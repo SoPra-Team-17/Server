@@ -37,7 +37,7 @@ Test the installation by executing the server.
 ## Usage
 The standard defines several flags for the server startup:
 * `-h` / `--help` prints some help information and exits.
-* `-c <path>` / `--config-charset <path>` configuration of the charset.
+* `-c <path>` / `--config-charset <path>` usage of the given character configuration.
 * `-m <path>` / `--config-match <path>` usage of the given match configuration.
 * `-s <path>` / `--config-scenario <path>` usage of the given scenario configuration.
 * `--x <key> <value>` can be used to give the server additional key-value pairs
