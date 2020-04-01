@@ -13,6 +13,8 @@ be also the option to install it through a docker container.
  * C++17 compatible Compiler (e.g. GCC-8)
  * CMake (at least version 3.10)
  * GNU-Make
+ * [spdlog](https://github.com/gabime/spdlog/)
+ * [CLI11](https://github.com/CLIUtils/CLI11)
 
 #### Compiling the application
 Create a directory for the build and change into this. The name of this 
@@ -31,7 +33,7 @@ make
 ```
 Test the installation by executing the server.
 ```
-./server017
+./server017 -h
 ```
 
 ## Usage
