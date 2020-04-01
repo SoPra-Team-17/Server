@@ -21,6 +21,8 @@ endif ()
 # build
 project(server017 VERSION 0.0.1 DESCRIPTION "Server of team 17 for the Sopra")
 
+find_package(spdlog REQUIRED)
+
 file(GLOB_RECURSE SOURCES
         ${CMAKE_SOURCE_DIR}/src/*.cpp
         ${CMAKE_SOURCE_DIR}/src/*.hpp
