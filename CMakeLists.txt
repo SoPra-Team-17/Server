@@ -26,6 +26,8 @@ file(GLOB_RECURSE SOURCES
         ${CMAKE_SOURCE_DIR}/src/*.hpp
 )
 
+SET(${LIBS} spdlog)
+
 include_directories(${CMAKE_SOURCE_DIR}/src)
 add_executable(${PROJECT_NAME} ${SOURCES})
 target_link_libraries(${PROJECT_NAME} ${LIBS})
