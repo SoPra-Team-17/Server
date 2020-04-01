@@ -33,7 +33,11 @@ int main(int argc, char *argv[]) {
     app.add_option("--port,-p", port, "Port used by the server");
     app.add_option("--x", additionalOptions, "Additional key value pairs");
 
-    CLI11_PARSE(app, argc, argv);
+    try {
+        app.parse(argc, argv);
+    } catch (const CLI::ParseError &e) {
+        return app.exit(e);
+    }
 
     spdlog::info("Server called with following arguments: ");
     spdlog::info(" -> character configuration: {}", characterPath);
