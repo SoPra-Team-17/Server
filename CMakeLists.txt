@@ -18,7 +18,6 @@ else ()
     message("############################\n")
 endif ()
 
-# build
 project(server017 VERSION 0.0.1 DESCRIPTION "Server of team 17 for the Sopra")
 
 find_package(spdlog REQUIRED)
