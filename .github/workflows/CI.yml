@@ -9,7 +9,7 @@ jobs:
             max-parallel: 4
             fail-fast: false
             matrix:
-              cxx: [g++-7, g++-8]
+              cxx: [g++-8]
         env:
           CXX: ${{ matrix.cxx }}
         steps:
