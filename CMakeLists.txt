@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 # build options
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
@@ -20,14 +21,19 @@ endif ()
 
 project(server017 VERSION 0.0.1 DESCRIPTION "Server of team 17 for the Sopra")
 
+# Libraries
+# spdlog
 find_package(spdlog REQUIRED)
+SET(LIBS ${LIBS} spdlog::spdlog)
+
+# CLI11
 find_package(CLI11 REQUIRED)
+add_definitions(-DCLI11_HAS_FILESYSTEM=1)
+SET(LIBS ${LIBS} CLI11::CLI11 stdc++fs)
 
 file(GLOB_RECURSE SOURCES
         ${CMAKE_SOURCE_DIR}/src/*.cpp
         ${CMAKE_SOURCE_DIR}/src/*.hpp)
-
-SET(LIBS spdlog::spdlog CLI11::CLI11 stdc++fs)
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
 add_executable(${PROJECT_NAME} ${SOURCES})

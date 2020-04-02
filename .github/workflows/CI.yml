@@ -8,7 +8,10 @@ jobs:
         strategy:
             max-parallel: 4
             fail-fast: false
-
+            matrix:
+              cxx: [g++-8, clang++]
+        env:
+          CXX: ${{ matrix.cxx }}
         steps:
         - uses: actions/checkout@v2
           with:
