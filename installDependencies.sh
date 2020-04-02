@@ -15,7 +15,7 @@ cd /tmp
 git clone https://github.com/CLIUtils/CLI11.git
 cd CLI11
 mkdir build && cd build
-cmake -DCLI11_BUILD_TESTS=false ..
+cmake -DCLI11_BUILD_TESTS=false -DCLI11_BUILD_DOCS=false -DCLI11_BUILD_EXAMPLES=false ..
 make -j$(nproc)
 sudo make install
 
