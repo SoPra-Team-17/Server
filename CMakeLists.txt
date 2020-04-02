@@ -25,10 +25,9 @@ find_package(CLI11 REQUIRED)
 
 file(GLOB_RECURSE SOURCES
         ${CMAKE_SOURCE_DIR}/src/*.cpp
-        ${CMAKE_SOURCE_DIR}/src/*.hpp
-)
+        ${CMAKE_SOURCE_DIR}/src/*.hpp)
 
-SET(${LIBS} spdlog)
+SET(${LIBS} LIBS spdlog::spdlog CLI11::CLI11 stdc++fs)
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
 add_executable(${PROJECT_NAME} ${SOURCES})
