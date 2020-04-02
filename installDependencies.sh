@@ -9,6 +9,8 @@ sudo apt update
 sudo apt install gcc-8 g++-8
 export CC=gcc-8
 export CXX=g++-8
+# clang
+sudo apt install clang
 
 # CLI11
 cd /tmp
