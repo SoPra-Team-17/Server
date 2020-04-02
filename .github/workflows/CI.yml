@@ -24,8 +24,4 @@ jobs:
           run: |
             cd build
             make -j$(nproc)
-        - name: Install
-          run: |
-            cd build
-            sudo make install
 
