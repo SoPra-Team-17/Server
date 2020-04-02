@@ -1,0 +1,27 @@
+name: CI
+
+on: [push]
+
+jobs:
+    build:
+        runs-on: ubuntu-18.04
+        strategy:
+            max-parallel: 4
+            fail-fast: false
+
+        steps:
+        - uses: actions/checkout@v2
+          with:
+            submodules: true
+        - name: Install Dependencies
+          run: ./installDependencies.sh
+        - name: Set up Build
+          run: |
+            mkdir build
+            cd build
+            cmake ..
+        - name: Build
+          run: |
+            cd build
+            make -j$(nproc)
+
