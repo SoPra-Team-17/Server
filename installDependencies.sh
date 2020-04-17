@@ -3,14 +3,6 @@
 # Setup
 # Exit the script if any command fails
 set -e
-# Update apt
-sudo apt update
-# GCC 8
-sudo apt install gcc-8 g++-8
-export CC=gcc-8
-export CXX=g++-8
-# clang
-sudo apt install clang
 
 # Dependencies from LibCommon
 ./external/LibCommon/installDependencies.sh
