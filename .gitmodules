@@ -1,0 +1,3 @@
+[submodule "external/LibCommon"]
+	path = external/LibCommon
+	url = https://github.com/SoPra-Team-17/LibCommon.git
