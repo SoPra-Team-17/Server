@@ -12,6 +12,9 @@ export CXX=g++-8
 # clang
 sudo apt install clang
 
+# Dependencies from LibCommon
+./external/LibCommon/installDependencies.sh
+
 # CLI11
 cd /tmp
 git clone https://github.com/CLIUtils/CLI11.git
