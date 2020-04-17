@@ -6,6 +6,7 @@
 
 #include "CLI/CLI.hpp"
 #include "spdlog/spdlog.h"
+#include <datatypes/matchconfig/MatchConfig.hpp>
 
 constexpr unsigned int maxVerbosity = 5;
 constexpr unsigned int defaultVerbosity = 1;
@@ -47,9 +48,13 @@ int main(int argc, char *argv[]) {
     spdlog::info(" -> verbosity:               {}", verbosity);
     spdlog::info(" -> port:                    {}", port);
     spdlog::info(" -> additional:");
-    for (unsigned int i = 0; i + 1 < additionalOptions.size(); i+= 2) {
-        spdlog::info("\t {} = {}", additionalOptions.at(i), additionalOptions.at(i+1));
+    for (unsigned int i = 0; i + 1 < additionalOptions.size(); i += 2) {
+        spdlog::info("\t {} = {}", additionalOptions.at(i), additionalOptions.at(i + 1));
     }
+
+    // Example use of LibCommon
+    spy::MatchConfig matchConfig;
+    std::cout << "Grapple range from matchConfig is " << matchConfig.getGrappleRange() << std::endl;
 
     return 0;
 }

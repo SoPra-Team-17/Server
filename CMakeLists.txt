@@ -31,6 +31,11 @@ find_package(CLI11 REQUIRED)
 add_definitions(-DCLI11_HAS_FILESYSTEM=1)
 SET(LIBS ${LIBS} CLI11::CLI11 stdc++fs)
 
+# LibCommon
+set(LIBCOMMON_TESTS OFF CACHE BOOL "Build LibCommon tests" FORCE)
+add_subdirectory(external/LibCommon)
+SET(LIBS ${LIBS} SopraCommon)
+
 file(GLOB_RECURSE SOURCES
         ${CMAKE_SOURCE_DIR}/src/*.cpp
         ${CMAKE_SOURCE_DIR}/src/*.hpp)
