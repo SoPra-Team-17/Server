@@ -32,8 +32,7 @@ add_definitions(-DCLI11_HAS_FILESYSTEM=1)
 SET(LIBS ${LIBS} CLI11::CLI11 stdc++fs)
 
 # LibCommon
-cmake_policy(SET CMP0077 NEW)
-set(LIBCOMMON_TESTS OFF)
+set(LIBCOMMON_TESTS OFF CACHE BOOL "Build LibCommon tests" FORCE)
 add_subdirectory(external/LibCommon)
 SET(LIBS ${LIBS} SopraCommon)
 
