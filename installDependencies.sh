@@ -7,6 +7,9 @@ set -e
 # Dependencies from LibCommon
 ./external/LibCommon/installDependencies.sh
 
+# Dependencies from WebsocketCPP
+./external/WebsocketCPP/installDependencies.sh
+
 # CLI11
 cd /tmp
 git clone https://github.com/CLIUtils/CLI11.git
