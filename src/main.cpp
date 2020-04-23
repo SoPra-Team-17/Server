@@ -6,11 +6,12 @@
 
 #include "CLI/CLI.hpp"
 #include "spdlog/spdlog.h"
+#include <Server/WebSocketServer.hpp>
 #include <datatypes/matchconfig/MatchConfig.hpp>
 
 constexpr unsigned int maxVerbosity = 5;
 constexpr unsigned int defaultVerbosity = 1;
-constexpr unsigned int defaultPort = 17;
+constexpr unsigned int defaultPort = 7007;
 
 int main(int argc, char *argv[]) {
     CLI::App app;
@@ -56,5 +57,13 @@ int main(int argc, char *argv[]) {
     spy::MatchConfig matchConfig;
     std::cout << "Grapple range from matchConfig is " << matchConfig.getGrappleRange() << std::endl;
 
-    return 0;
+    websocket::network::WebSocketServer s{static_cast<uint16_t>(port), "no-time-to-spy"};
+    s.connectionListener.subscribe([](std::shared_ptr<websocket::network::Connection> c) {
+        spdlog::info("New client connected");
+        c->receiveListener.subscribe([](const std::string &s) { spdlog::info("Message from client: {}",s); });
+    });
+
+    // Leave server running forever
+    std::this_thread::sleep_until(
+            std::chrono::system_clock::now() + std::chrono::hours(std::numeric_limits<int>::max()));
 }
