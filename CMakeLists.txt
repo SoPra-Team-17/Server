@@ -12,6 +12,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     message("###### DEBUG BUILD #######")
     message("##########################\n")
     list(APPEND COMMON_CXX_FLAGS -Og --coverage)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
 else ()
     message("\n############################")
     message("###### RELEASE BUILD #######")
@@ -42,7 +43,7 @@ set(SOURCES
 
 include_directories(src)
 add_executable(${PROJECT_NAME} ${SOURCES})
-target_link_libraries(${PROJECT_NAME} ${LIBS} $<$<CONFIG:Debug>:--coverage>)
+target_link_libraries(${PROJECT_NAME} ${LIBS})
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 target_compile_options(${PROJECT_NAME} PRIVATE ${COMMON_CXX_FLAGS})
 
