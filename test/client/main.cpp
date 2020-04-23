@@ -7,7 +7,7 @@
 
 using namespace std::string_literals;
 
-int main(int argc, char *argv[]) {
+int main() {
     auto host = "localhost"s;
     auto path = "/"s;
     auto protocol = "no-time-to-spy"s;
