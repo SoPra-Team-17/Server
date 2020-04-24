@@ -39,7 +39,8 @@ add_subdirectory(external/WebsocketCPP)
 list(APPEND LIBS SopraNetwork)
 
 set(SOURCES
-        src/main.cpp)
+        src/main.cpp
+        src/network/MessageRouter.cpp)
 
 include_directories(src)
 add_executable(${PROJECT_NAME} ${SOURCES})
