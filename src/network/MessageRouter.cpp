@@ -15,7 +15,13 @@ MessageRouter::MessageRouter(uint16_t port, std::string protocol) : server{port,
 }
 
 void MessageRouter::connectListener(std::shared_ptr<websocket::network::Connection> newConnection) {
-    int index = activeConnections.size();
+    // Assign lowest unused index
+    int index = 0;
+    for (const auto &conn : activeConnections) {
+        if (conn.first == index) {
+            index++;
+        }
+    }
     spdlog::info("New connection (Nr {})", index);
     activeConnections.emplace(index, newConnection);
 }
