@@ -10,10 +10,10 @@ set -e
 # Dependencies from WebsocketCPP
 ./external/WebsocketCPP/installDependencies.sh
 
-# asfm
+# afsm
 cd /tmp
 git clone --depth 1 https://github.com/zmij/afsm.git
-cd asfm
+cd afsm
 mkdir build && cd build
 cmake ..
 make -j$(nproc)
