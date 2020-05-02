@@ -9,23 +9,33 @@
 #include <spdlog/spdlog.h>
 #include <fstream>
 #include <iostream>
+#include <utility>
 
-Server::Server(uint16_t port, unsigned int verbosity, std::string characterPath, std::string matchPath,
-               std::string scenarioPath, std::map<std::string, std::string> additionalOptions) :
+Server::Server(uint16_t port, unsigned int verbosity, const std::string &characterPath, const std::string &matchPath,
+               const std::string &scenarioPath, std::map<std::string, std::string> additionalOptions) :
                port(port), verbosity(verbosity), additionalOptions(std::move(additionalOptions)),
                router(port, "no-time-to-spy") {
-    characterPath = "";
-    matchPath = "";
-    scenarioPath = "";
 
     std::ifstream ifs{matchPath};
     nlohmann::json j;
 
+    // load configuration files
     try {
+        std::cout << ifs.rdbuf() << std::endl;
         j = nlohmann::json::parse(ifs);
-        matchConfig = j;
+        matchConfig = j.get<spy::MatchConfig>();
+
+        ifs.open(scenarioPath);
+        std::cout << ifs.rdbuf() << std::endl;
+        j = nlohmann::json::parse(ifs);
+        scenarioConfig = j.get<spy::scenario::Scenario>();
+
+        ifs.open(characterPath);
+        j = nlohmann::json::parse(ifs);
+        characterDescriptions = j.get<std::vector<spy::character::CharacterDescription>>();
+        ifs.close();
     } catch (nlohmann::json::exception &e) {
-        std::cerr << "Not a valid json file: " << e.what() << std::endl;
+        spdlog::error("JSON file is invalid: " + std::string(e.what()));
         std::exit(1);
     }
 }

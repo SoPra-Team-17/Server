@@ -11,17 +11,17 @@
 #include <network/MessageRouter.hpp>
 #include "datatypes/matchconfig/MatchConfig.hpp"
 #include "datatypes/scenario/Scenario.hpp"
+#include "datatypes/character/CharacterDescription.hpp"
 
 
 class Server {
     public:
         Server(uint16_t port,
                unsigned int verbosity,
-               std::string characterPath,
-               std::string matchPath,
-               std::string scenarioPath,
-               std::map<std::string,
-               std::string> additionalOptions);
+               const std::string &characterPath,
+               const std::string &matchPath,
+               const std::string &scenarioPath,
+               std::map<std::string, std::string> additionalOptions);
 
         void run();
 
@@ -31,6 +31,7 @@ class Server {
         std::map<std::string, std::string> additionalOptions;
         spy::MatchConfig matchConfig;
         spy::scenario::Scenario scenarioConfig;
+        std::vector<spy::character::CharacterDescription> characterDescriptions;
         MessageRouter router;
 };
 
