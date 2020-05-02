@@ -24,7 +24,7 @@ cd /tmp
 git clone --depth 1 https://github.com/zmij/metapushkin.git
 cd metapushkin
 mkdir build && cd build
-cmake ..
+cmake -DMETA_BUILD_TESTS=false ..
 make -j$(nproc)
 sudo make install
 
