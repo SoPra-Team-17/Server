@@ -21,16 +21,14 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
 
     // load configuration files
     try {
-        std::cout << ifs.rdbuf() << std::endl;
         j = nlohmann::json::parse(ifs);
         matchConfig = j.get<spy::MatchConfig>();
 
-        ifs.open(scenarioPath);
-        std::cout << ifs.rdbuf() << std::endl;
+        ifs = std::ifstream(scenarioPath);
         j = nlohmann::json::parse(ifs);
         scenarioConfig = j.get<spy::scenario::Scenario>();
 
-        ifs.open(characterPath);
+        ifs = std::ifstream(characterPath);
         j = nlohmann::json::parse(ifs);
         characterDescriptions = j.get<std::vector<spy::character::CharacterDescription>>();
         ifs.close();
