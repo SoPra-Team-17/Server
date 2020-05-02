@@ -1,0 +1,58 @@
+name: Static analysis
+# Run static analysis only on PRs towards develop, as sonarcloud does not support gitflow with master+develop
+on:
+  pull_request:
+    branches:
+      - develop
+  push:
+    branches:
+      - develop
+
+jobs:
+  sonar:
+    runs-on: ubuntu-latest
+    env:
+      CXX: g++-8
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          # fetch-depth = 0 is equivalent to entire commit-history
+          fetch-depth: 0
+      # Sonar wants the target branch, but actions/checkout only fetches the current ref
+      - run: git fetch origin develop:refs/remotes/origin/develop
+      - name: Restore cache for sonar analysis
+        uses: actions/cache@v1
+        env:
+          cache-name: cache-sonar
+        with:
+          path: /home/runner/.sonarcache
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.ref }}
+      - name: Install Dependencies
+        run: ./installDependencies.sh
+      - uses: ottojo/sonarscanner-github-action@master
+      - name: Install build-wrapper
+        # TODO make this into an action (or integrate into ottojo/sonarscanner-github-action)
+        run: |
+          mkdir /home/runner/buildwrapper
+          wget -O /home/runner/buildwrapper/wrapper.zip https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip
+          unzip /home/runner/buildwrapper/wrapper.zip -d /home/runner/buildwrapper
+          echo ::set-env name=PATH::$PATH:/home/runner/buildwrapper/build-wrapper-linux-x86
+      - name: Set up debug build
+        # Build debug, because coverage is enabled in debug mode
+        run: |
+          mkdir build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=Debug ..
+      - name: Build
+        run: |
+          cd build
+          build-wrapper-linux-x86-64 --out-dir ../bw-output make -j$(nproc)
+      - name: sonar-scanner
+        run: |
+          sonar-scanner \
+          -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
+          -Dsonar.cfamily.cache.path=/home/runner/.sonarcache \
+          -Dsonar.cfamily.cache.enabled=true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
