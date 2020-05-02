@@ -15,7 +15,7 @@ cd /tmp
 git clone --depth 1 https://github.com/zmij/afsm.git
 cd afsm
 mkdir build && cd build
-cmake ..
+cmake -DAFSM_BUILD_TESTS=false ..
 make -j$(nproc)
 sudo make install
 
