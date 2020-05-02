@@ -38,6 +38,14 @@ list(APPEND LIBS SopraCommon)
 add_subdirectory(external/WebsocketCPP)
 list(APPEND LIBS SopraNetwork)
 
+# afsm
+find_file(AFSM_FOUND afsm/fsm.hpp HINTS /usr/local/include)
+if (AFSM_FOUND)
+    message("afsm found at ${AFSM_FOUND}")
+else ()
+    message(FATAL_ERROR "afsm not found")
+endif ()
+
 set(SOURCES
         src/main.cpp
         src/network/MessageRouter.cpp)
