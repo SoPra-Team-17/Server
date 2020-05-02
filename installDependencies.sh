@@ -10,6 +10,24 @@ set -e
 # Dependencies from WebsocketCPP
 ./external/WebsocketCPP/installDependencies.sh
 
+# asfm
+cd /tmp
+git clone --depth 1 https://github.com/zmij/afsm.git
+cd asfm
+mkdir build && cd build
+cmake ..
+make -j$(nproc)
+sudo make install
+
+# metapushkin (asfm dependency)
+cd /tmp
+git clone --depth 1 https://github.com/zmij/metapushkin.git
+cd metapushkin
+mkdir build && cd build
+cmake ..
+make -j$(nproc)
+sudo make install
+
 # CLI11
 cd /tmp
 git clone https://github.com/CLIUtils/CLI11.git
