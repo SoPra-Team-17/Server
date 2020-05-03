@@ -56,5 +56,7 @@ int main(int argc, char *argv[]) {
     }
 
     Server server(port, verbosity, characterPath, matchPath, scenarioPath, additionalOptions);
-    server.run();
+
+    std::this_thread::sleep_until(
+            std::chrono::system_clock::now() + std::chrono::hours(std::numeric_limits<int>::max()));
 }

@@ -23,28 +23,21 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
     try {
         j = nlohmann::json::parse(ifs);
         matchConfig = j.get<spy::MatchConfig>();
+        spdlog::info("Successfully read match configuration");
 
         ifs = std::ifstream(scenarioPath);
         j = nlohmann::json::parse(ifs);
         scenarioConfig = j.get<spy::scenario::Scenario>();
+        spdlog::info("Successfully read scenario configuration");
 
         ifs = std::ifstream(characterPath);
         j = nlohmann::json::parse(ifs);
         characterDescriptions = j.get<std::vector<spy::character::CharacterDescription>>();
+        spdlog::info("Successfully read character descriptions");
         ifs.close();
     } catch (nlohmann::json::exception &e) {
         spdlog::error("JSON file is invalid: " + std::string(e.what()));
+        ifs.close();
         std::exit(1);
     }
-
-    fsm.process_event(events::initDone{});
-}
-
-
-void Server::run() {
-    spdlog::info("Server is running!");
-
-    // Leave server running forever
-//    std::this_thread::sleep_until(
-//            std::chrono::system_clock::now() + std::chrono::hours(std::numeric_limits<int>::max()));
 }
