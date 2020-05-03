@@ -4,6 +4,7 @@
 #include <nlohmann/json.hpp>
 #include <Server/WebSocketServer.hpp>
 #include <utility>
+#include <spdlog/spdlog.h>
 
 /**
  * The MessageRouter holds a websocket::network::WebSocketServer and manages and enumerates connections.

@@ -1,4 +1,3 @@
-#include <spdlog/spdlog.h>
 
 #include <utility>
 #include "MessageRouter.hpp"
