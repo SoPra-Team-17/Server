@@ -9,7 +9,7 @@
 #include "Server.hpp"
 
 constexpr unsigned int maxVerbosity = 5;
-constexpr unsigned int defaultVerbosity = 1;
+constexpr unsigned int defaultVerbosity = 0;
 constexpr unsigned int defaultPort = 7007;
 
 int main(int argc, char *argv[]) {
@@ -43,15 +43,8 @@ int main(int argc, char *argv[]) {
         return app.exit(e);
     }
 
-    spdlog::info("Server called with following arguments: ");
-    spdlog::info(" -> character configuration: {}", characterPath);
-    spdlog::info(" -> match configuration:     {}", matchPath);
-    spdlog::info(" -> scenario configuration:  {}", scenarioPath);
-    spdlog::info(" -> verbosity:               {}", verbosity);
-    spdlog::info(" -> port:                    {}", port);
-    spdlog::info(" -> additional:");
+    // arrange key value pairs in a map
     for (unsigned int i = 0; i + 1 < keyValueStrings.size(); i += 2) {
-        spdlog::info("\t {} = {}", keyValueStrings.at(i), keyValueStrings.at(i + 1));
         additionalOptions[keyValueStrings.at(i)] = keyValueStrings.at(i + 1);
     }
 
@@ -59,4 +52,6 @@ int main(int argc, char *argv[]) {
 
     std::this_thread::sleep_until(
             std::chrono::system_clock::now() + std::chrono::hours(std::numeric_limits<int>::max()));
+
+    return 0;
 }

@@ -8,17 +8,19 @@
 #ifndef SERVER017_SERVER_HPP
 #define SERVER017_SERVER_HPP
 
-#include <network/MessageRouter.hpp>
+#include <afsm/fsm.hpp>
 #include "datatypes/matchconfig/MatchConfig.hpp"
 #include "datatypes/scenario/Scenario.hpp"
 #include "datatypes/character/CharacterDescription.hpp"
-#include <afsm/fsm.hpp>
-#include <network/messages/Hello.hpp>
-#include <network/messages/GameLeave.hpp>
+#include "network/MessageRouter.hpp"
+#include "network/messages/Hello.hpp"
+#include "network/messages/GameLeave.hpp"
 
 namespace events {
     struct choicePhaseFinished {};
     struct equipPhaseFinished {};
+    struct gameFinished {};
+    struct roundInitDone {};
 }
 
 class Server : afsm::def::state_machine<Server> {
@@ -41,6 +43,13 @@ class Server : afsm::def::state_machine<Server> {
             struct gamePhase : state_machine<gamePhase>{
                 struct roundInit : state<roundInit>{};                          //Cocktails + Zugreihenfolge
                 struct waitingForOperation : state<waitingForOperation>{};
+
+                using initial_state = roundInit;
+
+                using transitions  = transition_table<
+                    // Start        Event                        Next
+                    tr<roundInit,   events::roundInitDone,       waitingForOperation>
+                >;
             };
 
             struct gameOver : state<gameOver>{};
@@ -50,9 +59,9 @@ class Server : afsm::def::state_machine<Server> {
             using transitions = transition_table<
                 // Start        Event                        Next
                 tr<choicePhase, events::choicePhaseFinished, equipPhase>,
-                tr<equipPhase,  events::equipPhaseFinished,  gamePhase>
+                tr<equipPhase,  events::equipPhaseFinished,  gamePhase>,
+                tr<gamePhase,   events::gameFinished,        gameOver>
             >;
-
         };
 
         using transitions = transition_table<
@@ -70,6 +79,8 @@ class Server : afsm::def::state_machine<Server> {
         spy::scenario::Scenario scenarioConfig;
         std::vector<spy::character::CharacterDescription> characterDescriptions;
         MessageRouter router;
+
+        void configureLogging() const;
 };
 
 
