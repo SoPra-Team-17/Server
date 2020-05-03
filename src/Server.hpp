@@ -12,6 +12,7 @@
 #include "datatypes/matchconfig/MatchConfig.hpp"
 #include "datatypes/scenario/Scenario.hpp"
 #include "datatypes/character/CharacterDescription.hpp"
+#include "ServerFSM.hpp"
 
 
 class Server {
@@ -33,6 +34,8 @@ class Server {
         spy::scenario::Scenario scenarioConfig;
         std::vector<spy::character::CharacterDescription> characterDescriptions;
         MessageRouter router;
+
+        ServerFSM fsm;
 };
 
 

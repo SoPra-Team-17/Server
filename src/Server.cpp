@@ -36,6 +36,8 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         spdlog::error("JSON file is invalid: " + std::string(e.what()));
         std::exit(1);
     }
+
+    fsm.process_event(events::initDone{});
 }
 
 
