@@ -16,11 +16,13 @@
 
 const std::map<unsigned int, spdlog::level::level_enum> Server::verbosityMap = {
         {0, spdlog::level::level_enum::trace},
-        {1, spdlog::level::level_enum::err},
+        {1, spdlog::level::level_enum::off},
         {2, spdlog::level::level_enum::critical},
-        {3, spdlog::level::level_enum::warn},
-        {4, spdlog::level::level_enum::debug},
-        {5, spdlog::level::level_enum::trace}
+        {3, spdlog::level::level_enum::err},
+        {4, spdlog::level::level_enum::warn},
+        {5, spdlog::level::level_enum::info},
+        {6, spdlog::level::level_enum::debug},
+        {7, spdlog::level::level_enum::trace}
 };
 
 Server::Server(uint16_t port, unsigned int verbosity, const std::string &characterPath, const std::string &matchPath,
@@ -71,10 +73,11 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
 void Server::configureLogging() const {
     std::vector<spdlog::sink_ptr> sinks;
     std::string logFile(30, '\0');
+    struct tm buf = {};
 
     std::time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 
-    std::strftime(&logFile[0], logFile.size(), "%m-%d_%H:%M:%S.txt", std::localtime(&now));
+    std::strftime(&logFile[0], logFile.size(), "%m-%d_%H:%M:%S.txt", localtime_r(&now, &buf));
 
     auto it = verbosityMap.find(verbosity);
     if (it == verbosityMap.end()) {
