@@ -23,7 +23,7 @@ namespace events {
     struct roundInitDone {};
 }
 
-class Server : afsm::def::state_machine<Server> {
+class Server : public afsm::def::state_machine<Server> {
     public:
         Server(uint16_t port,
                unsigned int verbosity,
@@ -72,7 +72,6 @@ class Server : afsm::def::state_machine<Server> {
         >;
 
     private:
-        uint16_t port;
         unsigned int verbosity;
         std::map<std::string, std::string> additionalOptions;
         spy::MatchConfig matchConfig;

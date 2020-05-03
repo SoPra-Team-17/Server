@@ -26,7 +26,7 @@ const std::map<unsigned int, spdlog::level::level_enum> verbosityMap = {
 
 Server::Server(uint16_t port, unsigned int verbosity, const std::string &characterPath, const std::string &matchPath,
                const std::string &scenarioPath, std::map<std::string, std::string> additionalOptions) :
-               port(port), verbosity(verbosity), additionalOptions(std::move(additionalOptions)),
+               verbosity(verbosity), additionalOptions(std::move(additionalOptions)),
                router(port, "no-time-to-spy") {
     configureLogging();
 
@@ -36,9 +36,9 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
     spdlog::info(" -> scenario configuration:  {}", scenarioPath);
     spdlog::info(" -> verbosity:               {}", verbosity);
     spdlog::info(" -> port:                    {}", port);
-    if (!additionalOptions.empty()) {
+    if (!this->additionalOptions.empty()) {
         spdlog::info(" -> additional:");
-        for (const auto &elem : additionalOptions) {
+        for (const auto &elem : this->additionalOptions) {
             spdlog::info("\t {} = {}", elem.first, elem.second);
         }
     }
@@ -62,7 +62,7 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         characterDescriptions = j.get<std::vector<spy::character::CharacterDescription>>();
         spdlog::info("Successfully read character descriptions");
         ifs.close();
-    } catch (nlohmann::json::exception &e) {
+    } catch (const nlohmann::json::exception &e) {
         spdlog::error("JSON file is invalid: " + std::string(e.what()));
         ifs.close();
         std::exit(1);
