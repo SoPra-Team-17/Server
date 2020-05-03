@@ -15,6 +15,8 @@ be also the option to install it through a docker container.
  * GNU-Make
  * [spdlog](https://github.com/gabime/spdlog/)
  * [CLI11](https://github.com/CLIUtils/CLI11)
+ * [afsm](https://github.com/zmij/afsm)
+ * [metapushkin](https://github.com/zmij/metapushkin) (dependency from afsm)
 
 #### Compiling the application
 Create a directory for the build and change into this. The name of this 
