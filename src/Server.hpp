@@ -79,6 +79,8 @@ class Server : public afsm::def::state_machine<Server> {
         std::vector<spy::character::CharacterDescription> characterDescriptions;
         MessageRouter router;
 
+        const static std::map<unsigned int, spdlog::level::level_enum> verbosityMap;
+
         void configureLogging() const;
 };
 

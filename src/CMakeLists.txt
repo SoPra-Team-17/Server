@@ -4,8 +4,7 @@ set(SOURCES
         network/MessageRouter.cpp
         Server.cpp)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../external/LibCommon/src)
+include_directories(.)
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 target_link_libraries(${PROJECT_NAME} ${LIBS})

@@ -10,13 +10,12 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <fstream>
-#include <iostream>
 #include <chrono>
 #include <ctime>
 #include <utility>
 
-const std::map<unsigned int, spdlog::level::level_enum> verbosityMap = {
-        {0, spdlog::level::level_enum::debug},
+const std::map<unsigned int, spdlog::level::level_enum> Server::verbosityMap = {
+        {0, spdlog::level::level_enum::trace},
         {1, spdlog::level::level_enum::err},
         {2, spdlog::level::level_enum::critical},
         {3, spdlog::level::level_enum::warn},
@@ -77,21 +76,27 @@ void Server::configureLogging() const {
 
     std::strftime(&logFile[0], logFile.size(), "%m-%d_%H:%M:%S.txt", std::localtime(&now));
 
-    sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/" + logFile));
-    sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
-    auto combined_logger = std::make_shared<spdlog::logger>("name", begin(sinks), end(sinks));
-
-    // use this new combined sink as default logger
-    spdlog::set_default_logger(combined_logger);
-
-    spdlog::flush_every(std::chrono::seconds(5));
-
-    // Set logging level according to the internal server verbosity
     auto it = verbosityMap.find(verbosity);
     if (it == verbosityMap.end()) {
         spdlog::error("Requested verbosity level {} is not supported!", verbosity);
-        std::exit(-1);
-    } else {
-        spdlog::set_level(it->second);
+        std::exit(1);
     }
+
+    // logging to console can be influenced via verbosity setting
+    auto consoleSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    consoleSink->set_level(it->second);
+
+    // logging to file always works with max logging level
+    auto fileSink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/" + logFile);
+    fileSink->set_level(spdlog::level::level_enum::trace);
+
+    sinks.push_back(consoleSink);
+    sinks.push_back(fileSink);
+
+    auto combined_logger = std::make_shared<spdlog::logger>("Logger", begin(sinks), end(sinks));
+
+    spdlog::flush_every(std::chrono::seconds(5));
+
+    // use this new combined sink as default logger
+    spdlog::set_default_logger(combined_logger);
 }
