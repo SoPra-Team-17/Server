@@ -48,7 +48,12 @@ int main(int argc, char *argv[]) {
         additionalOptions[keyValueStrings.at(i)] = keyValueStrings.at(i + 1);
     }
 
-    Server server(port, verbosity, characterPath, matchPath, scenarioPath, additionalOptions);
+    afsm::state_machine<Server> server(port, verbosity, characterPath, matchPath, scenarioPath, additionalOptions);
+
+
+    server.process_event(spy::network::messages::Hello());
+    server.process_event(spy::network::messages::Hello());
+
 
     std::this_thread::sleep_until(
             std::chrono::system_clock::now() + std::chrono::hours(std::numeric_limits<int>::max()));
