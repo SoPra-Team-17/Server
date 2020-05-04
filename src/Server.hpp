@@ -2,7 +2,7 @@
  * @file   Server.hpp
  * @author Dominik Authaler
  * @date   02.05.2020 (creation)
- * @brief  Declaration of the server class.
+ * @brief  Declaration of the server class and state maching.
  */
 
 #ifndef SERVER017_SERVER_HPP

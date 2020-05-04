@@ -1,7 +1,8 @@
-//
-// Created by jonas on 04.05.20.
-//
-
+/**
+ * @file GameFSM.hpp
+ * @author ottojo
+ * @brief State machine for game
+ */
 #ifndef SERVER017_GAMEFSM_HPP
 #define SERVER017_GAMEFSM_HPP
 

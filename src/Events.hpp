@@ -1,6 +1,8 @@
-//
-// Created by jonas on 04.05.20.
-//
+/**
+ * @file Events.hpp
+ * @author ottojo
+ * @brief additional events for server state machine
+ */
 
 #ifndef SERVER017_EVENTS_HPP
 #define SERVER017_EVENTS_HPP
