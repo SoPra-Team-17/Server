@@ -25,7 +25,7 @@ namespace guards {
 namespace actions {
     struct nextCharacter {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
+        void operator()(Event &&, FSM &, SourceState &, TargetState &) {
             // TODO set next character as currently active
         }
     };
