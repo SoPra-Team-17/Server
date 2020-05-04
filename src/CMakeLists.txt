@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.10)
 set(SOURCES
         main.cpp
         network/MessageRouter.cpp
-        Server.cpp)
+        Server.cpp
+        util/Player.cpp)
 
 include_directories(.)
 

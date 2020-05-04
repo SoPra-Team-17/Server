@@ -28,27 +28,32 @@ class Server : public afsm::def::state_machine<Server> {
                const std::string &scenarioPath,
                std::map<std::string, std::string> additionalOptions);
 
-        struct emptyLobby : state<emptyLobby>{};
-        struct waitFor2Player : state<waitFor2Player>{};
+        struct emptyLobby : state<emptyLobby> {
+        };
+        struct waitFor2Player : state<waitFor2Player> {
+        };
         GameFSM game;
 
         using initial_state = emptyLobby;
 
-        using transitions = transition_table<
-            // Start            Event                               Next
-            tr<emptyLobby,      spy::network::messages::Hello,      waitFor2Player>,
-            tr<waitFor2Player,  spy::network::messages::GameLeave,  emptyLobby>,
-            tr<waitFor2Player,  spy::network::messages::Hello,      decltype(game)>
+        using transitions = transition_table <
+        // Start            Event                               Next
+        tr<emptyLobby,      spy::network::messages::Hello,      waitFor2Player>,
+        tr<waitFor2Player,  spy::network::messages::GameLeave,  emptyLobby>,
+        tr<waitFor2Player,  spy::network::messages::Hello,      decltype(game)>
         >;
 
-    private:
         unsigned int verbosity;
         std::map<std::string, std::string> additionalOptions;
         spy::MatchConfig matchConfig;
         spy::scenario::Scenario scenarioConfig;
         std::vector<spy::character::CharacterDescription> characterDescriptions;
         MessageRouter router;
+        spy::gameplay::State gameState;
+        std::map<unsigned int, int> safeCombinations;
+        std::map<Player, std::set<int>> knownCombinations;
 
+    private:
         const static std::map<unsigned int, spdlog::level::level_enum> verbosityMap;
 
         void configureLogging() const;

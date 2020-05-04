@@ -27,8 +27,9 @@ const std::map<unsigned int, spdlog::level::level_enum> Server::verbosityMap = {
 
 Server::Server(uint16_t port, unsigned int verbosity, const std::string &characterPath, const std::string &matchPath,
                const std::string &scenarioPath, std::map<std::string, std::string> additionalOptions) :
-               verbosity(verbosity), additionalOptions(std::move(additionalOptions)),
-               router(port, "no-time-to-spy") {
+        verbosity(verbosity),
+        additionalOptions(std::move(additionalOptions)),
+        router(port, "no-time-to-spy") {
     configureLogging();
 
     spdlog::info("Server called with following arguments: ");
@@ -68,6 +69,19 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         ifs.close();
         std::exit(1);
     }
+
+    gameState = spy::gameplay::State{1, spy::scenario::FieldMap{scenarioConfig}, {}, {}, spy::util::Point{1, 1},
+                                     spy::util::Point{}};
+
+    using serverFSM = afsm::state_machine<Server>;
+    auto &fsm = static_cast<serverFSM &>(*this);
+
+    router.addHelloListener([&fsm](auto helloMessage) {
+        spdlog::info("Server received Hello message, posting event to FSM now.");
+        fsm.process_event(helloMessage);
+    });
+
+    // TODO register handlers for more messages
 }
 
 void Server::configureLogging() const {
@@ -87,6 +101,7 @@ void Server::configureLogging() const {
 
     // logging to console can be influenced via verbosity setting
     auto consoleSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    consoleSink->set_color_mode(spdlog::color_mode::always);
     consoleSink->set_level(it->second);
 
     // logging to file always works with max logging level

@@ -4,6 +4,7 @@
 #include <Client/WebSocketClient.hpp>
 #include <string>
 #include <iostream>
+#include <network/messages/Hello.hpp>
 
 using namespace std::string_literals;
 
@@ -13,8 +14,11 @@ int main() {
     auto protocol = "no-time-to-spy"s;
 
     websocket::network::WebSocketClient c{host, path, 7007, protocol};
-    c.send("Hi!");
+    auto hello = spy::network::messages::Hello{spy::util::UUID::generate(),
+                                               "Test Client",
+                                               spy::network::RoleEnum::PLAYER};
+    nlohmann::json hj = hello;
+    c.send(hj.dump());
     std::cout << "done" << std::endl;
     std::this_thread::sleep_for(std::chrono::hours{100});
-
 }
