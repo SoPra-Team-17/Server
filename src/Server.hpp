@@ -2,7 +2,7 @@
  * @file   Server.hpp
  * @author Dominik Authaler
  * @date   02.05.2020 (creation)
- * @brief  Declaration of the server class.
+ * @brief  Declaration of the server class and state maching.
  */
 
 #ifndef SERVER017_SERVER_HPP
@@ -15,13 +15,9 @@
 #include "network/MessageRouter.hpp"
 #include "network/messages/Hello.hpp"
 #include "network/messages/GameLeave.hpp"
+#include <Events.hpp>
+#include <GameFSM.hpp>
 
-namespace events {
-    struct choicePhaseFinished {};
-    struct equipPhaseFinished {};
-    struct gameFinished {};
-    struct roundInitDone {};
-}
 
 class Server : public afsm::def::state_machine<Server> {
     public:
@@ -34,41 +30,15 @@ class Server : public afsm::def::state_machine<Server> {
 
         struct emptyLobby : state<emptyLobby>{};
         struct waitFor2Player : state<waitFor2Player>{};
-        struct game : state_machine<game> {
-            // Ziel: Auslagern in game.hpp
+        GameFSM game;
 
-            struct choicePhase : state<choicePhase>{};
-            struct equipPhase : state<equipPhase>{};
-
-            struct gamePhase : state_machine<gamePhase>{
-                struct roundInit : state<roundInit>{};                          //Cocktails + Zugreihenfolge
-                struct waitingForOperation : state<waitingForOperation>{};
-
-                using initial_state = roundInit;
-
-                using transitions  = transition_table<
-                    // Start        Event                        Next
-                    tr<roundInit,   events::roundInitDone,       waitingForOperation>
-                >;
-            };
-
-            struct gameOver : state<gameOver>{};
-
-            using initial_state = choicePhase;
-
-            using transitions = transition_table<
-                // Start        Event                        Next
-                tr<choicePhase, events::choicePhaseFinished, equipPhase>,
-                tr<equipPhase,  events::equipPhaseFinished,  gamePhase>,
-                tr<gamePhase,   events::gameFinished,        gameOver>
-            >;
-        };
+        using initial_state = emptyLobby;
 
         using transitions = transition_table<
             // Start            Event                               Next
             tr<emptyLobby,      spy::network::messages::Hello,      waitFor2Player>,
             tr<waitFor2Player,  spy::network::messages::GameLeave,  emptyLobby>,
-            tr<waitFor2Player,  spy::network::messages::Hello,      game>
+            tr<waitFor2Player,  spy::network::messages::Hello,      decltype(game)>
         >;
 
     private:
