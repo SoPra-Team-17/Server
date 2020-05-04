@@ -50,7 +50,7 @@ class Server : public afsm::def::state_machine<Server> {
         std::vector<spy::character::CharacterDescription> characterDescriptions;
         MessageRouter router;
         spy::gameplay::State gameState;
-        std::map<int, int> safeCombinations;
+        std::map<unsigned int, int> safeCombinations;
         std::map<Player, std::set<int>> knownCombinations;
 
     private:
