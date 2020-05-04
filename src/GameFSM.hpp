@@ -27,7 +27,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
 
             struct roundInit : state<roundInit> {
                 template<typename FSM, typename Event>
-                void on_enter(Event &&, FSM &fsm) {
+                void on_enter(Event &&, FSM &) {
                     spdlog::info("Entering state roundInit");
                     // TODO Zugreihenfolge initialisieren, Cocktails verteilen
                 }
