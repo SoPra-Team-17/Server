@@ -3,7 +3,7 @@ set(SOURCES
         main.cpp
         network/MessageRouter.cpp
         Server.cpp
-        ServerUtil.cpp util/Player.cpp)
+        util/Player.cpp)
 
 include_directories(.)
 
