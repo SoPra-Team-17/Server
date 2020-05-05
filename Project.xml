@@ -1,0 +1,18 @@
+<code_scheme name="Project" version="173">
+  <Objective-C-extensions>
+    <extensions>
+      <pair source="cpp" header="hpp" fileNamingConvention="NONE" />
+      <pair source="c" header="h" fileNamingConvention="NONE" />
+    </extensions>
+  </Objective-C-extensions>
+  <codeStyleSettings language="ObjectiveC">
+    <indentOptions>
+      <option name="TAB_SIZE" value="4" />
+    </indentOptions>
+  </codeStyleSettings>
+  <codeStyleSettings language="Shell Script">
+    <indentOptions>
+      <option name="INDENT_SIZE" value="4" />
+    </indentOptions>
+  </codeStyleSettings>
+</code_scheme>
