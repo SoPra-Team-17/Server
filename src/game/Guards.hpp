@@ -1,5 +1,5 @@
 /**
- * @file Guards.hp
+ * @file Guards.hpp
  * @brief FSM guards relating to GameFSM
  */
 
