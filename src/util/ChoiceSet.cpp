@@ -11,7 +11,9 @@
 
 ChoiceSet::ChoiceSet(const std::vector<spy::character::CharacterInformation> &charInfos,
                      std::list<spy::gadget::GadgetEnum> gadgetTypes) : gadgets(std::move(gadgetTypes)) {
-    std::copy(charInfos.begin(), charInfos.end(), std::back_inserter(characters));
+    for (const auto &c : charInfos) {
+        characters.push_back(c.getCharacterId());
+    }
 }
 
 ChoiceSet::ChoiceSet(std::list<spy::util::UUID> characterIds,
@@ -21,18 +23,22 @@ ChoiceSet::ChoiceSet(std::list<spy::util::UUID> characterIds,
 }
 
 void ChoiceSet::addForSelection(spy::character::CharacterInformation c) {
+    std::lock_guard<std::mutex> g(selectionMutex);
     characters.push_back(c.getCharacterId());
 }
 
 void ChoiceSet::addForSelection(spy::util::UUID u) {
+    std::lock_guard<std::mutex> g(selectionMutex);
     characters.push_back(u);
 }
 
 void ChoiceSet::addForSelection(spy::gadget::GadgetEnum g) {
+    std::lock_guard<std::mutex> g(selectionMutex);
     gadgets.push_back(g);
 }
 
 void ChoiceSet::addForSelection(std::vector<spy::util::UUID> chars, std::vector<spy::gadget::GadgetEnum> gadgetTypes) {
+    std::lock_guard<std::mutex> g(selectionMutex);
     std::copy(chars.begin(), chars.end(), std::back_inserter(characters));
     std::copy(gadgetTypes.begin(), gadgetTypes.end(), std::back_inserter(gadgets));
 }
