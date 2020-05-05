@@ -14,6 +14,7 @@
 #include "Server.hpp"
 #include "util/Player.hpp"
 #include "spdlog/fmt/ostr.h"
+#include "OperationHandling.hpp"
 
 class GameFSM : public afsm::def::state_machine<GameFSM> {
     public:
@@ -73,7 +74,6 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                         spdlog::info(c);
                     }
                     // TODO Cocktails verteilen
-                    // TODO request first operation
                     root_machine(fsm).process_event(events::roundInitDone{});
                 }
             };
@@ -86,7 +86,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                 }
 
                 using internal_transitions = transition_table <
-                in<spy::network::messages::GameOperation, actions::handleOperationAndRequestNext, and_<not_<guards::lastCharacter>,guards::operationValid>>
+                in<spy::network::messages::GameOperation, actions::handleOperationAndRequestNext, and_ < not_ < guards::noCharactersRemaining>, guards::operationValid>>
                 >;
             };
 
@@ -94,8 +94,8 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
 
             using transitions = transition_table <
             //  Start           Event                       Next            Action  Guard
-            tr<roundInit, events::roundInitDone, waitingForOperation>,
-            tr<waitingForOperation, spy::network::messages::GameOperation, roundInit, actions::handleOperation, guards::lastCharacter>
+            tr<roundInit, events::roundInitDone, waitingForOperation, actions::requestNextOperation>,
+            tr<waitingForOperation, spy::network::messages::GameOperation, roundInit, actions::handleOperation, guards::noCharactersRemaining>
             >;
         };
 

@@ -50,14 +50,15 @@ int main(int argc, char *argv[]) {
 
     afsm::state_machine<Server> server(port, verbosity, characterPath, matchPath, scenarioPath, additionalOptions);
 
-    server.process_event(spy::network::messages::Hello());
-    server.process_event(spy::network::messages::Hello());
-    server.process_event(events::choicePhaseFinished{});
-    server.process_event(events::equipPhaseFinished{});
-    server.process_event(spy::network::messages::GameOperation{});
-    server.process_event(spy::network::messages::GameOperation{});
-    server.process_event(spy::network::messages::GameOperation{});
-    server.process_event(spy::network::messages::GameOperation{});
+    std::cin.get();
+    server.process_event(spy::network::messages::Hello());               std::cin.get();
+    server.process_event(spy::network::messages::Hello());               std::cin.get();
+    server.process_event(events::choicePhaseFinished{});                 std::cin.get();
+    server.process_event(events::equipPhaseFinished{});                  std::cin.get();
+    server.process_event(spy::network::messages::GameOperation{});       std::cin.get();
+    server.process_event(spy::network::messages::GameOperation{});       std::cin.get();
+    server.process_event(spy::network::messages::GameOperation{});       std::cin.get();
+    server.process_event(spy::network::messages::GameOperation{});       std::cin.get();
 
 
     std::this_thread::sleep_until(

@@ -10,7 +10,6 @@
 #include <network/messages/GameOperation.hpp>
 #include <network/messages/RequestGameOperation.hpp>
 #include <util/Player.hpp>
-#include "Util.hpp"
 
 namespace guards {
     struct operationValid {
@@ -23,49 +22,14 @@ namespace guards {
         }
     };
 
-    struct lastCharacter {
+    struct noCharactersRemaining {
         template<typename FSM, typename FSMState, typename Event>
         bool operator()(FSM const &fsm, FSMState const &, Event const &) {
-            return fsm.remainingCharacters.size() == 1;
+            spdlog::info("Checking guard noCharactersRemaining: {} remaining characters", fsm.remainingCharacters.size());
+            return fsm.remainingCharacters.size() == 0;
         }
     };
 }
 
-
-namespace actions {
-    struct handleOperation {
-        template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(Event &&event, FSM &, SourceState &, TargetState &) {
-            Util::handleOperationFunc(event);
-        }
-    };
-
-    struct handleOperationAndRequestNext {
-        template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(Event &&event, FSM &fsm, SourceState &, TargetState &) {
-            Util::handleOperationFunc(event);
-            // TODO: this could be in the transition action
-            //  maybe proper guards so the transitions
-            //                       operation
-            //  waitingForOperation ----------------> waitingForOperation
-            //                       /chooseNext
-            //  and
-            //                       last operation
-            //  waitingForOperation ----------------> roundInit
-            //  are both possible
-
-
-            fsm.activeCharacter = fsm.remainingCharacters.front();
-            fsm.remainingCharacters.pop_front();
-
-            spdlog::info("Requesting GameOperation for character {}", fsm.activeCharacter);
-            // TODO: find player owning activeCharacter
-            auto activePlayer = Player::one;
-            spdlog::info("Requesting GameOperation from player {}", activePlayer);
-            // TODO properly request Operation
-            //root_machine(fsm).router.sendMessage(static_cast<int>(activePlayer), spy::network::messages::RequestGameOperation());
-        }
-    };
-}
 
 #endif //SERVER017_SERVERUTIL_HPP

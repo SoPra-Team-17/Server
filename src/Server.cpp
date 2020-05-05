@@ -116,11 +116,12 @@ void Server::configureLogging() const {
     fileSink->set_level(spdlog::level::level_enum::trace);
 
     sinks.push_back(consoleSink);
-    sinks.push_back(fileSink);
+    //sinks.push_back(fileSink);
 
     auto combined_logger = std::make_shared<spdlog::logger>("Logger", begin(sinks), end(sinks));
+    combined_logger->flush_on(spdlog::level::info);
 
-    spdlog::flush_every(std::chrono::seconds(5));
+    //spdlog::flush_every(std::chrono::seconds(5));
 
     // use this new combined sink as default logger
     spdlog::set_default_logger(combined_logger);

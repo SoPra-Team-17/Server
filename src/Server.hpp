@@ -32,6 +32,10 @@ class Server : public afsm::def::state_machine<Server> {
         struct emptyLobby : state<emptyLobby> {
         };
         struct waitFor2Player : state<waitFor2Player> {
+            template<typename FSM, typename Event>
+            void on_enter(Event &&, FSM &) {
+                spdlog::info("Entering state waitFor2Player");
+            }
         };
         GameFSM game;
 
