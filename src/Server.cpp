@@ -13,6 +13,7 @@
 #include <chrono>
 #include <ctime>
 #include <utility>
+#include <datatypes/character/CharacterInformation.hpp>
 
 const std::map<unsigned int, spdlog::level::level_enum> Server::verbosityMap = {
         {0, spdlog::level::level_enum::trace},
@@ -61,7 +62,13 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
 
         ifs = std::ifstream(characterPath);
         j = nlohmann::json::parse(ifs);
-        characterDescriptions = j.get<std::vector<spy::character::CharacterDescription>>();
+
+        for (const auto &characterDescriptionJson: j) {
+            // Read CharacterDescription, save CharacterInformation = CharacterDescription + UUID
+            auto characterDescription = characterDescriptionJson.get<spy::character::CharacterDescription>();
+            characterInformations.emplace_back(std::move(characterDescription), spy::util::UUID::generate());
+        }
+
         spdlog::info("Successfully read character descriptions");
         ifs.close();
     } catch (const nlohmann::json::exception &e) {
@@ -113,7 +120,8 @@ void Server::configureLogging() const {
 
     auto combined_logger = std::make_shared<spdlog::logger>("Logger", begin(sinks), end(sinks));
 
-    spdlog::flush_every(std::chrono::seconds(5));
+    // Flush for every message of level info or higher
+    combined_logger->flush_on(spdlog::level::info);
 
     // use this new combined sink as default logger
     spdlog::set_default_logger(combined_logger);
