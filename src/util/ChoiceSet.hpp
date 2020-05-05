@@ -10,6 +10,7 @@
 
 #include <mutex>
 #include <list>
+#include <random>
 
 #include "util/UUID.hpp"
 #include "datatypes/character/CharacterInformation.hpp"
@@ -73,6 +74,9 @@ class ChoiceSet {
         std::list<spy::gadget::GadgetEnum> gadgets;
 
         std::mutex selectionMutex;
+
+        std::random_device rd;
+        std::mt19937 rng;
 };
 
 

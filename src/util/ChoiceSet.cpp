@@ -7,10 +7,8 @@
 
 #include "ChoiceSet.hpp"
 
-#include <random>
-
 ChoiceSet::ChoiceSet(const std::vector<spy::character::CharacterInformation> &charInfos,
-                     std::list<spy::gadget::GadgetEnum> gadgetTypes) : gadgets(std::move(gadgetTypes)) {
+                     std::list<spy::gadget::GadgetEnum> gadgetTypes) : gadgets(std::move(gadgetTypes)), rng(rd()) {
     for (const auto &c : charInfos) {
         characters.push_back(c.getCharacterId());
     }
@@ -18,22 +16,22 @@ ChoiceSet::ChoiceSet(const std::vector<spy::character::CharacterInformation> &ch
 
 ChoiceSet::ChoiceSet(std::list<spy::util::UUID> characterIds,
                      std::list<spy::gadget::GadgetEnum> gadgetTypes) : characters(std::move(characterIds)),
-                                                                       gadgets(std::move(gadgetTypes)) {
+                                                                       gadgets(std::move(gadgetTypes)), rng(rd()) {
 
 }
 
 void ChoiceSet::addForSelection(spy::character::CharacterInformation c) {
-    std::lock_guard<std::mutex> g(selectionMutex);
+    std::lock_guard<std::mutex> guard(selectionMutex);
     characters.push_back(c.getCharacterId());
 }
 
 void ChoiceSet::addForSelection(spy::util::UUID u) {
-    std::lock_guard<std::mutex> g(selectionMutex);
+    std::lock_guard<std::mutex> guard(selectionMutex);
     characters.push_back(u);
 }
 
 void ChoiceSet::addForSelection(spy::gadget::GadgetEnum g) {
-    std::lock_guard<std::mutex> g(selectionMutex);
+    std::lock_guard<std::mutex> guard(selectionMutex);
     gadgets.push_back(g);
 }
 
@@ -44,17 +42,14 @@ void ChoiceSet::addForSelection(std::vector<spy::util::UUID> chars, std::vector<
 }
 
 std::pair<std::vector<spy::util::UUID>, std::vector<spy::gadget::GadgetEnum>> ChoiceSet::requestSelection() {
-    std::lock_guard<std::mutex> g(selectionMutex);
+    std::lock_guard<std::mutex> guard(selectionMutex);
 
     std::vector<spy::util::UUID> selectedChars(3);
     std::vector<spy::gadget::GadgetEnum> selectedGadgets(3);
 
-    std::random_device rd;
-    std::mt19937 gen(rd());
-
     for (auto i = 0; i < 3; i++) {
         std::uniform_int_distribution<unsigned int> randPos(0, characters.size() - 1);
-        auto index = randPos(gen);
+        auto index = randPos(rng);
 
         auto it = characters.begin();
         std::advance(it, index);
@@ -65,7 +60,7 @@ std::pair<std::vector<spy::util::UUID>, std::vector<spy::gadget::GadgetEnum>> Ch
 
     for (auto i = 0; i < 3; i++) {
         std::uniform_int_distribution<unsigned int> randPos(0, gadgets.size() - 1);
-        auto index = randPos(gen);
+        auto index = randPos(rng);
 
         auto it = gadgets.begin();
         std::advance(it, index);
