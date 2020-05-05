@@ -50,6 +50,16 @@ int main(int argc, char *argv[]) {
 
     afsm::state_machine<Server> server(port, verbosity, characterPath, matchPath, scenarioPath, additionalOptions);
 
+    // TODO: move this testing into some external program once choice and equip phase are implemented
+    server.process_event(spy::network::messages::Hello());
+    server.process_event(spy::network::messages::Hello());
+    server.process_event(events::choicePhaseFinished{});
+    server.process_event(events::equipPhaseFinished{});
+    for (int i = 0; i < 100; i++) {
+        std::cin.get();
+        server.process_event(spy::network::messages::GameOperation{});
+    }
+
     std::this_thread::sleep_until(
             std::chrono::system_clock::now() + std::chrono::hours(std::numeric_limits<int>::max()));
 
