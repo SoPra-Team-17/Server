@@ -50,6 +50,16 @@ int main(int argc, char *argv[]) {
 
     afsm::state_machine<Server> server(port, verbosity, characterPath, matchPath, scenarioPath, additionalOptions);
 
+    server.process_event(spy::network::messages::Hello());
+    server.process_event(spy::network::messages::Hello());
+    server.process_event(events::choicePhaseFinished{});
+    server.process_event(events::equipPhaseFinished{});
+    server.process_event(spy::network::messages::GameOperation{});
+    server.process_event(spy::network::messages::GameOperation{});
+    server.process_event(spy::network::messages::GameOperation{});
+    server.process_event(spy::network::messages::GameOperation{});
+
+
     std::this_thread::sleep_until(
             std::chrono::system_clock::now() + std::chrono::hours(std::numeric_limits<int>::max()));
 

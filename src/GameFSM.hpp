@@ -8,55 +8,94 @@
 
 #include <afsm/fsm.hpp>
 #include <network/messages/GameOperation.hpp>
+#include <datatypes/character/CharacterInformation.hpp>
 #include "Events.hpp"
 #include "ServerUtil.hpp"
 #include "Server.hpp"
 #include "util/Player.hpp"
+#include "spdlog/fmt/ostr.h"
 
 class GameFSM : public afsm::def::state_machine<GameFSM> {
     public:
 
         struct choicePhase : state<choicePhase> {
+
+            template<typename FSM, typename Event>
+            void on_enter(Event &&, FSM &fsm) {
+                spdlog::info("Entering choice phase");
+                spy::gameplay::State &gameState = root_machine(fsm).gameState;
+                std::vector<spy::character::CharacterInformation> &characterInformations =
+                        root_machine(fsm).characterInformations;
+
+                // TODO: choice phase, do not just use every character available
+                spy::character::CharacterSet characters;
+                for (const auto &c: characterInformations) {
+                    auto character = spy::character::Character{c.getCharacterId(), c.getName()};
+                    character.setProperties(
+                            std::set<spy::character::PropertyEnum>{c.getFeatures().begin(), c.getFeatures().end()});
+                    characters.insert(character);
+                }
+
+                gameState = spy::gameplay::State{1,
+                                                 gameState.getMap(),
+                                                 gameState.getMySafeCombinations(),
+                                                 characters,
+                                                 gameState.getCatCoordinates(),
+                                                 gameState.getJanitorCoordinates()};
+            }
         };
+
         struct equipPhase : state<equipPhase> {
+            template<typename FSM, typename Event>
+            void on_enter(Event &&, FSM &) {
+                spdlog::info("Entering equip phase");
+            }
         };
 
         struct gamePhase : state_machine<gamePhase> {
 
             spy::util::UUID activeCharacter; //!< Set in roundInit state and waitingForOperation internal transition
 
+            std::deque<spy::util::UUID> remainingCharacters; //!< Characters that have not made a move this round
+
             struct roundInit : state<roundInit> {
                 template<typename FSM, typename Event>
-                void on_enter(Event &&, FSM &) {
+                void on_enter(Event &&, FSM &fsm) {
                     spdlog::info("Entering state roundInit");
-                    // TODO Zugreihenfolge initialisieren, Cocktails verteilen
+
+                    for (const auto &c: root_machine(fsm).gameState.getCharacters()) {
+                        fsm.remainingCharacters.push_back(c.getCharacterId());
+                    }
+                    std::shuffle(fsm.remainingCharacters.begin(), fsm.remainingCharacters.end(), root_machine(fsm).rng);
+
+                    spdlog::info("Initialized round order:");
+                    for (const auto &c: fsm.remainingCharacters) {
+                        spdlog::info(c);
+                    }
+                    // TODO Cocktails verteilen
+                    // TODO request first operation
+                    root_machine(fsm).process_event(events::roundInitDone{});
                 }
             };
 
             struct waitingForOperation : state<waitingForOperation> {
 
                 template<typename FSM, typename Event>
-                void on_enter(Event &&, FSM &fsm) {
+                void on_enter(Event &&, FSM &) {
                     spdlog::info("Entering state waitingForOperation");
-                    spdlog::info("Requesting GameOperation for character {}", fsm.activeCharacter);
-                    // TODO: find player owning activeCharacter
-                    auto activePlayer = Player::one;
-                    spdlog::info("Requesting GameOperation from player {}", activePlayer);
-                    // TODO properly request Operation
-                    root_machine(fsm).router.sendMessage(static_cast<int>(activePlayer),
-                                                          spy::network::messages::RequestGameOperation());
                 }
 
                 using internal_transitions = transition_table <
-                in<spy::network::messages::GameOperation, guards::operationValid, actions::nextCharacter>
+                in<spy::network::messages::GameOperation, actions::handleOperationAndRequestNext, and_<not_<guards::lastCharacter>,guards::operationValid>>
                 >;
             };
 
             using initial_state = roundInit;
 
             using transitions = transition_table <
-            // Start        Event                        Next
-            tr<roundInit,   events::roundInitDone,       waitingForOperation>
+            //  Start           Event                       Next            Action  Guard
+            tr<roundInit, events::roundInitDone, waitingForOperation>,
+            tr<waitingForOperation, spy::network::messages::GameOperation, roundInit, actions::handleOperation, guards::lastCharacter>
             >;
         };
 
@@ -73,8 +112,8 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
         using transitions = transition_table <
         // Start        Event                        Next
         tr<choicePhase, events::choicePhaseFinished, equipPhase>,
-        tr<equipPhase,  events::equipPhaseFinished,  gamePhase>,
-        tr<gamePhase,   events::gameFinished,        gameOver>
+        tr<equipPhase, events::equipPhaseFinished, gamePhase>,
+        tr<gamePhase, events::gameFinished, gameOver>
         >;
 };
 
