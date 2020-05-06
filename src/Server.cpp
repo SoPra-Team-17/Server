@@ -77,6 +77,11 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         std::exit(1);
     }
 
+    if (characterInformations.size() < 10) {
+        spdlog::critical("No enough character descriptions given, at least 10 are needed to choice phase!");
+        std::exit(1);
+    }
+
     gameState = spy::gameplay::State{1, spy::scenario::FieldMap{scenarioConfig}, {}, {}, spy::util::Point{1, 1},
                                      spy::util::Point{}};
 
