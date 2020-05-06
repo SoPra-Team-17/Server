@@ -7,8 +7,6 @@
 
 #include "ChoiceSet.hpp"
 
-#include <iostream>
-
 ChoiceSet::ChoiceSet(const std::vector<spy::character::CharacterInformation> &charInfos,
                      std::list<spy::gadget::GadgetEnum> gadgetTypes) : gadgets(std::move(gadgetTypes)), rng(rd()) {
     for (const auto &c : charInfos) {
@@ -50,11 +48,6 @@ void ChoiceSet::addForSelection(std::vector<spy::character::CharacterInformation
         characters.push_back(c.getCharacterId());
     }
     std::copy(gadgetTypes.begin(), gadgetTypes.end(), std::back_inserter(gadgets));
-
-    std::cout << "Chars: " << chars.size() << std::endl;
-    std::cout << "gadgetTypes: " << chars.size() << std::endl;
-    std::cout << "Characters: " << characters.size() << std::endl;
-    std::cout << "Gadgets: " << gadgets.size() << std::endl;
 }
 
 std::pair<std::vector<spy::util::UUID>, std::vector<spy::gadget::GadgetEnum>> ChoiceSet::requestSelection() {
