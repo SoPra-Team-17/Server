@@ -11,7 +11,6 @@
 #include <datatypes/character/CharacterInformation.hpp>
 #include "Events.hpp"
 #include "Guards.hpp"
-#include "Server.hpp"
 #include "util/Player.hpp"
 #include "spdlog/fmt/ostr.h"
 #include "OperationHandling.hpp"
