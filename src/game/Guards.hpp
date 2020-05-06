@@ -34,6 +34,43 @@ namespace guards {
             return fsm.remainingCharacters.size() == 0;
         }
     };
+
+    /**
+     * @brief Guard passes if the client has chosen enough characters and gadgets.
+     */
+    struct noPlayerChoiceMissing {
+        template<typename FSM, typename FSMState, typename Event>
+        bool operator()(FSM const &, FSMState const &state, Event const &e) {
+            unsigned int missingChoices = 6;
+            missingChoices -= state.characterChoices.at(e.getClientId()).size();
+            missingChoices -= state.gadgetChoices.at(e.getClientId()).size();
+
+            spdlog::debug("Checking guard noPlayerChoiceMissing: {} remaining choices",
+                          missingChoices);
+            return missingChoices == 0;
+        }
+    };
+
+    /**
+     * @brief Guard passes if the client has chosen enough characters and gadgets.
+     */
+    struct noChoiceMissing {
+        template<typename FSM, typename FSMState, typename Event>
+        bool operator()(FSM const &, FSMState const &state, Event const &) {
+            unsigned int missingChoices = 12;
+            for (auto it = state.characterChoices.begin(); it != state.characterChoices.end(); it++) {
+                missingChoices -= it->second.size();
+            }
+
+            for (auto it = state.gadgetChoices.begin(); it != state.gadgetChoices.end(); it++) {
+                missingChoices -= it->second.size();
+            }
+
+            spdlog::debug("Checking guard noChoiceMissing: {} remaining choices",
+                          missingChoices);
+            return missingChoices == 0;
+        }
+    };
 }
 
 

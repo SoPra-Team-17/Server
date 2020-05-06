@@ -7,6 +7,8 @@
 
 #include "ChoiceSet.hpp"
 
+#include <iostream>
+
 ChoiceSet::ChoiceSet(const std::vector<spy::character::CharacterInformation> &charInfos,
                      std::list<spy::gadget::GadgetEnum> gadgetTypes) : gadgets(std::move(gadgetTypes)), rng(rd()) {
     for (const auto &c : charInfos) {
@@ -41,8 +43,26 @@ void ChoiceSet::addForSelection(std::vector<spy::util::UUID> chars, std::vector<
     std::copy(gadgetTypes.begin(), gadgetTypes.end(), std::back_inserter(gadgets));
 }
 
+void ChoiceSet::addForSelection(std::vector<spy::character::CharacterInformation> chars,
+                                std::vector<spy::gadget::GadgetEnum> gadgetTypes) {
+    std::lock_guard<std::mutex> g(selectionMutex);
+    for (const auto &c : chars) {
+        characters.push_back(c.getCharacterId());
+    }
+    std::copy(gadgetTypes.begin(), gadgetTypes.end(), std::back_inserter(gadgets));
+
+    std::cout << "Chars: " << chars.size() << std::endl;
+    std::cout << "gadgetTypes: " << chars.size() << std::endl;
+    std::cout << "Characters: " << characters.size() << std::endl;
+    std::cout << "Gadgets: " << gadgets.size() << std::endl;
+}
+
 std::pair<std::vector<spy::util::UUID>, std::vector<spy::gadget::GadgetEnum>> ChoiceSet::requestSelection() {
     std::lock_guard<std::mutex> guard(selectionMutex);
+
+    if (characters.size() < 3 || gadgets.size() < 3) {
+        throw std::invalid_argument("Not enough selections available!");
+    }
 
     std::vector<spy::util::UUID> selectedChars(3);
     std::vector<spy::gadget::GadgetEnum> selectedGadgets(3);
@@ -72,4 +92,8 @@ std::pair<std::vector<spy::util::UUID>, std::vector<spy::gadget::GadgetEnum>> Ch
 
     return std::pair<std::vector<spy::util::UUID>, std::vector<spy::gadget::GadgetEnum>>(selectedChars,
                                                                                          selectedGadgets);
+}
+
+bool ChoiceSet::isSelectionPossible() const {
+    return (characters.size() > 3 && gadgets.size() > 3);
 }

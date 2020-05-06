@@ -61,6 +61,7 @@ class Server : public afsm::def::state_machine<Server> {
         std::map<Player, std::set<int>> knownCombinations;
         std::random_device rd{};
         std::mt19937 rng{rd()};
+        ChoiceSet choiceSet;
 
     private:
         const static std::map<unsigned int, spdlog::level::level_enum> verbosityMap;

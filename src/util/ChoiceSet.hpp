@@ -23,6 +23,8 @@
  */
 class ChoiceSet {
     public:
+
+        ChoiceSet() = default;
         /**
          * Constructs the choice set by only using the uuids of the character information data structure.
          * @param charInfos   CharacterInformation structures of the selectable characters.
@@ -64,10 +66,24 @@ class ChoiceSet {
         void addForSelection(std::vector<spy::util::UUID> chars, std::vector<spy::gadget::GadgetEnum> gadgetTypes);
 
         /**
+         * Adds the given lists to the respective selection sets.
+         * @param chars         Character informations to add. Only the uuid is added.
+         * @param gadgetTypes   Gadgets to add.
+         */
+        void addForSelection(std::vector<spy::character::CharacterInformation> chars, std::vector<spy::gadget::GadgetEnum> gadgetTypes);
+
+        /**
          * Chooses three character uuids and three gadget types which are removed from the set and returned.
          * @return Pair of three character uuids and three gadget types.
          */
         std::pair<std::vector<spy::util::UUID>, std::vector<spy::gadget::GadgetEnum>> requestSelection();
+
+        /**
+         * Checks if the set contains enough items to start one selection.
+         * @return True if has more than three gadgets and three characters, else false.
+         */
+        [[nodiscard]] bool isSelectionPossible() const;
+
 
     private:
         std::list<spy::util::UUID> characters;
