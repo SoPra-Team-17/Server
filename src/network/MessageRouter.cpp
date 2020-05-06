@@ -1,48 +1,44 @@
 
 #include <utility>
+#include <algorithm>
 #include "MessageRouter.hpp"
+#include "spdlog/fmt/ostr.h"
 
 MessageRouter::MessageRouter(uint16_t port, std::string protocol) : server{port, std::move(protocol)} {
     server.connectionListener.subscribe(
-            [this](std::shared_ptr<websocket::network::Connection> newConnection) {
-                connectListener(std::move(newConnection));
+            [this](const connectionPtr &newConnection) {
+                connectListener(newConnection);
             });
     server.closeListener.subscribe(
-            [this](std::shared_ptr<websocket::network::Connection> closedConnection) {
-                disconnectListener(std::move(closedConnection));
+            [this](const connectionPtr &closedConnection) {
+                disconnectListener(closedConnection);
             });
 }
 
-void MessageRouter::connectListener(std::shared_ptr<websocket::network::Connection> newConnection) {
-    // Assign lowest unused index
-    int index = 0;
-    for (const auto &conn : activeConnections) {
-        if (conn.first == index) {
-            index++;
-        }
-    }
-    spdlog::info("New connection (Nr {})", index);
-    activeConnections.emplace(index, newConnection);
-    newConnection->receiveListener.subscribe(
-            std::bind(&MessageRouter::receiveListener, this, index, newConnection, std::placeholders::_1));
-}
+void MessageRouter::connectListener(const MessageRouter::connectionPtr &newConnection) {
+    spdlog::info("New client connected");
 
-void MessageRouter::disconnectListener(std::shared_ptr<websocket::network::Connection> closedConnection) {
-    auto foundConnection = std::find_if(activeConnections.begin(), activeConnections.end(), [&](const auto &mapEntry) {
-        return mapEntry.second == closedConnection;
+    // Connection does not have UUID yet
+    activeConnections.emplace_back(newConnection, std::nullopt);
+
+    newConnection->receiveListener.subscribe([this, newConnection](const std::string &message) {
+        receiveListener(newConnection, message);
     });
-    if (foundConnection == activeConnections.end()) {
-        spdlog::error("MessageRouter::disconnectListener called for unknown connection.");
-        throw std::invalid_argument("connection not in map of known client connections");
-    }
-    spdlog::info("Connection {} closed.", foundConnection->first);
-    activeConnections.erase(foundConnection->first);
 }
 
-void MessageRouter::receiveListener(int connectionIndex,
-                                    std::shared_ptr<websocket::network::Connection> /*connection*/,
-                                    std::string message) {
-    spdlog::info("Received message from client {} : {}", connectionIndex, message);
+void MessageRouter::disconnectListener(const MessageRouter::connectionPtr &closedConnection) {
+    auto &foundConnection = connectionFromPtr(closedConnection);
+    spdlog::info("Connection {} closed.", foundConnection.second.value());
+
+    auto con = std::find_if(activeConnections.begin(), activeConnections.end(), [closedConnection](const auto &c) {
+        return c.first == closedConnection;
+    });
+    activeConnections.erase(con);
+}
+
+void MessageRouter::receiveListener(const MessageRouter::connectionPtr &connectionPtr, const std::string &message) {
+    auto &con = connectionFromPtr(connectionPtr);
+    spdlog::info("Received message from client {} : {}", con.second.value_or(spy::util::UUID{}), message);
     nlohmann::json messageJson;
     try {
         messageJson = nlohmann::json::parse(message);
@@ -57,9 +53,9 @@ void MessageRouter::receiveListener(int connectionIndex,
             spdlog::error("Received message with invalid type: " + message);
             return;
         case spy::network::messages::MessageTypeEnum::HELLO:
-            spdlog::info("MessageRouter received Hello message. Calling listeners now.");
-            helloListener(messageJson.get<spy::network::messages::Hello>());
-            break;
+            spdlog::info("MessageRouter received Hello message.");
+            helloListener(messageJson.get<spy::network::messages::Hello>(), connectionPtr);
+            return;
         case spy::network::messages::MessageTypeEnum::HELLO_REPLY:
             break;
         case spy::network::messages::MessageTypeEnum::RECONNECT:
@@ -104,4 +100,28 @@ void MessageRouter::receiveListener(int connectionIndex,
             break;
     }
     spdlog::error("Handling this message type has not been implemented yet.");
+}
+
+void
+MessageRouter::registerUUIDforConnection(const spy::util::UUID &id, const MessageRouter::connectionPtr &connection) {
+    auto &con = connectionFromPtr(connection);
+    con.second = id;
+}
+
+MessageRouter::connection &MessageRouter::connectionFromPtr(const MessageRouter::connectionPtr &con) {
+    for (auto &c: activeConnections) {
+        if (con == c.first) {
+            return c;
+        }
+    }
+    throw std::invalid_argument("Connection not in list of known connections");
+}
+
+MessageRouter::connection &MessageRouter::connectionFromUUID(const spy::util::UUID &id) {
+    for (auto &c: activeConnections) {
+        if (id == c.second) {
+            return c;
+        }
+    }
+    throw std::invalid_argument("UUID not in list of known connections");
 }

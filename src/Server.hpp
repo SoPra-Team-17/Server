@@ -18,6 +18,7 @@
 #include <Events.hpp>
 #include <game/GameFSM.hpp>
 #include <random>
+#include<Actions.hpp>
 
 
 class Server : public afsm::def::state_machine<Server> {
@@ -31,22 +32,24 @@ class Server : public afsm::def::state_machine<Server> {
 
         struct emptyLobby : state<emptyLobby> {
         };
+
         struct waitFor2Player : state<waitFor2Player> {
             template<typename FSM, typename Event>
             void on_enter(Event &&, FSM &) {
                 spdlog::debug("Entering state waitFor2Player");
             }
         };
+
         GameFSM game;
 
         using initial_state = emptyLobby;
 
         // @formatter:off
         using transitions = transition_table <
-        // Start            Event                               Next
-        tr<emptyLobby,      spy::network::messages::Hello,      waitFor2Player>,
+        // Start            Event                               Next            Action
+        tr<emptyLobby,      spy::network::messages::Hello,      waitFor2Player, actions::multiple<actions::InitializeSession, actions::HelloReply>>,
         tr<waitFor2Player,  spy::network::messages::GameLeave,  emptyLobby>,
-        tr<waitFor2Player,  spy::network::messages::Hello,      decltype(game)>
+        tr<waitFor2Player,  spy::network::messages::Hello,      decltype(game), actions::multiple<actions::HelloReply, actions::StartGame>>
         >;
         // @formatter:on
 
@@ -59,6 +62,10 @@ class Server : public afsm::def::state_machine<Server> {
         spy::gameplay::State gameState;
         std::map<unsigned int, int> safeCombinations;
         std::map<Player, std::set<int>> knownCombinations;
+        // TODO: combine those
+        std::map<Player, spy::util::UUID> playerIds;
+        std::map<Player, std::string> playerNames;
+        spy::util::UUID sessionId;
         std::random_device rd{};
         std::mt19937 rng{rd()};
         ChoiceSet choiceSet;
