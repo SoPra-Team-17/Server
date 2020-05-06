@@ -14,6 +14,7 @@
 #include <ctime>
 #include <utility>
 #include <datatypes/character/CharacterInformation.hpp>
+#include <network/messages/HelloReply.hpp>
 
 const std::map<unsigned int, spdlog::level::level_enum> Server::verbosityMap = {
         {0, spdlog::level::level_enum::trace},
@@ -83,9 +84,15 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
     using serverFSM = afsm::state_machine<Server>;
     auto &fsm = static_cast<serverFSM &>(*this);
 
-    router.addHelloListener([&fsm](auto helloMessage) {
-        spdlog::info("Server received Hello message, posting event to FSM now.");
-        fsm.process_event(helloMessage);
+    router.addHelloListener([&fsm, this](spy::network::messages::Hello msg, MessageRouter::connectionPtr con) {
+        // New clients send Hello, and need to be assigned a UUID immediately.
+        // This new UUID gets inserted into the HelloMessage, so the FSM receives properly formatted HelloMessage
+        spdlog::info("Server received Hello message, initializing UUID");
+        msg = spy::network::messages::Hello{spy::util::UUID::generate(), msg.getName(), msg.getRole()};
+        spdlog::info("Registering UUID {} at router", msg.getclientId());
+        router.registerUUIDforConnection(msg.getclientId(), con);
+        spdlog::info("Posting event to FSM now");
+        fsm.process_event(msg);
     });
 
     // TODO register handlers for more messages

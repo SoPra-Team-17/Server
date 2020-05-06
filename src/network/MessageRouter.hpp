@@ -6,12 +6,18 @@
 #include <utility>
 #include <spdlog/spdlog.h>
 #include <network/messages/Hello.hpp>
+#include <set>
 
 /**
  * The MessageRouter holds a websocket::network::WebSocketServer and manages and enumerates connections.
  */
 class MessageRouter {
     public:
+
+        using connectionPtr = std::shared_ptr<websocket::network::Connection>;
+        using connection = std::pair<connectionPtr, std::optional<spy::util::UUID>>;
+        using connectionMap = std::vector<connection>;
+
         MessageRouter(uint16_t closedConnection, std::string protocol);
 
         template<typename MessageType>
@@ -27,40 +33,52 @@ class MessageRouter {
             helloListener.subscribe(l);
         }
 
+        /**
+         * Sends a message to a specific client.
+         * Message field MessageContainer::clientId will be set to the value of \p client
+         * @param client message recipient
+         */
         template<typename MessageType>
-        void sendMessage(int client, MessageType message) {
-            if (activeConnections.find(client) == activeConnections.end()) {
-                spdlog::error("Client Nr. {} does not exist in map of known connections", client);
-                throw std::invalid_argument("Invalid client nr. " + std::to_string(client));
-            }
+        void sendMessage(spy::util::UUID client, MessageType message) {
+            message.setClientId(client);
             nlohmann::json serializedMessage = message;
-            activeConnections.at(client)->send(serializedMessage.dump());
+            auto &con = connectionFromUUID(client);
+            con.first->send(serializedMessage.dump());
         }
+
+        /**
+         * Assigns a UUID to a specific connection
+         * @param id         UUID of client
+         * @param connection Pointer to connection
+         */
+        void registerUUIDforConnection(const spy::util::UUID &id, const connectionPtr &connection);
 
     private:
         websocket::network::WebSocketServer server;
 
-        // Active connections, including spectators. Special values: Keys 0 and 1 (Player::one, Player::two)
-        std::map<int, std::shared_ptr<websocket::network::Connection>> activeConnections;
+        // Active connections, including spectators.
+        connectionMap activeConnections;
+
+        connection &connectionFromPtr(const connectionPtr &con);
+
+        connection &connectionFromUUID(const spy::util::UUID &id);
 
         /**
          * New-connection-listener, called by server
          */
-        void connectListener(std::shared_ptr<websocket::network::Connection> newConnection);
+        void connectListener(const connectionPtr& newConnection);
 
         /**
          * Connection-close-listener, called by server
          */
-        void disconnectListener(std::shared_ptr<websocket::network::Connection> closedConnection);
+        void disconnectListener(const connectionPtr& closedConnection);
 
         /**
          * Receive-listener, called by each connection
          */
-        void receiveListener(int connectionIndex,
-                             std::shared_ptr<websocket::network::Connection> connection,
-                             std::string message);
+        void receiveListener(const connectionPtr& connection, const std::string& message);
 
-        const websocket::util::Listener<spy::network::messages::Hello> helloListener;
+        const websocket::util::Listener<spy::network::messages::Hello, connectionPtr> helloListener;
 };
 
 #endif //SERVER017_MESSAGEROUTER_HPP
