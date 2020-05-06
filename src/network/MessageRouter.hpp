@@ -47,6 +47,16 @@ class MessageRouter {
         }
 
         /**
+         * Sends a message to the client specified in the message
+         */
+        template<typename MessageType>
+        void sendMessage(MessageType message) {
+            nlohmann::json serializedMessage = message;
+            auto &con = connectionFromUUID(message.getclientId());
+            con.first->send(serializedMessage.dump());
+        }
+
+        /**
          * Assigns a UUID to a specific connection
          * @param id         UUID of client
          * @param connection Pointer to connection
