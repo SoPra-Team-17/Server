@@ -29,12 +29,12 @@ namespace actions {
                 // client has chosen a gadget --> at it to chosen list and remove it from selection
                 s.gadgetChoices.at(clientId).push_back(std::get<spy::gadget::GadgetEnum>(choice));
                 selection.second.erase(std::remove(selection.second.begin(), selection.second.end(),
-                                                   std::get<spy::util::UUID>(choice)), selection.second.end());
+                                                   std::get<spy::gadget::GadgetEnum>(choice)), selection.second.end());
             }
             // add other possible selection items to the choice set and clear the selection for this client
-            fsm.choiceSet.addForSelection(selection.first, selection.second);
-            selection.at(clientId).first.clear();
-            selection.at(clientId).second.clear();
+            root_machine(fsm).choiceSet.addForSelection(selection.first, selection.second);
+            selection.first.clear();
+            selection.second.clear();
         }
     };
 
@@ -48,7 +48,7 @@ namespace actions {
                 if (it->second.first.size() == 0 &&
                     (s.characterChoices.at(it->first).size() < 3 || s.gadgetChoices.at(it->first).size() < 3)) {
                     // client still needs selections
-                    it->second = fsm.choiceSet.requestSelection();
+                    it->second = root_machine(fsm).choiceSet.requestSelection();
                     spy::network::messages::RequestItemChoice message(it->first, it->second.first, it->second.second);
                     spdlog::info("Sending requestItemChoice at {}", it->first);
                     MessageRouter &router = root_machine(fsm).router;
