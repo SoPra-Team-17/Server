@@ -45,7 +45,7 @@ struct ChoicePhase : afsm::def::state_def<ChoicePhase> {
     void on_enter(Event &&, FSM &fsm) {
         spdlog::info("Entering choice phase");
                                                                     // get access to the members of the root fsm
-        std::vector<spy::character::CharacterInformation> &characterInformations =
+        const std::vector<spy::character::CharacterInformation> &characterInformations =
                 root_machine(fsm).characterInformations;
         ChoiceSet &choiceSet = root_machine(fsm).choiceSet;
         //MessageRouter &router = root_machine(fsm).router;

@@ -60,10 +60,10 @@ namespace actions {
     struct handleChoiceAndRequestNext {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&event, FSM &fsm, SourceState &source, TargetState &target) {
-            handleChoice{}(event, fsm, source, target);
+            handleChoice{}(std::forward<Event>(event), fsm, source, target);
 
-            if (!guards::noChoiceMissing{}(event, fsm, source, target)) {
-                requestNextChoice{}(event, fsm, source, target);
+            if (!guards::noChoiceMissing{}(std::forward<Event>(event), fsm, source, target)) {
+                requestNextChoice{}(std::forward<Event>(event), fsm, source, target);
             } else {
                 fsm.process_event(events::choicePhaseFinished{});
             }
