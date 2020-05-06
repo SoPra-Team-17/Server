@@ -100,6 +100,11 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         fsm.process_event(msg);
     });
 
+    router.addItemChoiceListener([&fsm](spy::network::messages::ItemChoice msg, MessageRouter::connectionPtr) {
+        spdlog::info("Posting item choice event to FSM");
+        fsm.process_event(msg);
+    });
+
     // TODO register handlers for more messages
 }
 

@@ -36,10 +36,14 @@ static const std::vector<spy::gadget::GadgetEnum> possibleGadgets = {
 };
 
 struct ChoicePhase : afsm::def::state_def<ChoicePhase> {
-    std::map<spy::util::UUID, std::vector<spy::util::UUID>> characterChoices;
-    std::map<spy::util::UUID, std::vector<spy::gadget::GadgetEnum>> gadgetChoices;
+    using SelectionMap = std::map<spy::util::UUID, std::pair<std::vector<spy::util::UUID>, std::vector<spy::gadget::GadgetEnum>>>;
+    using CharacterMap = std::map<spy::util::UUID, std::vector<spy::util::UUID>>;
+    using GadgetMap    = std::map<spy::util::UUID, std::vector<spy::gadget::GadgetEnum>>;
 
-    std::map<spy::util::UUID, std::pair<std::vector<spy::util::UUID>, std::vector<spy::gadget::GadgetEnum>>> selections;
+    CharacterMap characterChoices;
+    GadgetMap gadgetChoices;
+
+    SelectionMap selections;
 
     template<typename FSM, typename Event>
     void on_enter(Event &&, FSM &fsm) {
@@ -48,26 +52,32 @@ struct ChoicePhase : afsm::def::state_def<ChoicePhase> {
         const std::vector<spy::character::CharacterInformation> &characterInformations =
                 root_machine(fsm).characterInformations;
         ChoiceSet &choiceSet = root_machine(fsm).choiceSet;
-        //MessageRouter &router = root_machine(fsm).router;
+        MessageRouter &router = root_machine(fsm).router;
+        const std::map<Player, spy::util::UUID> &playerIds = root_machine(fsm).playerIds;
 
         choiceSet.addForSelection(characterInformations, possibleGadgets);
 
-        //selections.at(playerID1) = choiceSet.requestSelection();
-        //spy::network::messages::RequestItemChoice messageP1(spy::util::UUID(), selectionP1.first, selectionP1.second);
-        //router.sendMessage()
+        auto idP1 = playerIds.at(Player::one);
+        auto idP2 = playerIds.at(Player::two);
 
-        // depending on the size of the choice set a parallel selection is not always possible
-        if (choiceSet.isSelectionPossible()) {
-            //selections.at(playerID2) = choiceSet.requestSelection();
-            //spy::network::messages::RequestItemChoice messageP2(spy::util::UUID(), selectionP1.first, selectionP1.second);
-            //router.sendMessage()
-        }
+        selections[idP1] = choiceSet.requestSelection();
+        selections[idP2] = choiceSet.requestSelection();
+        auto selectionP1 = selections.at(idP1);
+        auto selectionP2 = selections.at(idP2);
+
+        spy::network::messages::RequestItemChoice messageP1(idP1, selectionP1.first, selectionP1.second);
+        spy::network::messages::RequestItemChoice messageP2(idP2, selectionP2.first, selectionP2.second);
+
+        router.sendMessage(messageP1);
+        spdlog::info("Sending choice offer to {}", idP1);
+        router.sendMessage(messageP2);
+        spdlog::info("Sending choice offer to {}", idP2);
     }
 
     // @formatter:off
     using internal_transitions = transition_table <
     //  Event                                 Action                            Guard
-    in<spy::network::messages::ItemChoice, actions::handleChoiceAndRequestNext, not_ < guards::noChoiceMissing>>
+    in<spy::network::messages::ItemChoice, actions::handleChoiceAndRequestNext, and_ < guards::choiceValid, not_ < guards::noChoiceMissing>>>
     >;
     // @formatter:on
 };

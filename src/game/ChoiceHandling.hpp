@@ -48,7 +48,8 @@ namespace actions {
                     it->second = fsm.choiceSet.requestSelection();
                     spy::network::messages::RequestItemChoice message(it->first, it->second.first, it->second.second);
                     spdlog::info("Sending requestItemChoice at {}", it->first);
-                    //router.sendMessage()
+                    MessageRouter &router = root_machine(fsm).router;
+                    router.sendMessage(message);
                 }
             }
         }

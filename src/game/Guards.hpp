@@ -38,22 +38,6 @@ namespace guards {
     /**
      * @brief Guard passes if the client has chosen enough characters and gadgets.
      */
-    struct noPlayerChoiceMissing {
-        template<typename FSM, typename FSMState, typename Event>
-        bool operator()(FSM const &, FSMState const &state, Event const &e) {
-            unsigned int missingChoices = 6;
-            missingChoices -= state.characterChoices.at(e.getClientId()).size();
-            missingChoices -= state.gadgetChoices.at(e.getClientId()).size();
-
-            spdlog::debug("Checking guard noPlayerChoiceMissing: {} remaining choices",
-                          missingChoices);
-            return missingChoices == 0;
-        }
-    };
-
-    /**
-     * @brief Guard passes if the client has chosen enough characters and gadgets.
-     */
     struct noChoiceMissing {
         template<typename FSM, typename FSMState, typename Event>
         bool operator()(FSM const &, FSMState const &state, Event const &) {
@@ -69,6 +53,21 @@ namespace guards {
             spdlog::debug("Checking guard noChoiceMissing: {} remaining choices",
                           missingChoices);
             return missingChoices == 0;
+        }
+    };
+
+    /**
+     * @brief Guard passes if the client choice message fits to the offer.
+     */
+    struct choiceValid {
+        template<typename FSM, typename FSMState, typename Event>
+        bool operator()(FSM const &, FSMState const &state, Event const &e) {
+            spdlog::debug("Checking guard choiceValid");
+
+            auto offered = state.selections.at(e.getclientId());
+
+            //TODO: adapt to Role Enum, needs rework of router
+            return e.validate(spy::network::RoleEnum::PLAYER, offered.first, offered.second);
         }
     };
 }

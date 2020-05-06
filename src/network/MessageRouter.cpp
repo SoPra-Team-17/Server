@@ -65,7 +65,9 @@ void MessageRouter::receiveListener(const MessageRouter::connectionPtr &connecti
         case spy::network::messages::MessageTypeEnum::REQUEST_ITEM_CHOICE:
             break;
         case spy::network::messages::MessageTypeEnum::ITEM_CHOICE:
-            break;
+            spdlog::info("MessageRouter received Item Choice message.");
+            itemChoiceListener(messageJson.get<spy::network::messages::ItemChoice>(), connectionPtr);
+            return;
         case spy::network::messages::MessageTypeEnum::REQUEST_EQUIPMENT_CHOICE:
             break;
         case spy::network::messages::MessageTypeEnum::EQUIPMENT_CHOICE:

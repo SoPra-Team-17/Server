@@ -7,13 +7,13 @@
 #include <spdlog/spdlog.h>
 #include <network/messages/Hello.hpp>
 #include <set>
+#include <network/messages/ItemChoice.hpp>
 
 /**
  * The MessageRouter holds a websocket::network::WebSocketServer and manages and enumerates connections.
  */
 class MessageRouter {
     public:
-
         using connectionPtr = std::shared_ptr<websocket::network::Connection>;
         using connection = std::pair<connectionPtr, std::optional<spy::util::UUID>>;
         using connectionMap = std::vector<connection>;
@@ -25,6 +25,12 @@ class MessageRouter {
             nlohmann::json serializedMessage = message;
             spdlog::info("Broadcasting message: " + serializedMessage.dump());
             server.broadcast(serializedMessage.dump());
+        }
+
+        template<typename T>
+        void addItemChoiceListener(T l) {
+            spdlog::info("Adding ItemChoiceListener to MessageRouter.");
+            itemChoiceListener.subscribe(l);
         }
 
         template<typename T>
@@ -89,6 +95,7 @@ class MessageRouter {
         void receiveListener(const connectionPtr& connection, const std::string& message);
 
         const websocket::util::Listener<spy::network::messages::Hello, connectionPtr> helloListener;
+        const websocket::util::Listener<spy::network::messages::ItemChoice, connectionPtr> itemChoiceListener;
 };
 
 #endif //SERVER017_MESSAGEROUTER_HPP
