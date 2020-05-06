@@ -23,11 +23,13 @@ namespace actions {
             if (std::holds_alternative<spy::util::UUID>(choice)) {
                 // client has chosen a character --> at it to chosen list and remove it from selection
                 s.characterChoices.at(clientId).push_back(std::get<spy::util::UUID>(choice));
-                selection.first.erase(std::get<spy::util::UUID>(choice));
+                selection.first.erase(std::remove(selection.first.begin(), selection.first.end(),
+                                                  std::get<spy::util::UUID>(choice)), selection.first.end());
             } else {
                 // client has chosen a gadget --> at it to chosen list and remove it from selection
                 s.gadgetChoices.at(clientId).push_back(std::get<spy::gadget::GadgetEnum>(choice));
-                selection.second.erase(std::get<spy::gadget::GadgetEnum>(choice));
+                selection.second.erase(std::remove(selection.second.begin(), selection.second.end(),
+                                                   std::get<spy::util::UUID>(choice)), selection.second.end());
             }
             // add other possible selection items to the choice set and clear the selection for this client
             fsm.choiceSet.addForSelection(selection.first, selection.second);
@@ -43,7 +45,8 @@ namespace actions {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&, FSM &fsm, SourceState &s, TargetState &) {
             for (auto it = s.selections.begin(); it != s.selections.end(); it++) {
-                if (it->second.first.size() == 0 && (s.characterChoices.at(it->first).size() < 3 || s.gadgetChoices.at(it->first).size() < 3)) {
+                if (it->second.first.size() == 0 &&
+                    (s.characterChoices.at(it->first).size() < 3 || s.gadgetChoices.at(it->first).size() < 3)) {
                     // client still needs selections
                     it->second = fsm.choiceSet.requestSelection();
                     spy::network::messages::RequestItemChoice message(it->first, it->second.first, it->second.second);
@@ -63,10 +66,10 @@ namespace actions {
         void operator()(Event &&event, FSM &fsm, SourceState &source, TargetState &target) {
             handleChoice{}(std::forward<Event>(event), fsm, source, target);
 
-            if (!guards::noChoiceMissing{}(std::forward<Event>(event), fsm, source, target)) {
+            if (!guards::noChoiceMissing{}(fsm, source, event)) {
                 requestNextChoice{}(std::forward<Event>(event), fsm, source, target);
             } else {
-                fsm.process_event(events::choicePhaseFinished{});
+                root_machine(fsm).process_event(events::choicePhaseFinished{});
             }
         }
     };
