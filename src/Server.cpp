@@ -140,6 +140,8 @@ void Server::configureLogging() const {
     // Flush for every message of level info or higher
     combined_logger->flush_on(spdlog::level::info);
 
+    combined_logger->set_level(spdlog::level::trace);
+
     // use this new combined sink as default logger
     spdlog::set_default_logger(combined_logger);
 }
