@@ -50,14 +50,35 @@ namespace guards {
                 missingChoices -= it->second.size();
             }
 
-            spdlog::info("Checking guard noChoiceMissing: {} remaining choices",
+            spdlog::debug("Checking guard noChoiceMissing: {} remaining choices",
                           missingChoices);
             return missingChoices == 0;
         }
     };
 
     /**
-     * @brief Guard passes if the client choice message fits to the offer.
+     * @brief Guard passes if the client has chosen enough characters and gadgets.
+     */
+    struct lastChoice {
+        template<typename FSM, typename FSMState, typename Event>
+        bool operator()(FSM const &, FSMState const &state, Event const &) {
+            unsigned int missingChoices = 16;
+            for (auto it = state.characterChoices.begin(); it != state.characterChoices.end(); it++) {
+                missingChoices -= it->second.size();
+            }
+
+            for (auto it = state.gadgetChoices.begin(); it != state.gadgetChoices.end(); it++) {
+                missingChoices -= it->second.size();
+            }
+
+            spdlog::debug("Checking guard noChoiceMissing: {} remaining choices",
+                         missingChoices);
+            return missingChoices == 1;
+        }
+    };
+
+    /**
+     * @brief Guard passes if it's the last choice.
      */
     struct choiceValid {
         template<typename FSM, typename FSMState, typename Event>
@@ -66,10 +87,10 @@ namespace guards {
 
             auto clientId = e.getclientId();
 
-            auto offered = state.selections.at(clientId);
+            auto offered = state.offers.at(clientId);
 
             //TODO: adapt to Role Enum, needs rework of router
-            bool validMessage = e.validate(spy::network::RoleEnum::PLAYER, offered.first, offered.second);
+            bool validMessage = e.validate(spy::network::RoleEnum::PLAYER, offered.characters, offered.gadgets);
             auto choice = e.getChoice();
 
             bool choiceInvalid = ((std::holds_alternative<spy::util::UUID>(choice)
@@ -78,11 +99,11 @@ namespace guards {
                                         && state.gadgetChoices.at(clientId).size() >= 6));
 
             if (validMessage && !choiceInvalid) {
-                spdlog::info("Choice valid!");
+                spdlog::debug("Choice valid!");
                 return true;
             } else {
                 //TODO: kick player
-                spdlog::info("Player {} has send an invalid choice and was therefore kicked", clientId);
+                spdlog::critical("Player {} has send an invalid choice and was therefore kicked", clientId);
                 return false;
             }
         }

@@ -21,6 +21,12 @@
  * @note In contrast to the name the data structure currently doesn't enforce set characteristics, but is
  *       intended to be used as one.
  */
+
+struct Offer {
+    std::vector<spy::util::UUID> characters;
+    std::vector<spy::gadget::GadgetEnum> gadgets;
+};
+
 class ChoiceSet {
     public:
 
@@ -76,13 +82,13 @@ class ChoiceSet {
          * Chooses three character uuids and three gadget types which are removed from the set and returned.
          * @return Pair of three character uuids and three gadget types.
          */
-        std::pair<std::vector<spy::util::UUID>, std::vector<spy::gadget::GadgetEnum>> requestSelection();
+        Offer requestSelection();
 
         /**
-         * Checks if the set contains enough items to start one selection.
+         * Checks if the set contains enough items to start one offer.
          * @return True if has more than three gadgets and three characters, else false.
          */
-        [[nodiscard]] bool isSelectionPossible() const;
+        [[nodiscard]] bool isOfferPossible() const;
 
 
     private:

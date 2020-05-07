@@ -11,6 +11,7 @@
 #include <afsm/fsm.hpp>
 #include <network/messages/RequestItemChoice.hpp>
 #include <map>
+#include <Actions.hpp>
 
 #include "game/ChoiceHandling.hpp"
 
@@ -36,19 +37,20 @@ static const std::vector<spy::gadget::GadgetEnum> possibleGadgets = {
 };
 
 struct ChoicePhase : afsm::def::state_def<ChoicePhase> {
-    using SelectionMap = std::map<spy::util::UUID, std::pair<std::vector<spy::util::UUID>, std::vector<spy::gadget::GadgetEnum>>>;
+    using OfferMap = std::map<spy::util::UUID, Offer>;
     using CharacterMap = std::map<spy::util::UUID, std::vector<spy::util::UUID>>;
     using GadgetMap    = std::map<spy::util::UUID, std::vector<spy::gadget::GadgetEnum>>;
 
     CharacterMap characterChoices;
     GadgetMap gadgetChoices;
 
-    SelectionMap selections;
+    OfferMap offers;
 
     template<typename FSM, typename Event>
     void on_enter(Event &&, FSM &fsm) {
         spdlog::info("Entering choice phase");
-                                                                    // get access to the members of the root fsm
+
+        // get access to the members of the root fsm
         const std::vector<spy::character::CharacterInformation> &characterInformations =
                 root_machine(fsm).characterInformations;
         ChoiceSet &choiceSet = root_machine(fsm).choiceSet;
@@ -60,8 +62,8 @@ struct ChoicePhase : afsm::def::state_def<ChoicePhase> {
         auto idP1 = playerIds.at(Player::one);
         auto idP2 = playerIds.at(Player::two);
 
-        selections[idP1] = choiceSet.requestSelection();
-        selections[idP2] = choiceSet.requestSelection();
+        offers[idP1] = choiceSet.requestSelection();
+        offers[idP2] = choiceSet.requestSelection();
 
         characterChoices[idP1] = std::vector<spy::util::UUID>();
         characterChoices[idP2] = std::vector<spy::util::UUID>();
@@ -69,11 +71,11 @@ struct ChoicePhase : afsm::def::state_def<ChoicePhase> {
         gadgetChoices[idP1] = std::vector<spy::gadget::GadgetEnum>();
         gadgetChoices[idP2] = std::vector<spy::gadget::GadgetEnum>();
 
-        auto selectionP1 = selections.at(idP1);
-        auto selectionP2 = selections.at(idP2);
+        auto offerP1 = offers.at(idP1);
+        auto offerP2 = offers.at(idP2);
 
-        spy::network::messages::RequestItemChoice messageP1(idP1, selectionP1.first, selectionP1.second);
-        spy::network::messages::RequestItemChoice messageP2(idP2, selectionP2.first, selectionP2.second);
+        spy::network::messages::RequestItemChoice messageP1(idP1, offerP1.characters, offerP1.gadgets);
+        spy::network::messages::RequestItemChoice messageP2(idP2, offerP2.characters, offerP2.gadgets);
 
         router.sendMessage(messageP1);
         spdlog::info("Sending choice offer to {}", idP1);
@@ -83,8 +85,8 @@ struct ChoicePhase : afsm::def::state_def<ChoicePhase> {
 
     // @formatter:off
     using internal_transitions = transition_table <
-    //  Event                                 Action                            Guard
-    in<spy::network::messages::ItemChoice, actions::handleChoiceAndRequestNext, and_ < guards::choiceValid, not_ < guards::noChoiceMissing>>>
+    //  Event                              Action                                                                Guard
+    in<spy::network::messages::ItemChoice, actions::multiple<actions::handleChoice, actions::requestNextChoice>, and_<guards::choiceValid, not_<guards::lastChoice>>>
     >;
     // @formatter:on
 };

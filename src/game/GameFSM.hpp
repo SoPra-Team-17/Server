@@ -105,10 +105,10 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
 
         // @formatter:off
         using transitions = transition_table <
-        // Start                  Event                        Next
-        tr<decltype(choicePhase), events::choicePhaseFinished, equipPhase, actions::createCharacterSet>,
-        tr<equipPhase,            events::equipPhaseFinished,  gamePhase>,
-        tr<gamePhase,             events::gameFinished,        gameOver>
+        // Start                  Event                               Next
+        tr<decltype(choicePhase), spy::network::messages::ItemChoice, equipPhase, actions::multiple<actions::handleChoice, actions::createCharacterSet>, and_<guards::choiceValid, guards::lastChoice>>,
+        tr<equipPhase,            events::equipPhaseFinished,         gamePhase>,
+        tr<gamePhase,             events::gameFinished,               gameOver>
         >;
         // @formatter:on
 };

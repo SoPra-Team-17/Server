@@ -18,23 +18,23 @@ namespace actions {
             spdlog::info("Handling client choice");
             auto clientId = e.getclientId();
             auto choice = e.getChoice();
-            auto &selection = s.selections.at(clientId);
+            auto &offer = s.offers.at(clientId);
 
             if (std::holds_alternative<spy::util::UUID>(choice)) {
                 // client has chosen a character --> at it to chosen list and remove it from selection
                 s.characterChoices.at(clientId).push_back(std::get<spy::util::UUID>(choice));
-                selection.first.erase(std::remove(selection.first.begin(), selection.first.end(),
-                                                  std::get<spy::util::UUID>(choice)), selection.first.end());
+                offer.characters.erase(std::remove(offer.characters.begin(), offer.characters.end(),
+                                                  std::get<spy::util::UUID>(choice)), offer.characters.end());
             } else {
                 // client has chosen a gadget --> at it to chosen list and remove it from selection
                 s.gadgetChoices.at(clientId).push_back(std::get<spy::gadget::GadgetEnum>(choice));
-                selection.second.erase(std::remove(selection.second.begin(), selection.second.end(),
-                                                   std::get<spy::gadget::GadgetEnum>(choice)), selection.second.end());
+                offer.gadgets.erase(std::remove(offer.gadgets.begin(), offer.gadgets.end(),
+                                                   std::get<spy::gadget::GadgetEnum>(choice)), offer.gadgets.end());
             }
             // add other possible selection items to the choice set and clear the selection for this client
-            root_machine(fsm).choiceSet.addForSelection(selection.first, selection.second);
-            selection.first.clear();
-            selection.second.clear();
+            root_machine(fsm).choiceSet.addForSelection(offer.characters, offer.gadgets);
+            offer.characters.clear();
+            offer.gadgets.clear();
         }
     };
 
@@ -45,33 +45,17 @@ namespace actions {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&, FSM &fsm, SourceState &s, TargetState &) {
             spdlog::debug("Check which client needs a choice request next");
-            for (auto it = s.selections.begin(); it != s.selections.end(); it++) {
-                if (it->second.first.size() == 0 &&
+            for (auto it = s.offers.begin(); it != s.offers.end(); it++) {
+                if (it->second.characters.size() == 0 &&
                     (s.characterChoices.at(it->first).size() + s.gadgetChoices.at(it->first).size() < 8)
-                    && root_machine(fsm).choiceSet.isSelectionPossible()) {
+                    && root_machine(fsm).choiceSet.isOfferPossible()) {
                     // client still needs selections and selection is currently possible
                     it->second = root_machine(fsm).choiceSet.requestSelection();
-                    spy::network::messages::RequestItemChoice message(it->first, it->second.first, it->second.second);
+                    spy::network::messages::RequestItemChoice message(it->first, it->second.characters, it->second.gadgets);
                     spdlog::info("Sending requestItemChoice to client {}", it->first);
                     MessageRouter &router = root_machine(fsm).router;
                     router.sendMessage(message);
                 }
-            }
-        }
-    };
-
-    /**
-     * @brief calls both actions::handleChoice and actions::requestNextChoice with the same parameters
-     */
-    struct handleChoiceAndRequestNext {
-        template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(Event &&event, FSM &fsm, SourceState &source, TargetState &target) {
-            handleChoice{}(std::forward<Event>(event), fsm, source, target);
-
-            if (!guards::noChoiceMissing{}(fsm, source, event)) {
-                requestNextChoice{}(std::forward<Event>(event), fsm, source, target);
-            } else {
-                root_machine(fsm).process_event(events::choicePhaseFinished{});
             }
         }
     };

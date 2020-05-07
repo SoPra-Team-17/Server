@@ -50,15 +50,17 @@ void ChoiceSet::addForSelection(std::vector<spy::character::CharacterInformation
     std::copy(gadgetTypes.begin(), gadgetTypes.end(), std::back_inserter(gadgets));
 }
 
-std::pair<std::vector<spy::util::UUID>, std::vector<spy::gadget::GadgetEnum>> ChoiceSet::requestSelection() {
+Offer ChoiceSet::requestSelection() {
     std::lock_guard<std::mutex> guard(selectionMutex);
+
+    Offer offer;
 
     if (characters.size() < 3 || gadgets.size() < 3) {
         throw std::invalid_argument("Not enough selections available!");
     }
 
-    std::vector<spy::util::UUID> selectedChars(3);
-    std::vector<spy::gadget::GadgetEnum> selectedGadgets(3);
+    offer.characters.resize(3);
+    offer.gadgets.resize(3);
 
     for (auto i = 0; i < 3; i++) {
         std::uniform_int_distribution<unsigned int> randPos(0, characters.size() - 1);
@@ -67,7 +69,7 @@ std::pair<std::vector<spy::util::UUID>, std::vector<spy::gadget::GadgetEnum>> Ch
         auto it = characters.begin();
         std::advance(it, index);
 
-        selectedChars.at(i) = *it;
+        offer.characters.at(i) = *it;
         characters.erase(it);
     }
 
@@ -78,15 +80,14 @@ std::pair<std::vector<spy::util::UUID>, std::vector<spy::gadget::GadgetEnum>> Ch
         auto it = gadgets.begin();
         std::advance(it, index);
 
-        selectedGadgets.at(i) = *it;
+        offer.gadgets.at(i) = *it;
         gadgets.erase(it);
     }
 
 
-    return std::pair<std::vector<spy::util::UUID>, std::vector<spy::gadget::GadgetEnum>>(selectedChars,
-                                                                                         selectedGadgets);
+    return offer;
 }
 
-bool ChoiceSet::isSelectionPossible() const {
+bool ChoiceSet::isOfferPossible() const {
     return (characters.size() > 3 && gadgets.size() > 3);
 }
