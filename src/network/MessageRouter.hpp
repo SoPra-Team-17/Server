@@ -29,9 +29,13 @@ class MessageRouter {
 
         template<typename MessageType>
         void broadcastMessage(MessageType message) {
-            nlohmann::json serializedMessage = message;
-            spdlog::info("Broadcasting message: " + serializedMessage.dump());
-            server.broadcast(serializedMessage.dump());
+            for (const auto &[ptr, uuid] :activeConnections) {
+                if (!uuid.has_value()) {
+                    spdlog::warn("Broadcasting message while there is unregistered connection");
+                    continue;
+                }
+                sendMessage(uuid.value(), message);
+            }
         }
 
         template<typename T>
@@ -101,7 +105,7 @@ class MessageRouter {
             nlohmann::json serializedMessage = message;
             spdlog::trace("Sending message: {}", serializedMessage.dump());
 
-            auto &con = connectionFromUUID(message.getclientId());
+            auto &con = connectionFromUUID(message.getClientId());
             con.first->send(serializedMessage.dump());
         }
 
@@ -125,17 +129,17 @@ class MessageRouter {
         /**
          * New-connection-listener, called by server
          */
-        void connectListener(const connectionPtr& newConnection);
+        void connectListener(const connectionPtr &newConnection);
 
         /**
          * Connection-close-listener, called by server
          */
-        void disconnectListener(const connectionPtr& closedConnection);
+        void disconnectListener(const connectionPtr &closedConnection);
 
         /**
          * Receive-listener, called by each connection
          */
-        void receiveListener(const connectionPtr& connection, const std::string& message);
+        void receiveListener(const connectionPtr &connection, const std::string &message);
 
         const websocket::util::Listener<spy::network::messages::Hello, connectionPtr> helloListener;
         const websocket::util::Listener<spy::network::messages::Reconnect> reconnectListener;

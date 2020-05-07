@@ -16,7 +16,7 @@ namespace actions {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &e, FSM &fsm, SourceState &s, TargetState &) {
             spdlog::info("Handling client choice");
-            auto clientId = e.getclientId();
+            auto clientId = e.getClientId();
             auto choice = e.getChoice();
             auto &offer = s.offers.at(clientId);
 
