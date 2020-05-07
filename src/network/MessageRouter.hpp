@@ -5,9 +5,16 @@
 #include <Server/WebSocketServer.hpp>
 #include <utility>
 #include <spdlog/spdlog.h>
-#include <network/messages/Hello.hpp>
 #include <set>
+#include <network/messages/Hello.hpp>
+#include <network/messages/Reconnect.hpp>
 #include <network/messages/ItemChoice.hpp>
+#include <network/messages/EquipmentChoice.hpp>
+#include <network/messages/GameOperation.hpp>
+#include <network/messages/GameLeave.hpp>
+#include <network/messages/RequestGamePause.hpp>
+#include <network/messages/RequestMetaInformation.hpp>
+#include <network/messages/RequestReplay.hpp>
 
 /**
  * The MessageRouter holds a websocket::network::WebSocketServer and manages and enumerates connections.
@@ -28,16 +35,50 @@ class MessageRouter {
         }
 
         template<typename T>
+        void addHelloListener(T l) {
+            helloListener.subscribe(l);
+        }
+
+        template<typename T>
+        void addReconnectListener(T l) {
+            reconnectListener.subscribe(l);
+        }
+
+        template<typename T>
         void addItemChoiceListener(T l) {
-            spdlog::info("Adding ItemChoiceListener to MessageRouter.");
             itemChoiceListener.subscribe(l);
         }
 
         template<typename T>
-        void addHelloListener(T l) {
-            spdlog::info("Adding HelloListener to MessageRouter.");
-            helloListener.subscribe(l);
+        void addEquipmentChoiceListener(T l) {
+            equipmentChoiceListener.subscribe(l);
         }
+
+        template<typename T>
+        void addGameOperationListener(T l) {
+            gameOperationListener.subscribe(l);
+        }
+
+        template<typename T>
+        void addGameLeaveListener(T l) {
+            gameLeaveListener.subscribe(l);
+        }
+
+        template<typename T>
+        void addPauseRequestListener(T l) {
+            pauseRequestListener.subscribe(l);
+        }
+
+        template<typename T>
+        void addMetaInformationRequestListener(T l) {
+            metaInformationRequestListener.subscribe(l);
+        }
+
+        template<typename T>
+        void addReplayRequestListener(T l) {
+            replayRequestListener.subscribe(l);
+        }
+
 
         /**
          * Sends a message to a specific client.
@@ -95,7 +136,16 @@ class MessageRouter {
         void receiveListener(const connectionPtr& connection, const std::string& message);
 
         const websocket::util::Listener<spy::network::messages::Hello, connectionPtr> helloListener;
-        const websocket::util::Listener<spy::network::messages::ItemChoice, connectionPtr> itemChoiceListener;
+        const websocket::util::Listener<spy::network::messages::Reconnect> reconnectListener;
+        const websocket::util::Listener<spy::network::messages::ItemChoice> itemChoiceListener;
+        const websocket::util::Listener<spy::network::messages::EquipmentChoice> equipmentChoiceListener;
+        const websocket::util::Listener<spy::network::messages::GameOperation> gameOperationListener;
+        const websocket::util::Listener<spy::network::messages::GameLeave> gameLeaveListener;
+        const websocket::util::Listener<spy::network::messages::RequestGamePause> pauseRequestListener;
+        const websocket::util::Listener<spy::network::messages::RequestMetaInformation> metaInformationRequestListener;
+        const websocket::util::Listener<spy::network::messages::RequestReplay> replayRequestListener;
+
+
 };
 
 #endif //SERVER017_MESSAGEROUTER_HPP

@@ -100,12 +100,16 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         fsm.process_event(msg);
     });
 
-    router.addItemChoiceListener([&fsm](spy::network::messages::ItemChoice msg, MessageRouter::connectionPtr) {
-        spdlog::info("Posting item choice event to FSM");
-        fsm.process_event(msg);
-    });
+    auto forwardMessage = [&fsm](auto msg) { fsm.process_event(msg); };
 
-    // TODO register handlers for more messages
+    //router.addReconnectListener(forwardMessage);
+    router.addItemChoiceListener(forwardMessage);
+    //router.addEquipmentChoiceListener(forwardMessage);
+    router.addGameOperationListener(forwardMessage);
+    router.addGameLeaveListener(forwardMessage);
+    //router.addPauseRequestListener(forwardMessage);
+    //router.addMetaInformationRequestListener(forwardMessage);
+    //router.addReplayRequestListener(forwardMessage);
 }
 
 void Server::configureLogging() const {

@@ -48,7 +48,6 @@ void MessageRouter::receiveListener(const MessageRouter::connectionPtr &connecti
     }
     auto messageContainer = messageJson.get<spy::network::MessageContainer>();
     switch (messageContainer.getType()) {
-        // TODO: missing cases
         case spy::network::messages::MessageTypeEnum::INVALID:
             spdlog::error("Received message with invalid type: " + message);
             return;
@@ -56,52 +55,41 @@ void MessageRouter::receiveListener(const MessageRouter::connectionPtr &connecti
             spdlog::info("MessageRouter received Hello message.");
             helloListener(messageJson.get<spy::network::messages::Hello>(), connectionPtr);
             return;
-        case spy::network::messages::MessageTypeEnum::HELLO_REPLY:
-            break;
         case spy::network::messages::MessageTypeEnum::RECONNECT:
-            break;
-        case spy::network::messages::MessageTypeEnum::GAME_STARTED:
-            break;
-        case spy::network::messages::MessageTypeEnum::REQUEST_ITEM_CHOICE:
-            break;
-        case spy::network::messages::MessageTypeEnum::ITEM_CHOICE:
-            spdlog::info("MessageRouter received Item Choice message.");
-            itemChoiceListener(messageJson.get<spy::network::messages::ItemChoice>(), connectionPtr);
+            spdlog::info("MessageRouter received Reconnect message.");
+            reconnectListener(messageJson.get<spy::network::messages::Reconnect>());
             return;
-        case spy::network::messages::MessageTypeEnum::REQUEST_EQUIPMENT_CHOICE:
-            break;
+        case spy::network::messages::MessageTypeEnum::ITEM_CHOICE:
+            spdlog::info("MessageRouter received ItemChoice message.");
+            itemChoiceListener(messageJson.get<spy::network::messages::ItemChoice>());
+            return;
         case spy::network::messages::MessageTypeEnum::EQUIPMENT_CHOICE:
-            break;
-        case spy::network::messages::MessageTypeEnum::GAME_STATUS:
-            break;
-        case spy::network::messages::MessageTypeEnum::REQUEST_GAME_OPERATION:
-            break;
+            spdlog::info("MessageRouter received EquipmentChoice message.");
+            equipmentChoiceListener(messageJson.get<spy::network::messages::EquipmentChoice>());
+            return;
         case spy::network::messages::MessageTypeEnum::GAME_OPERATION:
-            break;
-        case spy::network::messages::MessageTypeEnum::STATISTICS:
-            break;
+            spdlog::info("MessageRouter received GameOperation message.");
+            gameOperationListener(messageJson.get<spy::network::messages::GameOperation>());
+            return;
         case spy::network::messages::MessageTypeEnum::GAME_LEAVE:
-            break;
-        case spy::network::messages::MessageTypeEnum::GAME_LEFT:
-            break;
+            spdlog::info("MessageRouter GameLeave Hello message.");
+            gameLeaveListener(messageJson.get<spy::network::messages::GameLeave>());
+            return;
         case spy::network::messages::MessageTypeEnum::REQUEST_GAME_PAUSE:
-            break;
-        case spy::network::messages::MessageTypeEnum::GAME_PAUSE:
-            break;
+            spdlog::info("MessageRouter received RequestGamePause message.");
+            pauseRequestListener(messageJson.get<spy::network::messages::RequestGamePause>());
+            return;
         case spy::network::messages::MessageTypeEnum::REQUEST_META_INFORMATION:
-            break;
-        case spy::network::messages::MessageTypeEnum::META_INFORMATION:
-            break;
-        case spy::network::messages::MessageTypeEnum::STRIKE:
-            break;
-        case spy::network::messages::MessageTypeEnum::ERROR:
-            break;
+            spdlog::info("MessageRouter received RequestMetaInformation message.");
+            metaInformationRequestListener(messageJson.get<spy::network::messages::RequestMetaInformation>());
+            return;
         case spy::network::messages::MessageTypeEnum::REQUEST_REPLAY:
-            break;
-        case spy::network::messages::MessageTypeEnum::REPLAY:
-            break;
+            spdlog::info("MessageRouter received RequestReplay message.");
+            replayRequestListener(messageJson.get<spy::network::messages::RequestReplay>());
+            return;
+        default:
+            spdlog::error("Handling this message type has not been implemented.");
     }
-    spdlog::error("Handling this message type has not been implemented yet.");
 }
 
 void
