@@ -78,9 +78,9 @@ struct ChoicePhase : afsm::def::state_def<ChoicePhase> {
         spy::network::messages::RequestItemChoice messageP2(idP2, offerP2.characters, offerP2.gadgets);
 
         router.sendMessage(messageP1);
-        spdlog::info("Sending choice offer to {}", idP1);
+        spdlog::info("Sending choice offer to player1 ({})", idP1);
         router.sendMessage(messageP2);
-        spdlog::info("Sending choice offer to {}", idP2);
+        spdlog::info("Sending choice offer to player2 ({})", idP2);
     }
 
     // @formatter:off

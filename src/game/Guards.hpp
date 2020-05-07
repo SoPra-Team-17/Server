@@ -36,39 +36,19 @@ namespace guards {
     };
 
     /**
-     * @brief Guard passes if the client has chosen enough characters and gadgets.
-     */
-    struct noChoiceMissing {
-        template<typename FSM, typename FSMState, typename Event>
-        bool operator()(FSM const &, FSMState const &state, Event const &) {
-            unsigned int missingChoices = 16;
-            for (auto it = state.characterChoices.begin(); it != state.characterChoices.end(); it++) {
-                missingChoices -= it->second.size();
-            }
-
-            for (auto it = state.gadgetChoices.begin(); it != state.gadgetChoices.end(); it++) {
-                missingChoices -= it->second.size();
-            }
-
-            spdlog::debug("Checking guard noChoiceMissing: {} remaining choices",
-                          missingChoices);
-            return missingChoices == 0;
-        }
-    };
-
-    /**
-     * @brief Guard passes if the client has chosen enough characters and gadgets.
+     * @brief Guard passes if it's the last choice (together both players have chosen
+     *        items over 15 rounds, and one round is missing).
      */
     struct lastChoice {
         template<typename FSM, typename FSMState, typename Event>
         bool operator()(FSM const &, FSMState const &state, Event const &) {
             unsigned int missingChoices = 16;
-            for (auto it = state.characterChoices.begin(); it != state.characterChoices.end(); it++) {
-                missingChoices -= it->second.size();
+            for (const auto &[_, characterChoice] : state.characterChoices) {
+                missingChoices -= characterChoice.size();
             }
 
-            for (auto it = state.gadgetChoices.begin(); it != state.gadgetChoices.end(); it++) {
-                missingChoices -= it->second.size();
+            for (const auto &[_, gadgetChoice] : state.gadgetChoices) {
+                missingChoices -= gadgetChoice.size();
             }
 
             spdlog::debug("Checking guard noChoiceMissing: {} remaining choices",
@@ -78,7 +58,8 @@ namespace guards {
     };
 
     /**
-     * @brief Guard passes if it's the last choice.
+     * @brief Guard passes if the choice is valid regarding the offer and the already
+     *        chosen items.
      */
     struct choiceValid {
         template<typename FSM, typename FSMState, typename Event>
@@ -87,7 +68,7 @@ namespace guards {
 
             auto clientId = e.getclientId();
 
-            auto offered = state.offers.at(clientId);
+            const auto &offered = state.offers.at(clientId);
 
             //TODO: adapt to Role Enum, needs rework of router
             bool validMessage = e.validate(spy::network::RoleEnum::PLAYER, offered.characters, offered.gadgets);
@@ -99,11 +80,10 @@ namespace guards {
                                         && state.gadgetChoices.at(clientId).size() >= 6));
 
             if (validMessage && !choiceInvalid) {
-                spdlog::debug("Choice valid!");
                 return true;
             } else {
                 //TODO: kick player
-                spdlog::critical("Player {} has send an invalid choice and was therefore kicked", clientId);
+                spdlog::critical("Player {} has send an invalid choice and should be kicked", clientId);
                 return false;
             }
         }

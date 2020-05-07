@@ -16,17 +16,16 @@
 #include "datatypes/character/CharacterInformation.hpp"
 #include "datatypes/gadgets/GadgetEnum.hpp"
 
-/**
- * This class implements a simple data structure used during choice phase to select characters and gadgets.
- * @note In contrast to the name the data structure currently doesn't enforce set characteristics, but is
- *       intended to be used as one.
- */
-
 struct Offer {
     std::vector<spy::util::UUID> characters;
     std::vector<spy::gadget::GadgetEnum> gadgets;
 };
 
+/**
+ * This class implements a simple data structure used during choice phase to select characters and gadgets.
+ * @note In contrast to the name the data structure currently doesn't enforce set characteristics, but is
+ *       intended to be used as one.
+ */
 class ChoiceSet {
     public:
 

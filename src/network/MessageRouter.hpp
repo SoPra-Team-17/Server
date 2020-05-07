@@ -99,6 +99,8 @@ class MessageRouter {
         template<typename MessageType>
         void sendMessage(MessageType message) {
             nlohmann::json serializedMessage = message;
+            spdlog::trace("Sending message: {}", serializedMessage.dump());
+
             auto &con = connectionFromUUID(message.getclientId());
             con.first->send(serializedMessage.dump());
         }
