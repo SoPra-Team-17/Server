@@ -14,7 +14,7 @@ namespace actions {
      */
     struct handleChoice {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(Event &&e, FSM &fsm, SourceState &s, TargetState &) {
+        void operator()(Event &e, FSM &fsm, SourceState &s, TargetState &) {
             spdlog::info("Handling client choice");
             auto clientId = e.getclientId();
             auto choice = e.getChoice();
