@@ -21,7 +21,6 @@
  */
 class MessageRouter {
     public:
-
         using connectionPtr = std::shared_ptr<websocket::network::Connection>;
         using connection = std::pair<connectionPtr, std::optional<spy::util::UUID>>;
         using connectionMap = std::vector<connection>;
@@ -100,6 +99,8 @@ class MessageRouter {
         template<typename MessageType>
         void sendMessage(MessageType message) {
             nlohmann::json serializedMessage = message;
+            spdlog::trace("Sending message: {}", serializedMessage.dump());
+
             auto &con = connectionFromUUID(message.getclientId());
             con.first->send(serializedMessage.dump());
         }

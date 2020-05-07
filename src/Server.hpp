@@ -68,6 +68,7 @@ class Server : public afsm::def::state_machine<Server> {
         spy::util::UUID sessionId;
         std::random_device rd{};
         std::mt19937 rng{rd()};
+        ChoiceSet choiceSet;
 
     private:
         const static std::map<unsigned int, spdlog::level::level_enum> verbosityMap;

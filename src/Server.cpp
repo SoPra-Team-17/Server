@@ -78,6 +78,11 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         std::exit(1);
     }
 
+    if (characterInformations.size() < 10) {
+        spdlog::critical("No enough character descriptions given, at least 10 are needed to choice phase!");
+        std::exit(1);
+    }
+
     gameState = spy::gameplay::State{1, spy::scenario::FieldMap{scenarioConfig}, {}, {}, spy::util::Point{1, 1},
                                      spy::util::Point{}};
 
@@ -98,7 +103,7 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
     auto forwardMessage = [&fsm](auto msg) { fsm.process_event(msg); };
 
     //router.addReconnectListener(forwardMessage);
-    //router.addItemChoiceListener(forwardMessage);
+    router.addItemChoiceListener(forwardMessage);
     //router.addEquipmentChoiceListener(forwardMessage);
     router.addGameOperationListener(forwardMessage);
     router.addGameLeaveListener(forwardMessage);
@@ -138,6 +143,8 @@ void Server::configureLogging() const {
 
     // Flush for every message of level info or higher
     combined_logger->flush_on(spdlog::level::info);
+
+    combined_logger->set_level(spdlog::level::trace);
 
     // use this new combined sink as default logger
     spdlog::set_default_logger(combined_logger);

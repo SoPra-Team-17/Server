@@ -12,6 +12,7 @@
       <file path="$PROJECT_DIR$/doxygen-out" />
       <file path="$PROJECT_DIR$/exampleConfig" />
       <file path="$PROJECT_DIR$/external" />
+      <file path="$PROJECT_DIR$/logs" />
     </excludeRoots>
   </component>
   <component name="JavaScriptSettings">

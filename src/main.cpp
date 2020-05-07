@@ -9,7 +9,7 @@
 #include "Server.hpp"
 
 constexpr unsigned int maxVerbosity = spdlog::level::level_enum::n_levels;
-constexpr unsigned int defaultVerbosity = 0;
+constexpr unsigned int defaultVerbosity = 5;
 constexpr unsigned int defaultPort = 7007;
 
 int main(int argc, char *argv[]) {

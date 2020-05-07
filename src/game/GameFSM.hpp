@@ -3,47 +3,25 @@
  * @author ottojo
  * @brief State machine for game
  */
+
 #ifndef SERVER017_GAMEFSM_HPP
 #define SERVER017_GAMEFSM_HPP
 
 #include <afsm/fsm.hpp>
 #include <network/messages/GameOperation.hpp>
 #include <datatypes/character/CharacterInformation.hpp>
+#include <network/messages/ItemChoice.hpp>
 #include "Events.hpp"
 #include "Guards.hpp"
 #include "util/Player.hpp"
 #include "spdlog/fmt/ostr.h"
 #include "OperationHandling.hpp"
+#include "util/ChoiceSet.hpp"
+#include "ChoicePhaseFSM.hpp"
 
 class GameFSM : public afsm::def::state_machine<GameFSM> {
     public:
-
-        struct choicePhase : state<choicePhase> {
-
-            template<typename FSM, typename Event>
-            void on_enter(Event &&, FSM &fsm) {
-                spdlog::info("Entering choice phase");
-                spy::gameplay::State &gameState = root_machine(fsm).gameState;
-                std::vector<spy::character::CharacterInformation> &characterInformations =
-                        root_machine(fsm).characterInformations;
-
-                // TODO: choice phase, do not just use every character available
-                spy::character::CharacterSet characters;
-                for (const auto &c: characterInformations) {
-                    auto character = spy::character::Character{c.getCharacterId(), c.getName()};
-                    character.setProperties(
-                            std::set<spy::character::PropertyEnum>{c.getFeatures().begin(), c.getFeatures().end()});
-                    characters.insert(character);
-                }
-
-                gameState = spy::gameplay::State{1,
-                                                 gameState.getMap(),
-                                                 gameState.getMySafeCombinations(),
-                                                 characters,
-                                                 gameState.getCatCoordinates(),
-                                                 gameState.getJanitorCoordinates()};
-            }
-        };
+        ChoicePhase choicePhase;
 
         struct equipPhase : state<equipPhase> {
             template<typename FSM, typename Event>
@@ -57,6 +35,14 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
             spy::util::UUID activeCharacter; //!< Set in roundInit state and waitingForOperation internal transition
 
             std::deque<spy::util::UUID> remainingCharacters; //!< Characters that have not made a move this round
+
+            template<typename FSM, typename Event>
+            void on_enter(Event &&, FSM &) {
+                spdlog::info("Initial entering to game phase");
+
+                //spy::gameplay::State &gameState = root_machine(fsm).gameState;
+                // TODO: add non chosen characters as NPCs
+            }
 
             struct roundInit : state<roundInit> {
                 template<typename FSM, typename Event>
@@ -110,7 +96,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
         struct gameOver : state<gameOver> {
         };
 
-        using initial_state = choicePhase;
+        using initial_state = decltype(choicePhase);
 
         template<typename FSM, typename Event>
         void on_enter(Event &&, FSM &) {
@@ -119,10 +105,10 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
 
         // @formatter:off
         using transitions = transition_table <
-        // Start        Event                        Next
-        tr<choicePhase, events::choicePhaseFinished, equipPhase>,
-        tr<equipPhase,  events::equipPhaseFinished,  gamePhase>,
-        tr<gamePhase,   events::gameFinished,        gameOver>
+        // Start                  Event                               Next
+        tr<decltype(choicePhase), spy::network::messages::ItemChoice, equipPhase, actions::multiple<actions::handleChoice, actions::createCharacterSet>, and_<guards::choiceValid, guards::lastChoice>>,
+        tr<equipPhase,            events::equipPhaseFinished,         gamePhase>,
+        tr<gamePhase,             events::gameFinished,               gameOver>
         >;
         // @formatter:on
 };

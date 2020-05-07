@@ -36,12 +36,82 @@
 		]
 	},
 	{
+		"name": "James Bond 4",
+		"description": "Bester Geheimagent aller Zeiten mit 00-Status.",
+		"gender": "DIVERSE",
+		"features": [
+			"SPRYNESS",
+			"TOUGHNESS",
+			"ROBUST_STOMACH",
+			"LUCKY_DEVIL",
+			"TRADECRAFT"
+		]
+	},
+	{
+		"name": "James Bond 5",
+		"description": "Bester Geheimagent aller Zeiten mit 00-Status.",
+		"gender": "DIVERSE",
+		"features": [
+			"SPRYNESS",
+			"TOUGHNESS",
+			"ROBUST_STOMACH",
+			"LUCKY_DEVIL",
+			"TRADECRAFT"
+		]
+	},
+	{
+		"name": "James Bond 6",
+		"description": "Bester Geheimagent aller Zeiten mit 00-Status.",
+		"gender": "DIVERSE",
+		"features": [
+			"SPRYNESS",
+			"TOUGHNESS",
+			"ROBUST_STOMACH",
+			"LUCKY_DEVIL",
+			"TRADECRAFT"
+		]
+	},
+	{
+		"name": "James Bond 7",
+		"description": "Bester Geheimagent aller Zeiten mit 00-Status.",
+		"gender": "DIVERSE",
+		"features": [
+			"SPRYNESS",
+			"TOUGHNESS",
+			"ROBUST_STOMACH",
+			"LUCKY_DEVIL",
+			"TRADECRAFT"
+		]
+	},
+	{
+		"name": "James Bond 8",
+		"description": "Bester Geheimagent aller Zeiten mit 00-Status.",
+		"gender": "DIVERSE",
+		"features": [
+			"SPRYNESS",
+			"TOUGHNESS",
+			"ROBUST_STOMACH",
+			"LUCKY_DEVIL",
+			"TRADECRAFT"
+		]
+	},
+	{
 		"name": "Meister Yoda",
 		"description": "Yoda (* 896 VSY; † 4 NSY auf Dagobah) gehörte einer unbekannten Spezies an, war 66 cm groß und war am Ende seines Lebens 900 Jahre alt. Er hatte in über 800 Jahren als Jedi-(Groß-)Meister zahlreiche Schüler in der Macht ausgebildet, darunter u. a. Luke Skywalker und Count Dooku, und war ein Meister im Umgang mit dem Lichtschwert.",
 		"features": [
 		"LUCKY_DEVIL",
 		"OBSERVATION",
 		"TOUGHNESS"
+		]
+	},
+	{
+		"name": "Tracy Bond",
+		"description": "Hat kein glückliches Händchen im Spiel und bringt sich selbst ständig\nin Schwierigkeiten. Wenn jemand anders sie braucht, ist sie aber immer zur Stelle.",
+		"features": [
+			"AGILITY",
+			"BABYSITTER",
+			"HONEY_TRAP",
+			"JINX"
 		]
 	}
 ]
