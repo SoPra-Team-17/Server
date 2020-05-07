@@ -41,7 +41,7 @@ namespace guards {
     struct noChoiceMissing {
         template<typename FSM, typename FSMState, typename Event>
         bool operator()(FSM const &, FSMState const &state, Event const &) {
-            unsigned int missingChoices = 12;
+            unsigned int missingChoices = 16;
             for (auto it = state.characterChoices.begin(); it != state.characterChoices.end(); it++) {
                 missingChoices -= it->second.size();
             }
@@ -50,7 +50,7 @@ namespace guards {
                 missingChoices -= it->second.size();
             }
 
-            spdlog::debug("Checking guard noChoiceMissing: {} remaining choices",
+            spdlog::info("Checking guard noChoiceMissing: {} remaining choices",
                           missingChoices);
             return missingChoices == 0;
         }
@@ -64,10 +64,27 @@ namespace guards {
         bool operator()(FSM const &, FSMState const &state, Event const &e) {
             spdlog::debug("Checking guard choiceValid");
 
-            auto offered = state.selections.at(e.getclientId());
+            auto clientId = e.getclientId();
+
+            auto offered = state.selections.at(clientId);
 
             //TODO: adapt to Role Enum, needs rework of router
-            return e.validate(spy::network::RoleEnum::PLAYER, offered.first, offered.second);
+            bool validMessage = e.validate(spy::network::RoleEnum::PLAYER, offered.first, offered.second);
+            auto choice = e.getChoice();
+
+            bool choiceInvalid = ((std::holds_alternative<spy::util::UUID>(choice)
+                                        && state.characterChoices.at(clientId).size() >= 4)
+                                || (std::holds_alternative<spy::gadget::GadgetEnum>(choice)
+                                        && state.gadgetChoices.at(clientId).size() >= 6));
+
+            if (validMessage && !choiceInvalid) {
+                spdlog::info("Choice valid!");
+                return true;
+            } else {
+                //TODO: kick player
+                spdlog::info("Player {} has send an invalid choice and was therefore kicked", clientId);
+                return false;
+            }
         }
     };
 }

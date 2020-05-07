@@ -62,6 +62,13 @@ struct ChoicePhase : afsm::def::state_def<ChoicePhase> {
 
         selections[idP1] = choiceSet.requestSelection();
         selections[idP2] = choiceSet.requestSelection();
+
+        characterChoices[idP1] = std::vector<spy::util::UUID>();
+        characterChoices[idP2] = std::vector<spy::util::UUID>();
+
+        gadgetChoices[idP1] = std::vector<spy::gadget::GadgetEnum>();
+        gadgetChoices[idP2] = std::vector<spy::gadget::GadgetEnum>();
+
         auto selectionP1 = selections.at(idP1);
         auto selectionP2 = selections.at(idP2);
 

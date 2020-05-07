@@ -8,7 +8,9 @@
 #include <variant>
 #include <network/messages/ItemChoice.hpp>
 #include <network/messages/RequestItemChoice.hpp>
+#include <network/messages/HelloReply.hpp>
 #include "datatypes/gadgets/GadgetEnum.hpp"
+#include <spdlog/spdlog.h>
 
 using namespace std::string_literals;
 
@@ -33,17 +35,28 @@ struct TestClient {
                     std::variant<spy::util::UUID, spy::gadget::GadgetEnum> choice;
                     auto offer = j.get<spy::network::messages::RequestItemChoice>();
 
+                    spdlog::info("{} received Request item choice", name);
+
                     if (choiceCounter < 3) {
                         // select character in the first 3 offers
                         choice = offer.getOfferedCharacterIds()[0];
-                    } else if (choiceCounter < 6) {
+                    } else if (choiceCounter < 8) {
                         // select character in the second 3 offers
                         choice = offer.getOfferedGadgets()[0];
                     } else {
-                        std::cerr << "ERROR, server offering to many rounds!" << std::endl;
+                        std::cout << "### ERROR, server offering to many rounds! ###" << std::endl;
                     }
 
                     sendChoice(choice);
+                    choiceCounter++;
+                    break;
+                }
+
+                case MessageTypeEnum::HELLO_REPLY: {
+                    auto m = j.get<spy::network::messages::HelloReply>();
+                    id = m.getclientId();
+
+                    std::cout << name << ": was assigned id: " << id << std::endl;
                     break;
                 }
 
@@ -57,6 +70,8 @@ struct TestClient {
         spy::network::messages::ItemChoice message(id, choice);
         nlohmann::json hj = message;
         wsClient.send(hj.dump());
+
+        spdlog::info("{} sent item choice", name);
     }
 
     void sendHello() {

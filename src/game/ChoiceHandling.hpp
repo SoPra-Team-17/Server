@@ -44,13 +44,15 @@ namespace actions {
     struct requestNextChoice {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&, FSM &fsm, SourceState &s, TargetState &) {
+            spdlog::debug("Check which client needs a choice request next");
             for (auto it = s.selections.begin(); it != s.selections.end(); it++) {
                 if (it->second.first.size() == 0 &&
-                    (s.characterChoices.at(it->first).size() < 3 || s.gadgetChoices.at(it->first).size() < 3)) {
-                    // client still needs selections
+                    (s.characterChoices.at(it->first).size() + s.gadgetChoices.at(it->first).size() < 8)
+                    && root_machine(fsm).choiceSet.isSelectionPossible()) {
+                    // client still needs selections and selection is currently possible
                     it->second = root_machine(fsm).choiceSet.requestSelection();
                     spy::network::messages::RequestItemChoice message(it->first, it->second.first, it->second.second);
-                    spdlog::info("Sending requestItemChoice at {}", it->first);
+                    spdlog::info("Sending requestItemChoice to client {}", it->first);
                     MessageRouter &router = root_machine(fsm).router;
                     router.sendMessage(message);
                 }
