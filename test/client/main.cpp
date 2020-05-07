@@ -11,6 +11,8 @@
 #include <network/messages/HelloReply.hpp>
 #include "datatypes/gadgets/GadgetEnum.hpp"
 #include <spdlog/spdlog.h>
+#include <network/messages/RequestEquipmentChoice.hpp>
+#include <network/messages/EquipmentChoice.hpp>
 
 using namespace std::string_literals;
 
@@ -52,6 +54,29 @@ struct TestClient {
                     break;
                 }
 
+                case MessageTypeEnum::REQUEST_EQUIPMENT_CHOICE: {
+                    auto m = j.get<spy::network::messages::RequestEquipmentChoice>();
+
+                    spdlog::info("{} received Request equipment choice", name);
+
+                    const auto &gadgets = m.getChosenGadgets();
+                    const auto &chars   = m.getChosenCharacterIds();
+
+                    std::set<spy::gadget::GadgetEnum> gadgetSet;
+                    std::map<spy::util::UUID, std::set<spy::gadget::GadgetEnum>> choice;
+
+                    for (const auto &g : gadgets) {
+                        gadgetSet.insert(g);
+                    }
+
+                    // give all gadgets to the first character
+                    choice[chars.at(0)] = gadgetSet;
+
+                    sendEquipmentChoice(choice);
+                    choiceCounter++;
+                    break;
+                }
+
                 case MessageTypeEnum::HELLO_REPLY: {
                     auto m = j.get<spy::network::messages::HelloReply>();
                     id = m.getclientId();
@@ -68,8 +93,16 @@ struct TestClient {
 
     void sendChoice(std::variant<spy::util::UUID, spy::gadget::GadgetEnum> choice) {
         spy::network::messages::ItemChoice message(id, choice);
-        nlohmann::json hj = message;
-        wsClient.send(hj.dump());
+        nlohmann::json mj = message;
+        wsClient.send(mj.dump());
+
+        spdlog::info("{} sent item choice", name);
+    }
+
+    void sendEquipmentChoice(std::map<spy::util::UUID, std::set<spy::gadget::GadgetEnum>> choice) {
+        spy::network::messages::EquipmentChoice message(id, choice);
+        nlohmann::json mj = message;
+        wsClient.send(mj.dump());
 
         spdlog::info("{} sent item choice", name);
     }

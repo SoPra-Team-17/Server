@@ -10,8 +10,6 @@
 namespace events {
     struct choicePhaseFinished {
     };
-    struct equipPhaseFinished {
-    };
     struct gameFinished {
     };
     struct roundInitDone {

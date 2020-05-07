@@ -15,7 +15,7 @@ namespace actions {
     struct handleChoice {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &e, FSM &fsm, SourceState &s, TargetState &) {
-            spdlog::info("Handling client choice");
+            spdlog::info("Handling client item choice");
             auto clientId = e.getclientId();
             auto choice = e.getChoice();
             auto &offer = s.offers.at(clientId);
@@ -71,8 +71,47 @@ namespace actions {
      */
     struct createCharacterSet {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(Event &&/*event*/, FSM &/*fsm*/, SourceState &/*source*/, TargetState &/*target*/) {
+        void operator()(Event &&, FSM &fsm, SourceState &s, TargetState &t) {
             spdlog::info("create character Set");
+
+            const std::map<Player, spy::util::UUID> &playerIds = root_machine(fsm).playerIds;
+            const std::vector<spy::character::CharacterInformation> &charInfos =
+                    root_machine(fsm).characterInformations;
+            spy::gameplay::State &gameState = root_machine(fsm).gameState;
+
+            auto charsP1 = s.characterChoices.at(playerIds.at(Player::one));
+            auto charsP2 = s.characterChoices.at(playerIds.at(Player::two));
+
+            spy::character::CharacterSet charSet;
+
+            spy::character::FactionEnum faction;
+            //TODO: check if all non-chosen characters are NPCs
+            for (const auto &c : charInfos) {
+                if (std::find(charsP1.begin(), charsP1.end(), c.getCharacterId()) != charsP1.end()) {
+                    faction = spy::character::FactionEnum::PLAYER1;
+                } else if (std::find(charsP2.begin(), charsP2.end(), c.getCharacterId()) != charsP2.end()) {
+                    faction = spy::character::FactionEnum::PLAYER2;
+                } else {
+                    faction = spy::character::FactionEnum::INVALID;
+                }
+
+                auto character = spy::character::Character{c.getCharacterId(), c.getName()};
+                character.setProperties(
+                        std::set<spy::character::PropertyEnum>{c.getFeatures().begin(), c.getFeatures().end()});
+                character.setFaction(faction);
+                charSet.insert(character);
+            }
+
+            gameState = spy::gameplay::State{1,
+                                             gameState.getMap(),
+                                             gameState.getMySafeCombinations(),
+                                             charSet,
+                                             gameState.getCatCoordinates(),
+                                             gameState.getJanitorCoordinates()};
+
+            // give information about choices to the equip phase
+            t.chosenCharacters = s.characterChoices;
+            t.chosenGadgets = s.gadgetChoices;
         }
     };
 }

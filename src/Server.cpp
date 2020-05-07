@@ -104,7 +104,7 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
 
     //router.addReconnectListener(forwardMessage);
     router.addItemChoiceListener(forwardMessage);
-    //router.addEquipmentChoiceListener(forwardMessage);
+    router.addEquipmentChoiceListener(forwardMessage);
     router.addGameOperationListener(forwardMessage);
     router.addGameLeaveListener(forwardMessage);
     //router.addPauseRequestListener(forwardMessage);
