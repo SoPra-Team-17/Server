@@ -74,11 +74,22 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
             std::deque<spy::util::UUID> remainingCharacters; //!< Characters that have not made a move this round
 
             template<typename FSM, typename Event>
-            void on_enter(Event &&, FSM &) {
+            void on_enter(Event &&, FSM &fsm) {
                 spdlog::info("Initial entering to game phase");
 
-                //spy::gameplay::State &gameState = root_machine(fsm).gameState;
-                // TODO: set chip amount on roulette tables
+                spy::gameplay::State &gameState = root_machine(fsm).gameState;
+                spy::MatchConfig &config = root_machine(fsm).matchConfig;
+                std::mt19937 &rng = root_machine(fsm).rng;
+
+                gameState.getMap().forAllFields([&rng, &config](spy::scenario::Field &field) {
+                   if (field.getFieldState() == spy::scenario::FieldStateEnum::ROULETTE_TABLE) {
+                       std::uniform_int_distribution<unsigned int> randChips(config.getMinChipsRoulette(),
+                                                                           config.getMaxChipsRoulette());
+
+                       field.setChipAmount(randChips(rng));
+                   }
+                });
+
             }
 
             /**
