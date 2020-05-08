@@ -73,11 +73,10 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                     RoundUtils::updateFog(state);
                     RoundUtils::checkGadgetFailure(state, matchConfig);
                     RoundUtils::resetUpdatedMarker(state);
-                    // TODO AP, BP festlegen
+                    for (auto &character: state.getCharacters()) {
+                        RoundUtils::determinePoints(character);
+                    }
 
-
-
-                    // TODO Cocktails verteilen
                     root_machine(fsm).process_event(events::roundInitDone{});
                 }
             };
