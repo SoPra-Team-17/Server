@@ -8,7 +8,7 @@
 #define SERVER017_EVENTS_HPP
 
 namespace events {
-    struct choicePhaseFinished {
+    struct triggerNPCmove {
     };
     struct gameFinished {
     };
