@@ -112,7 +112,7 @@ namespace actions {
                     fsm.activeCharacter
             };
             MessageRouter &router = root_machine(fsm).router;
-            spdlog::info("Requesting Operation for character {} from player ", activeChar->getName(), activePlayer);
+            spdlog::info("Requesting Operation for character {} from player {}", activeChar->getName(), activePlayer);
             router.sendMessage(request);
         }
     };
