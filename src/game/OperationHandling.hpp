@@ -62,6 +62,19 @@ namespace actions {
         }
     };
 
+    struct npcMove {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
+            spdlog::warn("NPC move called but not implemented");
+            // TODO: NPC move
+
+            if (!fsm.remainingCharacters.empty()) {
+                fsm.activeCharacter = fsm.remainingCharacters.front();
+                fsm.remainingCharacters.pop_front();
+            }
+        }
+    };
+
     /**
      * Request operation from next character in list
      */
