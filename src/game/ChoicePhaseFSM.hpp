@@ -86,7 +86,7 @@ struct ChoicePhase : afsm::def::state_def<ChoicePhase> {
     // @formatter:off
     using internal_transitions = transition_table <
     //  Event                              Action                                                                Guard
-    in<spy::network::messages::ItemChoice, actions::multiple<actions::handleChoice, actions::requestNextChoice>, and_<guards::choiceValid, not_<guards::lastChoice>>>
+    in<spy::network::messages::ItemChoice, actions::multiple<actions::handleChoice, actions::requestNextChoice>, and_<not_<guards::lastChoice>, guards::choiceValid>>
     >;
     // @formatter:on
 };

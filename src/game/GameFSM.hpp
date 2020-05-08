@@ -11,24 +11,60 @@
 #include <network/messages/GameOperation.hpp>
 #include <datatypes/character/CharacterInformation.hpp>
 #include <network/messages/ItemChoice.hpp>
-#include <Actions.hpp>
+#include <network/messages/RequestEquipmentChoice.hpp>
 #include "Events.hpp"
 #include "Guards.hpp"
+#include "Actions.hpp"
 #include "util/Player.hpp"
 #include "spdlog/fmt/ostr.h"
 #include "OperationHandling.hpp"
 #include "util/ChoiceSet.hpp"
 #include "ChoicePhaseFSM.hpp"
+#include "EquipChoiceHandling.hpp"
 
 class GameFSM : public afsm::def::state_machine<GameFSM> {
     public:
         ChoicePhase choicePhase;
 
         struct equipPhase : state<equipPhase> {
+            // Maps from clientId to the vector of chosen character uuids
+            using CharacterMap = std::map<spy::util::UUID, std::vector<spy::util::UUID>>;
+            // Maps from clientId to the vector of chosen gadget types
+            using GadgetMap    = std::map<spy::util::UUID, std::vector<spy::gadget::GadgetEnum>>;
+
+
+            CharacterMap chosenCharacters;              ///< Stores the character choice of the players
+            GadgetMap    chosenGadgets;                 ///< Stores the gadget choice of the players
+            std::map<spy::util::UUID, bool> hasChosen;  ///< Stores whether the client has already sent his equip choice
+
             template<typename FSM, typename Event>
-            void on_enter(Event &&, FSM &) {
+            void on_enter(Event &&, FSM &fsm) {
                 spdlog::info("Entering equip phase");
+
+                const std::map<Player, spy::util::UUID> &playerIds = root_machine(fsm).playerIds;
+                MessageRouter &router = root_machine(fsm).router;
+
+                auto idP1 = playerIds.at(Player::one);
+                auto idP2 = playerIds.at(Player::two);
+
+                hasChosen[idP1] = false;
+                hasChosen[idP2] = false;
+
+                spy::network::messages::RequestEquipmentChoice messageP1(idP1, chosenCharacters.at(idP1), chosenGadgets.at(idP1));
+                spy::network::messages::RequestEquipmentChoice messageP2(idP2, chosenCharacters.at(idP2), chosenGadgets.at(idP2));
+
+                router.sendMessage(messageP1);
+                spdlog::info("Sending request for equipment choice to player1 ({})", idP1);
+                router.sendMessage(messageP2);
+                spdlog::info("Sending request for equipment choice to player2 ({})", idP2);
             }
+
+            // @formatter:off
+            using internal_transitions = transition_table <
+            //  Event                                   Action                                                     Guard
+            in<spy::network::messages::EquipmentChoice, actions::handleEquipmentChoice, and_<not_<guards::lastEquipmentChoice>, guards::equipmentChoiceValid>>
+            >;
+            // @formatter:on
         };
 
         struct gamePhase : state_machine<gamePhase> {
@@ -42,7 +78,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                 spdlog::info("Initial entering to game phase");
 
                 //spy::gameplay::State &gameState = root_machine(fsm).gameState;
-                // TODO: add non chosen characters as NPCs
+                // TODO: set chip amount on roulette tables
             }
 
             /**
@@ -123,10 +159,10 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
 
         // @formatter:off
         using transitions = transition_table <
-        // Start                  Event                               Next
-        tr<decltype(choicePhase), spy::network::messages::ItemChoice, equipPhase, actions::multiple<actions::handleChoice, actions::createCharacterSet>, and_<guards::choiceValid, guards::lastChoice>>,
-        tr<equipPhase,            events::equipPhaseFinished,         gamePhase>,
-        tr<gamePhase,             events::gameFinished,               gameOver>
+        // Start                  Event                                    Next        Action                                                                 Guard
+        tr<decltype(choicePhase), spy::network::messages::ItemChoice,      equipPhase, actions::multiple<actions::handleChoice, actions::createCharacterSet>, and_<guards::lastChoice, guards::choiceValid>>,
+        tr<equipPhase,            spy::network::messages::EquipmentChoice, gamePhase,  actions::handleEquipmentChoice,                                        and_<guards::lastEquipmentChoice, guards::equipmentChoiceValid>>,
+        tr<gamePhase,             events::gameFinished,                    gameOver>
         >;
         // @formatter:on
 };

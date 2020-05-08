@@ -55,7 +55,7 @@ namespace guards {
                 missingChoices -= gadgetChoice.size();
             }
 
-            spdlog::debug("Checking guard noChoiceMissing: {} remaining choices",
+            spdlog::debug("Checking guard lastChoice: {} remaining choices",
                           missingChoices);
             return missingChoices == 1;
         }
@@ -90,6 +90,46 @@ namespace guards {
                 spdlog::critical("Player {} has send an invalid choice and should be kicked", clientId);
                 return false;
             }
+        }
+    };
+
+    /**
+     * @brief Guard passes if the equipment choice is valid.
+     */
+    struct equipmentChoiceValid {
+        template<typename FSM, typename FSMState, typename Event>
+        bool operator()(FSM const &, FSMState const &state, Event const &e) {
+            spdlog::debug("Checking guard equipmentChoiceValid");
+
+            auto clientId = e.getClientId();
+
+            bool alreadyChosen = state.hasChosen.at(clientId);
+
+            bool messageValid = e.validate(spy::network::RoleEnum::PLAYER, state.chosenCharacters.at(clientId), state.chosenGadgets.at(clientId));
+
+            if (!alreadyChosen && messageValid) {
+                return true;
+            } else {
+                //TODO: kick player
+                spdlog::critical("Player {} has send an invalid equipment choice and should be kicked", clientId);
+                return false;
+            }
+        }
+    };
+
+    /**
+     * @brief Guard passes if it's the last equipment choice (one player has submitted his choice, the
+     *        other one is missing).
+     */
+    struct lastEquipmentChoice {
+        template<typename FSM, typename FSMState, typename Event>
+        bool operator()(FSM const &fsm, FSMState const &state, Event const &) {
+            const std::map<Player, spy::util::UUID> &playerIds = root_machine(fsm).playerIds;
+
+            auto idP1 = playerIds.at(Player::one);
+            auto idP2 = playerIds.at(Player::two);
+
+            return (state.hasChosen.at(idP1) || state.hasChosen.at(idP2));
         }
     };
 }
