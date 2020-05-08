@@ -76,7 +76,7 @@ namespace actions {
     };
 
     /**
-     * Request operation from next character in list
+     * Request operation from next character in list, emits events::triggerNPCmove if next is NPC
      */
     struct requestNextOperation {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
@@ -100,8 +100,10 @@ namespace actions {
                     activePlayer = Player::two;
                     break;
                 default:
-                    spdlog::warn("activeCharacter ({}) does not have valid faction, NPCs not yet implemented",
-                                 fsm.activeCharacter);
+                    // Do not request when next is NPCmove
+                    spdlog::debug("requestNextOperation determined that next character is not a PC"
+                                  "-> Not requesting, triggering NPC move instead.");
+                    root_machine(fsm).process_event(events::triggerNPCmove{});
                     return;
             }
 
