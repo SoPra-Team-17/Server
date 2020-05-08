@@ -55,7 +55,7 @@ namespace guards {
                 missingChoices -= gadgetChoice.size();
             }
 
-            spdlog::debug("Checking guard noChoiceMissing: {} remaining choices",
+            spdlog::debug("Checking guard lastChoice: {} remaining choices",
                           missingChoices);
             return missingChoices == 1;
         }

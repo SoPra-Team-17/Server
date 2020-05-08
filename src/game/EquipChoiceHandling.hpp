@@ -26,16 +26,33 @@ namespace actions {
 
             auto equipChoice = e.getEquipment();
 
+            if (clientId == root_machine(fsm).playerIds.at(Player::one)) {
+                spdlog::info("Equipment choice of player one ({})", clientId);
+            } else {
+                spdlog::info("Equipment choice of player two ({})", clientId);
+            }
+
+            auto &chosenCharacters = s.chosenCharacters.at(clientId);
+
             for (const auto &[characterId, gadgetSet] : equipChoice) {
                 auto character = charSet.getByUUID(characterId);
+                spdlog::info("Character: {} ({})", character->getName(), characterId);
 
                 for (const auto &g : gadgetSet) {
+                    spdlog::info("\t {}", fmt::json(g));
                     if (g == spy::gadget::GadgetEnum::WIRETAP_WITH_EARPLUGS) {
                         character->addGadget(std::make_shared<spy::gadget::WiretapWithEarplugs>());
                     } else {
                         character->addGadget(std::make_shared<spy::gadget::Gadget>(g));
                     }
                 }
+                chosenCharacters.erase(std::remove(chosenCharacters.begin(), chosenCharacters.end(),
+                                                                            characterId), chosenCharacters.end());
+            }
+
+            for (const auto &characterId : chosenCharacters) {
+                auto character = charSet.findByUUID(characterId);
+                spdlog::info("Character: {} ({})", character->getName(), characterId);
             }
 
             s.chosenCharacters.at(clientId).clear();

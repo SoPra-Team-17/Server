@@ -55,7 +55,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
             // @formatter:off
             using internal_transitions = transition_table <
             //  Event                                   Action                                                     Guard
-            in<spy::network::messages::EquipmentChoice, actions::handleEquipmentChoice, and_<guards::equipmentChoiceValid, not_<guards::lastEquipmentChoice>>>
+            in<spy::network::messages::EquipmentChoice, actions::handleEquipmentChoice, and_<not_<guards::lastEquipmentChoice>, guards::equipmentChoiceValid>>
             >;
             // @formatter:on
         };
@@ -71,7 +71,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                 spdlog::info("Initial entering to game phase");
 
                 //spy::gameplay::State &gameState = root_machine(fsm).gameState;
-                // TODO: add non chosen characters as NPCs
+                // TODO: set chip amount on roulette tables
             }
 
             /**

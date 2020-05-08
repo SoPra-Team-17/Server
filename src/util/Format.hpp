@@ -8,7 +8,7 @@
 #include <string>
 #include <nlohmann/json.hpp>
 
-namespace fmt{
+namespace fmt {
     template<typename T>
     std::string json(T t){
         nlohmann::json j = t;
