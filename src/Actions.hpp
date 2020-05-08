@@ -9,6 +9,7 @@
 #include <util/UUID.hpp>
 #include <network/messages/GameStarted.hpp>
 #include <network/messages/HelloReply.hpp>
+#include <util/Player.hpp>
 
 namespace actions {
 
@@ -32,14 +33,14 @@ namespace actions {
             spy::network::messages::Hello &helloMessage = event;
             // Client ID is already assigned here, gets assigned directly after server receives hello callback from network
             spy::network::messages::HelloReply helloReply{
-                    helloMessage.getclientId(),
+                    helloMessage.getClientId(),
                     fsm.sessionId,
                     fsm.scenarioConfig,
                     fsm.matchConfig,
                     fsm.characterInformations
             };
 
-            spdlog::info("Sending HelloReply to {} ({})", helloMessage.getName(), helloReply.getclientId());
+            spdlog::info("Sending HelloReply to {} ({})", helloMessage.getName(), helloReply.getClientId());
             fsm.router.sendMessage(helloReply);
         }
     };
@@ -57,9 +58,9 @@ namespace actions {
             spdlog::info("Initialized session with Id {}", fsm.sessionId);
 
             // Register first player in Server
-            spdlog::info("Player one is now {} ({})", helloMessage.getName(), helloMessage.getclientId());
+            spdlog::info("Player one is now {} ({})", helloMessage.getName(), helloMessage.getClientId());
             std::map<Player, spy::util::UUID> &playerIds = fsm.playerIds;
-            playerIds.insert({Player::one, helloMessage.getclientId()});
+            playerIds.insert({Player::one, helloMessage.getClientId()});
             std::map<Player, std::string> &playerNames = fsm.playerNames;
             playerNames.insert({Player::one, helloMessage.getName()});
         }
@@ -75,9 +76,9 @@ namespace actions {
             spy::network::messages::Hello &helloMessage = event;
 
             // Register second player in server
-            spdlog::info("Player two is now {} ({})", helloMessage.getName(), helloMessage.getclientId());
+            spdlog::info("Player two is now {} ({})", helloMessage.getName(), helloMessage.getClientId());
             std::map<Player, spy::util::UUID> &playerIds = fsm.playerIds;
-            playerIds.insert({Player::two, helloMessage.getclientId()});
+            playerIds.insert({Player::two, helloMessage.getClientId()});
             std::map<Player, std::string> &playerNames = fsm.playerNames;
             playerNames.insert({Player::two, helloMessage.getName()});
 

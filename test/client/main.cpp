@@ -54,7 +54,7 @@ struct TestClient {
 
                 case MessageTypeEnum::HELLO_REPLY: {
                     auto m = j.get<spy::network::messages::HelloReply>();
-                    id = m.getclientId();
+                    id = m.getClientId();
 
                     std::cout << name << ": was assigned id: " << id << std::endl;
                     break;
