@@ -19,7 +19,6 @@ namespace actions {
     struct handleEquipmentChoice {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&e, FSM &fsm, SourceState &s, TargetState &) {
-            spdlog::info("Handling equipment choice");
             auto clientId = e.getClientId();
 
             spy::character::CharacterSet &charSet = root_machine(fsm).gameState.getCharacters();
@@ -27,12 +26,12 @@ namespace actions {
             auto equipChoice = e.getEquipment();
 
             if (clientId == root_machine(fsm).playerIds.at(Player::one)) {
-                spdlog::info("Equipment choice of player one ({})", clientId);
+                spdlog::info("Handling equipment choice of player one ({})", clientId);
             } else {
-                spdlog::info("Equipment choice of player two ({})", clientId);
+                spdlog::info("Handling equipment choice of player two ({})", clientId);
             }
 
-            auto &chosenCharacters = s.chosenCharacters.at(clientId);
+            auto chosenCharacters = s.chosenCharacters.at(clientId);
 
             for (const auto &[characterId, gadgetSet] : equipChoice) {
                 auto character = charSet.getByUUID(characterId);
@@ -46,6 +45,8 @@ namespace actions {
                         character->addGadget(std::make_shared<spy::gadget::Gadget>(g));
                     }
                 }
+                // remove the character id from the copy of the list of chosen characters to determine which ones
+                // have no gadgets equipped
                 chosenCharacters.erase(std::remove(chosenCharacters.begin(), chosenCharacters.end(),
                                                                             characterId), chosenCharacters.end());
             }
@@ -55,8 +56,7 @@ namespace actions {
                 spdlog::info("Character: {} ({})", character->getName(), characterId);
             }
 
-            s.chosenCharacters.at(clientId).clear();
-            s.chosenGadgets.at(clientId).clear();
+            s.hasChosen.at(clientId) = true;
         }
     };
 }

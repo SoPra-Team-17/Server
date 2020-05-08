@@ -102,9 +102,12 @@ namespace guards {
             spdlog::debug("Checking guard equipmentChoiceValid");
 
             auto clientId = e.getClientId();
+
+            bool alreadyChosen = state.hasChosen.at(clientId);
+
             bool messageValid = e.validate(spy::network::RoleEnum::PLAYER, state.chosenCharacters.at(clientId), state.chosenGadgets.at(clientId));
 
-            if (messageValid) {
+            if (!alreadyChosen && messageValid) {
                 return true;
             } else {
                 //TODO: kick player
@@ -126,7 +129,7 @@ namespace guards {
             auto idP1 = playerIds.at(Player::one);
             auto idP2 = playerIds.at(Player::two);
 
-            return (state.chosenCharacters.at(idP1).empty() || state.chosenCharacters.at(idP2).empty());
+            return (state.hasChosen.at(idP1) || state.hasChosen.at(idP2));
         }
     };
 }
