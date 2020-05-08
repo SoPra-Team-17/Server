@@ -38,7 +38,7 @@ void MessageRouter::disconnectListener(const MessageRouter::connectionPtr &close
 
 void MessageRouter::receiveListener(const MessageRouter::connectionPtr &connectionPtr, const std::string &message) {
     auto &con = connectionFromPtr(connectionPtr);
-    spdlog::info("Received message from client {} : {}", con.second.value_or(spy::util::UUID{}), message);
+    spdlog::trace("Received message from client {} : {}", con.second.value_or(spy::util::UUID{}), message);
     nlohmann::json messageJson;
     try {
         messageJson = nlohmann::json::parse(message);
@@ -52,23 +52,23 @@ void MessageRouter::receiveListener(const MessageRouter::connectionPtr &connecti
             spdlog::error("Received message with invalid type: " + message);
             return;
         case spy::network::messages::MessageTypeEnum::HELLO:
-            spdlog::info("MessageRouter received Hello message.");
+            spdlog::debug("MessageRouter received Hello message.");
             helloListener(messageJson.get<spy::network::messages::Hello>(), connectionPtr);
             return;
         case spy::network::messages::MessageTypeEnum::RECONNECT:
-            spdlog::info("MessageRouter received Reconnect message.");
+            spdlog::debug("MessageRouter received Reconnect message.");
             reconnectListener(messageJson.get<spy::network::messages::Reconnect>());
             return;
         case spy::network::messages::MessageTypeEnum::ITEM_CHOICE:
-            spdlog::info("MessageRouter received ItemChoice message.");
+            spdlog::debug("MessageRouter received ItemChoice message.");
             itemChoiceListener(messageJson.get<spy::network::messages::ItemChoice>());
             return;
         case spy::network::messages::MessageTypeEnum::EQUIPMENT_CHOICE:
-            spdlog::info("MessageRouter received EquipmentChoice message.");
+            spdlog::debug("MessageRouter received EquipmentChoice message.");
             equipmentChoiceListener(messageJson.get<spy::network::messages::EquipmentChoice>());
             return;
         case spy::network::messages::MessageTypeEnum::GAME_OPERATION:
-            spdlog::info("MessageRouter received GameOperation message.");
+            spdlog::debug("MessageRouter received GameOperation message.");
             gameOperationListener(messageJson.get<spy::network::messages::GameOperation>());
             return;
         case spy::network::messages::MessageTypeEnum::GAME_LEAVE:
@@ -76,15 +76,15 @@ void MessageRouter::receiveListener(const MessageRouter::connectionPtr &connecti
             gameLeaveListener(messageJson.get<spy::network::messages::GameLeave>());
             return;
         case spy::network::messages::MessageTypeEnum::REQUEST_GAME_PAUSE:
-            spdlog::info("MessageRouter received RequestGamePause message.");
+            spdlog::debug("MessageRouter received RequestGamePause message.");
             pauseRequestListener(messageJson.get<spy::network::messages::RequestGamePause>());
             return;
         case spy::network::messages::MessageTypeEnum::REQUEST_META_INFORMATION:
-            spdlog::info("MessageRouter received RequestMetaInformation message.");
+            spdlog::debug("MessageRouter received RequestMetaInformation message.");
             metaInformationRequestListener(messageJson.get<spy::network::messages::RequestMetaInformation>());
             return;
         case spy::network::messages::MessageTypeEnum::REQUEST_REPLAY:
-            spdlog::info("MessageRouter received RequestReplay message.");
+            spdlog::debug("MessageRouter received RequestReplay message.");
             replayRequestListener(messageJson.get<spy::network::messages::RequestReplay>());
             return;
         default:
