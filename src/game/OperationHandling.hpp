@@ -23,10 +23,11 @@ namespace actions {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&e, FSM &fsm, SourceState &, TargetState &) {
             using spy::gameplay::ActionExecutor;
+            using spy::network::messages::GameOperation;
             using spy::util::RoundUtils;
             spdlog::info("Handling some operation");
 
-            const spy::network::messages::GameOperation operationMessage = e;
+            const GameOperation &operationMessage = std::forward<GameOperation>(e);
             spy::gameplay::State &state = root_machine(fsm).gameState;
             auto operation = operationMessage.getOperation();
 

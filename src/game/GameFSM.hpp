@@ -65,7 +65,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                         spdlog::info(c);
                     }
                     spy::gameplay::State &state = root_machine(fsm).gameState;
-                    spy::MatchConfig &matchConfig = root_machine(fsm).matchConfig;
+                    const spy::MatchConfig &matchConfig = root_machine(fsm).matchConfig;
 
                     using spy::util::RoundUtils;
 
