@@ -87,8 +87,9 @@ namespace actions {
                     activePlayer = Player::two;
                     break;
                 default:
-                    spdlog::critical("activeCharacter ({}) does not have valid faction", fsm.activeCharacter);
-                    std::exit(1);
+                    spdlog::warn("activeCharacter ({}) does not have valid faction, NPCs not yet implemented",
+                                 fsm.activeCharacter);
+                    return;
             }
 
             spy::network::messages::RequestGameOperation request{
