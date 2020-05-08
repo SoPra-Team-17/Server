@@ -18,7 +18,7 @@ namespace actions {
      */
     struct handleEquipmentChoice {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(Event &e, FSM &fsm, SourceState &s, TargetState &t) {
+        void operator()(Event &&e, FSM &fsm, SourceState &s, TargetState &) {
             spdlog::info("Handling equipment choice");
             auto clientId = e.getclientId();
 
@@ -27,19 +27,19 @@ namespace actions {
             auto equipChoice = e.getEquipment();
 
             for (const auto &[characterId, gadgetSet] : equipChoice) {
-                spy::character::Character &character = charSet.findByUUID(characterId);
+                auto character = charSet.getByUUID(characterId);
 
                 for (const auto &g : gadgetSet) {
                     if (g == spy::gadget::GadgetEnum::WIRETAP_WITH_EARPLUGS) {
-                        character.addGadget(std::make_shared<spy::gadget::WiretapWithEarplugs>());
+                        character->addGadget(std::make_shared<spy::gadget::WiretapWithEarplugs>());
                     } else {
-                        character.addGadget(std::make_shared<spy::gadget::Gadget>(g));
+                        character->addGadget(std::make_shared<spy::gadget::Gadget>(g));
                     }
                 }
             }
 
-            s.characterChoices.at(clientId).clear();
-            s.gadgetChoices.at(clientId).clear();
+            s.chosenCharacters.at(clientId).clear();
+            s.chosenGadgets.at(clientId).clear();
         }
     };
 }
