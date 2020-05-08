@@ -65,12 +65,36 @@ namespace actions {
     struct requestNextOperation {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
-            spdlog::info("Requesting GameOperation for character {}", fsm.activeCharacter);
-            // TODO: find player owning activeCharacter
-            auto activePlayer = Player::one;
-            spdlog::info("Requesting GameOperation from player {}", activePlayer);
-            // TODO properly request Operation:
-            //  root_machine(fsm).router.sendMessage(static_cast<int>(activePlayer), spy::network::messages::RequestGameOperation());
+            spdlog::trace("requestNextOperation for character {}", fsm.activeCharacter);
+            spy::gameplay::State &state = root_machine(fsm).gameState;
+
+            // Find character object by UUID to determine faction
+            auto activeChar = std::find_if(state.getCharacters().begin(),
+                                           state.getCharacters().end(),
+                                           [&fsm](const spy::character::Character &c) {
+                                               return c.getCharacterId() == fsm.activeCharacter;
+                                           });
+
+            Player activePlayer;
+            switch (activeChar->getFaction()) {
+                case spy::character::FactionEnum::PLAYER1:
+                    activePlayer = Player::one;
+                    break;
+                case spy::character::FactionEnum::PLAYER2:
+                    activePlayer = Player::two;
+                    break;
+                default:
+                    spdlog::critical("activeCharacter ({}) does not have valid faction", fsm.activeCharacter);
+                    std::exit(1);
+            }
+
+            spy::network::messages::RequestGameOperation request{
+                    root_machine(fsm).playerIds.find(activePlayer).second,
+                    fsm.activeCharacter
+            };
+            MessageRouter &router = root_machine(fsm).router;
+            spdlog::info("Requesting Operation for character {} from player ", activeChar->getName(), activePlayer);
+            router.sendMessage(request);
         }
     };
 }
