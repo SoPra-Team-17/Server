@@ -72,7 +72,7 @@ namespace actions {
     struct createCharacterSet {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&, FSM &fsm, SourceState &s, TargetState &t) {
-            spdlog::info("create character Set");
+            spdlog::info("adding chosen characters to the character set");
 
             const std::map<Player, spy::util::UUID> &playerIds = root_machine(fsm).playerIds;
             const std::vector<spy::character::CharacterInformation> &charInfos =

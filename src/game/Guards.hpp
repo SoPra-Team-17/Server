@@ -11,15 +11,19 @@
 #include <network/messages/GameOperation.hpp>
 #include <network/messages/RequestGameOperation.hpp>
 #include <util/Player.hpp>
+#include <util/Format.hpp>
+#include <gameLogic/validation/ActionValidator.hpp>
 
 namespace guards {
     struct operationValid {
-        template<typename FSM, typename FSMState, typename Event>
-        bool operator()(FSM const &, FSMState const &, Event const &event) {
-            nlohmann::json operationType = event.getType();
-            spdlog::debug("Checking GameOperation of type " + operationType.dump() + " ... valid");
-            // TODO validate Operation
-            return true;
+        template<typename FSM, typename FSMState>
+        bool operator()(FSM const &fsm, FSMState const &, const spy::network::messages::GameOperation &event) {
+            spdlog::debug("Checking GameOperation of type {}", fmt::json(event.getType()));
+
+            using spy::gameplay::ActionValidator;
+            const spy::gameplay::State &state = root_machine(fsm).gameState;
+
+            return ActionValidator::validate(state, event.getOperation(), root_machine(fsm).matchConfig);
         }
     };
 
@@ -30,7 +34,7 @@ namespace guards {
         template<typename FSM, typename FSMState, typename Event>
         bool operator()(FSM const &fsm, FSMState const &, Event const &) {
             spdlog::debug("Checking guard noCharactersRemaining: {} remaining characters",
-                         fsm.remainingCharacters.size());
+                          fsm.remainingCharacters.size());
             return fsm.remainingCharacters.size() == 0;
         }
     };
@@ -52,7 +56,7 @@ namespace guards {
             }
 
             spdlog::debug("Checking guard noChoiceMissing: {} remaining choices",
-                         missingChoices);
+                          missingChoices);
             return missingChoices == 1;
         }
     };
@@ -75,9 +79,9 @@ namespace guards {
             auto choice = e.getChoice();
 
             bool choiceInvalid = ((std::holds_alternative<spy::util::UUID>(choice)
-                                        && state.characterChoices.at(clientId).size() >= 4)
-                                || (std::holds_alternative<spy::gadget::GadgetEnum>(choice)
-                                        && state.gadgetChoices.at(clientId).size() >= 6));
+                                   && state.characterChoices.at(clientId).size() >= 4)
+                                  || (std::holds_alternative<spy::gadget::GadgetEnum>(choice)
+                                      && state.gadgetChoices.at(clientId).size() >= 6));
 
             if (validMessage && !choiceInvalid) {
                 return true;

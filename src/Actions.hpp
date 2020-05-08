@@ -9,6 +9,7 @@
 #include <util/UUID.hpp>
 #include <network/messages/GameStarted.hpp>
 #include <network/messages/HelloReply.hpp>
+#include <util/Player.hpp>
 
 namespace actions {
 

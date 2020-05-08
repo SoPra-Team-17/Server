@@ -57,17 +57,46 @@ class Server : public afsm::def::state_machine<Server> {
         std::map<std::string, std::string> additionalOptions;
         spy::MatchConfig matchConfig;
         spy::scenario::Scenario scenarioConfig;
+
+        /**
+         * Characters from configuration file + UUIDs
+         */
         std::vector<spy::character::CharacterInformation> characterInformations;
+
         MessageRouter router;
+
+        /**
+         * Current game state, contains characters and faction information after successful equipment phase.
+         */
         spy::gameplay::State gameState;
+
+        /**
+         * Safe combinations by safe index
+         */
         std::map<unsigned int, int> safeCombinations;
+
+        /**
+         * Known safe combinations (not indices) for both players
+         */
         std::map<Player, std::set<int>> knownCombinations;
-        // TODO: combine those
+
+        /**
+         * Client IDs for both players
+         */
         std::map<Player, spy::util::UUID> playerIds;
+
+        /**
+         * Names for both players
+         */
         std::map<Player, std::string> playerNames;
+
         spy::util::UUID sessionId;
         std::random_device rd{};
         std::mt19937 rng{rd()};
+
+        /**
+         * Holds all characters and gadgets currently available to choose from.
+         */
         ChoiceSet choiceSet;
 
     private:

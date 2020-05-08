@@ -14,6 +14,7 @@
 #include <network/messages/RequestEquipmentChoice.hpp>
 #include "Events.hpp"
 #include "Guards.hpp"
+#include "Actions.hpp"
 #include "util/Player.hpp"
 #include "spdlog/fmt/ostr.h"
 #include "OperationHandling.hpp"
@@ -73,6 +74,11 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                 // TODO: add non chosen characters as NPCs
             }
 
+            /**
+             * Last operation + resulting operations (Exfiltration)
+             */
+            std::vector<std::shared_ptr<const spy::gameplay::BaseOperation>> operations;
+
             struct roundInit : state<roundInit> {
                 template<typename FSM, typename Event>
                 void on_enter(Event &&, FSM &fsm) {
@@ -87,7 +93,19 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                     for (const auto &c: fsm.remainingCharacters) {
                         spdlog::info(c);
                     }
-                    // TODO Cocktails verteilen
+                    spy::gameplay::State &state = root_machine(fsm).gameState;
+                    const spy::MatchConfig &matchConfig = root_machine(fsm).matchConfig;
+
+                    using spy::util::RoundUtils;
+
+                    RoundUtils::refillBarTables(state);
+                    RoundUtils::updateFog(state);
+                    RoundUtils::checkGadgetFailure(state, matchConfig);
+                    RoundUtils::resetUpdatedMarker(state);
+                    for (auto &character: state.getCharacters()) {
+                        RoundUtils::determinePoints(character);
+                    }
+
                     root_machine(fsm).process_event(events::roundInitDone{});
                 }
             };
@@ -104,8 +122,8 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
 
                 // @formatter:off
                 using internal_transitions = transition_table <
-                //  Event                                 Action                                  Guard
-                in<spy::network::messages::GameOperation, actions::handleOperationAndRequestNext, and_ < not_ < guards::noCharactersRemaining>, guards::operationValid>>
+                // Event                                  Action                                                                                               Guard
+                in<spy::network::messages::GameOperation, actions::multiple<actions::handleOperation, actions::broadcastState, actions::requestNextOperation>, and_<guards::operationValid, not_<guards::noCharactersRemaining>>>
                 >;
                 // @formatter:on
             };
