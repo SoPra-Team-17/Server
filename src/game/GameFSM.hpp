@@ -101,15 +101,18 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                 template<typename FSM, typename Event>
                 void on_enter(Event &&, FSM &fsm) {
                     spdlog::info("Entering state roundInit");
+                    const auto &characters = root_machine(fsm).gameState.getCharacters();
 
-                    for (const auto &c: root_machine(fsm).gameState.getCharacters()) {
+                    for (const auto &c: characters) {
                         fsm.remainingCharacters.push_back(c.getCharacterId());
                     }
                     std::shuffle(fsm.remainingCharacters.begin(), fsm.remainingCharacters.end(), root_machine(fsm).rng);
 
+                    fsm.activeCharacter = fsm.remainingCharacters.front();
+
                     spdlog::info("Initialized round order:");
-                    for (const auto &c: fsm.remainingCharacters) {
-                        spdlog::info(c);
+                    for (const auto &uuid: fsm.remainingCharacters) {
+                        spdlog::info("{} \t({})", characters.findByUUID(uuid)->getName(), uuid);
                     }
                     spy::gameplay::State &state = root_machine(fsm).gameState;
                     const spy::MatchConfig &matchConfig = root_machine(fsm).matchConfig;
