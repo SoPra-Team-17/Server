@@ -20,7 +20,7 @@ namespace actions {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&e, FSM &fsm, SourceState &s, TargetState &) {
             spdlog::info("Handling equipment choice");
-            auto clientId = e.getclientId();
+            auto clientId = e.getClientId();
 
             spy::character::CharacterSet &charSet = root_machine(fsm).gameState.getCharacters();
 

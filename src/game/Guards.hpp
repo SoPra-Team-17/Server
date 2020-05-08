@@ -66,7 +66,7 @@ namespace guards {
         bool operator()(FSM const &, FSMState const &state, Event const &e) {
             spdlog::debug("Checking guard choiceValid");
 
-            auto clientId = e.getclientId();
+            auto clientId = e.getClientId();
 
             const auto &offered = state.offers.at(clientId);
 
@@ -97,7 +97,7 @@ namespace guards {
         bool operator()(FSM const &, FSMState const &state, Event const &e) {
             spdlog::debug("Checking guard equipmentChoiceValid");
 
-            auto clientId = e.getclientId();
+            auto clientId = e.getClientId();
             bool messageValid = e.validate(spy::network::RoleEnum::PLAYER, state.chosenCharacters.at(clientId), state.chosenGadgets.at(clientId));
 
             if (messageValid) {

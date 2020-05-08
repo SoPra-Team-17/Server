@@ -94,8 +94,8 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         // This new UUID gets inserted into the HelloMessage, so the FSM receives properly formatted HelloMessage
         spdlog::info("Server received Hello message, initializing UUID");
         msg = spy::network::messages::Hello{spy::util::UUID::generate(), msg.getName(), msg.getRole()};
-        spdlog::info("Registering UUID {} at router", msg.getclientId());
-        router.registerUUIDforConnection(msg.getclientId(), con);
+        spdlog::info("Registering UUID {} at router", msg.getClientId());
+        router.registerUUIDforConnection(msg.getClientId(), con);
         spdlog::info("Posting event to FSM now");
         fsm.process_event(msg);
     });

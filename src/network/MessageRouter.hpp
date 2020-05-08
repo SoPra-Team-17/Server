@@ -101,7 +101,7 @@ class MessageRouter {
             nlohmann::json serializedMessage = message;
             spdlog::trace("Sending message: {}", serializedMessage.dump());
 
-            auto &con = connectionFromUUID(message.getclientId());
+            auto &con = connectionFromUUID(message.getClientId());
             con.first->send(serializedMessage.dump());
         }
 
