@@ -41,8 +41,10 @@ namespace actions {
             // TODO: execute potentially resulting exfiltration, add those to fsm.operations
 
             // Choose next character
-            fsm.activeCharacter = fsm.remainingCharacters.front();
-            fsm.remainingCharacters.pop_front();
+            if (!fsm.remainingCharacters.empty()) {
+                fsm.activeCharacter = fsm.remainingCharacters.front();
+                fsm.remainingCharacters.pop_front();
+            }
         }
     };
 
@@ -89,7 +91,7 @@ namespace actions {
             }
 
             spy::network::messages::RequestGameOperation request{
-                    root_machine(fsm).playerIds.find(activePlayer).second,
+                    root_machine(fsm).playerIds.find(activePlayer)->second,
                     fsm.activeCharacter
             };
             MessageRouter &router = root_machine(fsm).router;
