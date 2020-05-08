@@ -33,9 +33,9 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
             using GadgetMap    = std::map<spy::util::UUID, std::vector<spy::gadget::GadgetEnum>>;
 
 
-            CharacterMap chosenCharacters;              // Stores the character choice of the players
-            GadgetMap    chosenGadgets;                 // Stores the gadget choice of the players
-            std::map<spy::util::UUID, bool> hasChosen;  // Stores whether the client has already sent his equip choice
+            CharacterMap chosenCharacters;              ///< Stores the character choice of the players
+            GadgetMap    chosenGadgets;                 ///< Stores the gadget choice of the players
+            std::map<spy::util::UUID, bool> hasChosen;  ///< Stores whether the client has already sent his equip choice
 
             template<typename FSM, typename Event>
             void on_enter(Event &&, FSM &fsm) {

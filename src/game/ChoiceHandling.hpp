@@ -102,12 +102,7 @@ namespace actions {
                 charSet.insert(character);
             }
 
-            gameState = spy::gameplay::State{1,
-                                             gameState.getMap(),
-                                             gameState.getMySafeCombinations(),
-                                             charSet,
-                                             gameState.getCatCoordinates(),
-                                             gameState.getJanitorCoordinates()};
+            gameState.setCharacters(charSet);
 
             // give information about choices to the equip phase
             t.chosenCharacters = s.characterChoices;

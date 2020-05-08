@@ -31,6 +31,7 @@ namespace actions {
                 spdlog::info("Handling equipment choice of player two ({})", clientId);
             }
 
+            // List of all the players characters, only to print all of them (including those without gadget) to log
             auto chosenCharacters = s.chosenCharacters.at(clientId);
 
             for (const auto &[characterId, gadgetSet] : equipChoice) {
@@ -51,6 +52,7 @@ namespace actions {
                                                                             characterId), chosenCharacters.end());
             }
 
+            // Print message to log for characters not explicitly mentioned in equipment choice
             for (const auto &characterId : chosenCharacters) {
                 auto character = charSet.findByUUID(characterId);
                 spdlog::info("Character: {} ({})", character->getName(), characterId);
