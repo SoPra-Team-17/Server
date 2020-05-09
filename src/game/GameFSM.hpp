@@ -81,6 +81,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                 spy::MatchConfig &config = root_machine(fsm).matchConfig;
                 std::mt19937 &rng = root_machine(fsm).rng;
 
+                // Initialize roulette tables with random amount of chips
                 gameState.getMap().forAllFields([&rng, &config](spy::scenario::Field &field) {
                    if (field.getFieldState() == spy::scenario::FieldStateEnum::ROULETTE_TABLE) {
                        std::uniform_int_distribution<unsigned int> randChips(config.getMinChipsRoulette(),
