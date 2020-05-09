@@ -47,3 +47,26 @@ The standard defines several flags for the server startup:
 * `--x <key> <value>` can be used to give the server additional key-value pairs
 * `-v <int>` / `--verbosity <int>` configuration of the logging verbosity
 * `-p <int>` / `--port <int>` configuration of the port to be used
+
+## Docker
+### Building the docker container
+```bash
+docker build -t server017 .
+```
+
+### Running the container
+```bash
+docker run --rm -p 7007:7007 server017
+```
+
+### Customizing configuration files with docker
+Configuration can be changed by bindmounting a directory with configuration files to `/config`:
+```bash
+docker run -v ~/customConfig:/config -p 7007:7007 server017
+```
+With the local configuration files
+```
+~/customConfig/characters.json
+~/customConfig/matchconfig.json
+~/customConfig/scenario.json
+```
