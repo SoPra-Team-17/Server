@@ -35,6 +35,9 @@
     "observationSuccessChance": 0.12,
 
     "chipsToIpFactor": 12,
+    "secretToIpFactor": 9,
+    "minChipsRoulette": 0,
+    "maxChipsRoulette": 6,
     "roundLimit": 15,
     "turnPhaseLimit": 6,
     "catIp": 8,

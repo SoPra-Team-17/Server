@@ -9,37 +9,29 @@
 
 
 #include <spdlog/spdlog.h>
-#include <util/Player.hpp>
 #include <network/messages/GameStatus.hpp>
-#include <gameLogic/execution/ActionExecutor.hpp>
 #include <util/RoundUtils.hpp>
-#include <util/Format.hpp>
+#include <gameLogic/generation/ActionGenerator.hpp>
+#include "util/Format.hpp"
+#include "util/Player.hpp"
+#include "util/Operation.hpp"
 
 namespace actions {
     /**
-     * @brief Action to apply a valid operation to the state
+     * @brief Action to apply a valid operation to the state and set next character as active
      */
     struct handleOperation {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&e, FSM &fsm, SourceState &, TargetState &) {
-            using spy::gameplay::ActionExecutor;
             using spy::network::messages::GameOperation;
-            using spy::util::RoundUtils;
             spdlog::info("Handling some operation");
 
             const GameOperation &operationMessage = std::forward<GameOperation>(e);
-            spy::gameplay::State &state = root_machine(fsm).gameState;
-            auto operation = operationMessage.getOperation();
 
-
-            spdlog::info("Executing {} action", fmt::json(operation->getType()));
-            bool operationSuccessful = ActionExecutor::execute(state, operation, root_machine(fsm).matchConfig);
-
-            auto operationWithResult = operation->clone();
-            operationWithResult->setSuccessful(operationSuccessful);
-            fsm.operations.push_back(operationWithResult);
-
-            // TODO: execute potentially resulting exfiltration, add those to fsm.operations
+            executeOperation(operationMessage.getOperation(),
+                             root_machine(fsm).gameState,
+                             root_machine(fsm).matchConfig,
+                             fsm.operations);
 
             // Choose next character
             if (!fsm.remainingCharacters.empty()) {
@@ -63,7 +55,34 @@ namespace actions {
     };
 
     /**
-     * Request operation from next character in list
+     * @brief Generates and executes a NPC action and sets next character as active
+     */
+    struct npcMove {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
+            spdlog::info("Generating NPC action");
+
+            using spy::gameplay::ActionGenerator;
+            auto npcAction = ActionGenerator::generateNPCAction(root_machine(fsm).gameState, fsm.activeCharacter);
+
+            if (npcAction != nullptr) {
+                executeOperation(npcAction,
+                                 root_machine(fsm).gameState,
+                                 root_machine(fsm).matchConfig,
+                                 fsm.operations);
+            } else {
+                spdlog::error("Generating NPC action failed.");
+            }
+
+            if (!fsm.remainingCharacters.empty()) {
+                fsm.activeCharacter = fsm.remainingCharacters.front();
+                fsm.remainingCharacters.pop_front();
+            }
+        }
+    };
+
+    /**
+     * Request operation from next character in list, emits events::triggerNPCmove if next is NPC
      */
     struct requestNextOperation {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
@@ -87,8 +106,10 @@ namespace actions {
                     activePlayer = Player::two;
                     break;
                 default:
-                    spdlog::warn("activeCharacter ({}) does not have valid faction, NPCs not yet implemented",
-                                 fsm.activeCharacter);
+                    // Do not request when next is NPCmove
+                    spdlog::debug("requestNextOperation determined that next character is not a PC"
+                                  "-> Not requesting, triggering NPC move instead.");
+                    root_machine(fsm).process_event(events::triggerNPCmove{});
                     return;
             }
 
@@ -97,7 +118,7 @@ namespace actions {
                     fsm.activeCharacter
             };
             MessageRouter &router = root_machine(fsm).router;
-            spdlog::info("Requesting Operation for character {} from player ", activeChar->getName(), activePlayer);
+            spdlog::info("Requesting Operation for character {} from player {}", activeChar->getName(), activePlayer);
             router.sendMessage(request);
         }
     };
