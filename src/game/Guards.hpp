@@ -28,14 +28,14 @@ namespace guards {
     };
 
     /**
-     * @brief Guard passes if there are no more characters in the remainingCharacters list of a round
+     * @brief Guard passes if there are characters in the remainingCharacters list of a round
      */
-    struct noCharactersRemaining {
+    struct charactersRemaining {
         template<typename FSM, typename FSMState, typename Event>
         bool operator()(FSM const &fsm, FSMState const &, Event const &) {
             spdlog::debug("Checking guard noCharactersRemaining: {} remaining characters",
                           fsm.remainingCharacters.size());
-            return fsm.remainingCharacters.size() == 0;
+            return !fsm.remainingCharacters.empty();
         }
     };
 

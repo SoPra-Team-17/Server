@@ -47,3 +47,34 @@ The standard defines several flags for the server startup:
 * `--x <key> <value>` can be used to give the server additional key-value pairs
 * `-v <int>` / `--verbosity <int>` configuration of the logging verbosity
 * `-p <int>` / `--port <int>` configuration of the port to be used
+
+## Docker
+### Building the docker container
+```bash
+docker build -t soprateam17/server .
+```
+
+### Running the container
+```bash
+docker run --rm -p 7007:7007 soprateam17/server
+```
+To get the latest `develop` branch you can also pull the container from [docker hub](https://hub.docker.com/repository/docker/soprateam17/server):
+```bash
+docker pull soprateam17/server
+```
+
+### Customizing configuration files with docker
+Configuration can be changed by bindmounting a directory with configuration files to `/config`:
+```bash
+docker run -v ~/customConfig:/config -p 7007:7007 soprateam17/server
+```
+With the local configuration files
+```
+~/customConfig/characters.json
+~/customConfig/matchconfig.json
+~/customConfig/scenario.json
+```
+The local directory path has to begin with `/` or `~`, so if you have a config directory in the current path use
+```bash
+sudo docker run --rm -v "$(pwd)"/myConfig:/config -p 7007:7007 soprateam17/server
+```

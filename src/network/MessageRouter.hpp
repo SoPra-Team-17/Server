@@ -93,6 +93,7 @@ class MessageRouter {
         void sendMessage(spy::util::UUID client, MessageType message) {
             message.setClientId(client);
             nlohmann::json serializedMessage = message;
+            spdlog::trace("Sending message: {}", serializedMessage.dump());
             auto &con = connectionFromUUID(client);
             con.first->send(serializedMessage.dump());
         }
