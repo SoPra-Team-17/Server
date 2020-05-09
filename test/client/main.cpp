@@ -14,6 +14,8 @@
 #include <spdlog/spdlog.h>
 #include <network/messages/RequestEquipmentChoice.hpp>
 #include <network/messages/EquipmentChoice.hpp>
+#include <network/messages/RequestGamePause.hpp>
+#include <network/messages/GameLeave.hpp>
 
 using namespace std::string_literals;
 
@@ -21,17 +23,17 @@ struct TestClient {
     spy::util::UUID id;
     websocket::network::WebSocketClient wsClient{"localhost", "/", 7007, "no-time-to-spy"};
     std::string name;
+    spy::network::RoleEnum role;
     unsigned int choiceCounter = 0;
     unsigned int numberOfCharacters = 0;
     std::random_device rd{};
     std::mt19937 rng{rd()};
 
-    explicit TestClient(const std::string &clientName) {
+    explicit TestClient(const std::string &clientName, spy::network::RoleEnum clientRole = spy::network::RoleEnum::PLAYER) :
+        name(clientName), role(clientRole) {
         using spy::network::messages::MessageTypeEnum;
 
         spdlog::set_level(spdlog::level::level_enum::trace);
-
-        name = clientName;
 
         // decide randomly how many characters are chosen [2 - 4]
         std::uniform_int_distribution<unsigned int> randNum(2, 4);
@@ -101,6 +103,11 @@ struct TestClient {
                     break;
                 }
 
+                case MessageTypeEnum::REQUEST_GAME_OPERATION:
+                    // hijacked to test message filtering
+                    sendGameLeave();
+                    break;
+
                 default:
                     break;
             }
@@ -124,15 +131,27 @@ struct TestClient {
     }
 
     void sendHello() {
-        auto hello = spy::network::messages::Hello{id, name, spy::network::RoleEnum::PLAYER};
+        auto hello = spy::network::messages::Hello{id, name, role};
         nlohmann::json hj = hello;
         wsClient.send(hj.dump());
+    }
+
+    void sendRequestPause() {
+        auto msg = spy::network::messages::RequestGamePause{id, true};
+        nlohmann::json mj = msg;
+        wsClient.send(mj.dump());
+    }
+
+    void sendGameLeave() {
+        auto msg = spy::network::messages::GameLeave{id};
+        nlohmann::json mj = msg;
+        wsClient.send(mj.dump());
     }
 };
 
 int main() {
-    auto c1 = TestClient("TestClient1");
-    auto c2 = TestClient("TestClient2");
+    auto c1 = TestClient("TestClient1", spy::network::RoleEnum::AI);
+    auto c2 = TestClient("TestClient2", spy::network::RoleEnum::AI);
 
     c1.sendHello();
     std::this_thread::sleep_for(std::chrono::seconds{1});
