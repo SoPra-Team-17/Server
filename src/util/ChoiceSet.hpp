@@ -84,20 +84,56 @@ class ChoiceSet {
         Offer requestSelection();
 
         /**
+         * Chooses three character uuids which are removed from the set and returned.
+         * @return Pair of three character uuids.
+         */
+        Offer requestCharacterSelection();
+
+        /**
+         * Chooses three gadget types which are removed from the set and returned.
+         * @return Pair of three gadget types.
+         */
+        Offer requestGadgetSelection();
+
+        /**
          * Checks if the set contains enough items to start one offer.
          * @return True if has more than three gadgets and three characters, else false.
          */
         [[nodiscard]] bool isOfferPossible() const;
+
+        /**
+        * Checks if the set contains enough items to start one offer.
+        * @return True if has more than three gadgets and three characters, else false.
+        */
+        [[nodiscard]] bool isCharacterOfferPossible() const;
+
+        /**
+        * Checks if the set contains enough items to start one offer.
+        * @return True if has more than three gadgets and three characters, else false.
+        */
+        [[nodiscard]] bool isGadgetOfferPossible() const;
+
+        /**
+         * Getter for the number of character uuids within the set.
+         * @return Number of character uuids currently in the set.
+         */
+        [[nodiscard]] unsigned int getNumberOfCharacters() const;
+
+        /**
+         * Getter for the number of gadget types within the set.
+         * @return Number of gadget types currently in the set.
+         */
+        [[nodiscard]] unsigned int getNumberOfGadgets() const;
 
 
     private:
         std::list<spy::util::UUID> characters;
         std::list<spy::gadget::GadgetEnum> gadgets;
 
-        std::mutex selectionMutex;
-
         std::random_device rd;
         std::mt19937 rng;
+
+        mutable std::mutex selectionMutex;              ///< Mutable to be able to lock even in a const method
 };
 
 

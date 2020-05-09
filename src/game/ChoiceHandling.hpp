@@ -15,10 +15,17 @@ namespace actions {
     struct handleChoice {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &e, FSM &fsm, SourceState &s, TargetState &) {
-            spdlog::info("Handling client item choice");
             auto clientId = e.getClientId();
             auto choice = e.getChoice();
             auto &offer = s.offers.at(clientId);
+
+            s.choiceCount.at(clientId) += 1;
+
+            if (clientId == root_machine(fsm).playerIds.at(Player::one)) {
+                spdlog::info("Handling item choice from player 1 [{}/8]", s.choiceCount.at(clientId));
+            } else {
+                spdlog::info("Handling item choice from player 2 [{}/8]", s.choiceCount.at(clientId));
+            }
 
             if (std::holds_alternative<spy::util::UUID>(choice)) {
                 // client has chosen a character --> add it to chosen list and remove it from selection
@@ -47,20 +54,34 @@ namespace actions {
             spdlog::debug("Check which client needs a choice request next");
 
             for (auto& [playerId, offer] : s.offers) {
-                if (!root_machine(fsm).choiceSet.isOfferPossible()) {
-                    return;
-                }
-
-                bool hasNoOffer = (offer.characters.size() == 0);
-                bool choicesMissing = (s.characterChoices.at(playerId).size() + s.gadgetChoices.at(playerId).size() < 8);
+                bool hasNoOffer = (offer.characters.empty() && offer.gadgets.empty());
+                bool choicesMissing = ((s.characterChoices.at(playerId).size() + s.gadgetChoices.at(playerId).size()) < 8);
 
                 if (hasNoOffer && choicesMissing) {
                     // client still needs selections and selection is currently possible
-                    offer = root_machine(fsm).choiceSet.requestSelection();
+                    if (s.characterChoices.at(playerId).size() >= 4 && root_machine(fsm).choiceSet.isGadgetOfferPossible()) {
+                        // client has chosen maximum number of characters, thus offer only gadgets
+                        offer = root_machine(fsm).choiceSet.requestGadgetSelection();
+                    } else if (s.characterChoices.at(playerId).size() >= 6 && root_machine(fsm).choiceSet.isCharacterOfferPossible()) {
+                        // client has chosen maximum number of gadgets, thus offer only characters
+                        offer = root_machine(fsm).choiceSet.requestCharacterSelection();
+                    } else if (root_machine(fsm).choiceSet.isOfferPossible()) {
+                        // client can choose both
+                        offer = root_machine(fsm).choiceSet.requestSelection();
+                    } else {
+                        // no offer is possible
+                        continue;
+                    }
+
                     spy::network::messages::RequestItemChoice message(playerId, offer.characters, offer.gadgets);
-                    spdlog::info("Sending requestItemChoice to client {}", playerId);
                     MessageRouter &router = root_machine(fsm).router;
                     router.sendMessage(message);
+
+                    if (playerId == root_machine(fsm).playerIds.at(Player::one)) {
+                        spdlog::info("Sending new requestItemChoice to player 1 ({})", playerId);
+                    } else {
+                        spdlog::info("Sending new requestItemChoice to player 2 ({})", playerId);
+                    }
                 }
             }
         }

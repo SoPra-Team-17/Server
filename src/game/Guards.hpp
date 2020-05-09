@@ -47,17 +47,13 @@ namespace guards {
         template<typename FSM, typename FSMState, typename Event>
         bool operator()(FSM const &, FSMState const &state, Event const &) {
             unsigned int missingChoices = 16;
-            for (const auto &[_, characterChoice] : state.characterChoices) {
-                missingChoices -= characterChoice.size();
-            }
-
-            for (const auto &[_, gadgetChoice] : state.gadgetChoices) {
-                missingChoices -= gadgetChoice.size();
+            for (const auto &[_, choiceCount] : state.choiceCount) {
+                missingChoices -= choiceCount;
             }
 
             spdlog::debug("Checking guard lastChoice: {} remaining choices",
                           missingChoices);
-            return missingChoices == 1;
+            return (missingChoices == 1);
         }
     };
 

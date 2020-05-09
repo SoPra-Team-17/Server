@@ -40,9 +40,11 @@ struct ChoicePhase : afsm::def::state_def<ChoicePhase> {
     using OfferMap = std::map<spy::util::UUID, Offer>;
     using CharacterMap = std::map<spy::util::UUID, std::vector<spy::util::UUID>>;
     using GadgetMap    = std::map<spy::util::UUID, std::vector<spy::gadget::GadgetEnum>>;
+    using ChoiceCountMap = std::map<spy::util::UUID, unsigned int>;
 
     CharacterMap characterChoices;
     GadgetMap gadgetChoices;
+    ChoiceCountMap choiceCount;
 
     OfferMap offers;
 
@@ -62,14 +64,17 @@ struct ChoicePhase : afsm::def::state_def<ChoicePhase> {
         auto idP1 = playerIds.at(Player::one);
         auto idP2 = playerIds.at(Player::two);
 
-        offers[idP1] = choiceSet.requestSelection();
-        offers[idP2] = choiceSet.requestSelection();
-
         characterChoices[idP1] = std::vector<spy::util::UUID>();
         characterChoices[idP2] = std::vector<spy::util::UUID>();
 
         gadgetChoices[idP1] = std::vector<spy::gadget::GadgetEnum>();
         gadgetChoices[idP2] = std::vector<spy::gadget::GadgetEnum>();
+
+        choiceCount[idP1] = 0;
+        choiceCount[idP2] = 0;
+
+        offers[idP1] = choiceSet.requestSelection();
+        offers[idP2] = choiceSet.requestSelection();
 
         auto offerP1 = offers.at(idP1);
         auto offerP2 = offers.at(idP2);
