@@ -6,6 +6,7 @@
  */
 
 #include "ChoiceSet.hpp"
+#include <util/GameLogicUtils.hpp>
 
 ChoiceSet::ChoiceSet(const std::vector<spy::character::CharacterInformation> &charInfos,
                      std::list<spy::gadget::GadgetEnum> gadgetTypes) : gadgets(std::move(gadgetTypes)), rng(rd()) {
@@ -59,28 +60,20 @@ Offer ChoiceSet::requestSelection() {
         throw std::invalid_argument("Not enough selections available!");
     }
 
-    offer.characters.resize(3);
-    offer.gadgets.resize(3);
+    offer.characters.reserve(3);
+    offer.gadgets.reserve(3);
 
     for (auto i = 0; i < 3; i++) {
-        std::uniform_int_distribution<unsigned int> randPos(0, characters.size() - 1);
-        auto index = randPos(rng);
+        auto it = spy::util::GameLogicUtils::getRandomItemFromContainer(characters);
 
-        auto it = characters.begin();
-        std::advance(it, index);
-
-        offer.characters.at(i) = *it;
+        offer.characters.push_back(*it);
         characters.erase(it);
     }
 
     for (auto i = 0; i < 3; i++) {
-        std::uniform_int_distribution<unsigned int> randPos(0, gadgets.size() - 1);
-        auto index = randPos(rng);
+        auto it = spy::util::GameLogicUtils::getRandomItemFromContainer(gadgets);
 
-        auto it = gadgets.begin();
-        std::advance(it, index);
-
-        offer.gadgets.at(i) = *it;
+        offer.gadgets.push_back(*it);
         gadgets.erase(it);
     }
 
@@ -93,19 +86,15 @@ Offer ChoiceSet::requestCharacterSelection() {
     Offer offer;
 
     if (characters.size() < 3) {
-        throw std::invalid_argument("Not enough selections available!");
+        throw std::invalid_argument("Not enough characters available!");
     }
 
-    offer.characters.resize(3);
+    offer.characters.reserve(3);
 
     for (auto i = 0; i < 3; i++) {
-        std::uniform_int_distribution<unsigned int> randPos(0, characters.size() - 1);
-        auto index = randPos(rng);
+        auto it = spy::util::GameLogicUtils::getRandomItemFromContainer(characters);
 
-        auto it = characters.begin();
-        std::advance(it, index);
-
-        offer.characters.at(i) = *it;
+        offer.characters.push_back(*it);
         characters.erase(it);
     }
 
@@ -118,19 +107,15 @@ Offer ChoiceSet::requestGadgetSelection() {
     Offer offer;
 
     if (gadgets.size() < 3) {
-        throw std::invalid_argument("Not enough selections available!");
+        throw std::invalid_argument("Not enough gadgets available!");
     }
 
-    offer.gadgets.resize(3);
+    offer.gadgets.reserve(3);
 
     for (auto i = 0; i < 3; i++) {
-        std::uniform_int_distribution<unsigned int> randPos(0, gadgets.size() - 1);
-        auto index = randPos(rng);
+        auto it = spy::util::GameLogicUtils::getRandomItemFromContainer(gadgets);
 
-        auto it = gadgets.begin();
-        std::advance(it, index);
-
-        offer.gadgets.at(i) = *it;
+        offer.gadgets.push_back(*it);
         gadgets.erase(it);
     }
 
