@@ -79,7 +79,7 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
     }
 
     if (characterInformations.size() < 10) {
-        spdlog::critical("No enough character descriptions given, at least 10 are needed to choice phase!");
+        spdlog::critical("No enough character descriptions given, at least 10 are needed for choice phase!");
         std::exit(1);
     }
 
