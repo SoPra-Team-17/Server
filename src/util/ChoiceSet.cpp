@@ -84,10 +84,80 @@ Offer ChoiceSet::requestSelection() {
         gadgets.erase(it);
     }
 
+    return offer;
+}
+
+Offer ChoiceSet::requestCharacterSelection() {
+    std::lock_guard<std::mutex> guard(selectionMutex);
+
+    Offer offer;
+
+    if (characters.size() < 3) {
+        throw std::invalid_argument("Not enough selections available!");
+    }
+
+    offer.characters.resize(3);
+
+    for (auto i = 0; i < 3; i++) {
+        std::uniform_int_distribution<unsigned int> randPos(0, characters.size() - 1);
+        auto index = randPos(rng);
+
+        auto it = characters.begin();
+        std::advance(it, index);
+
+        offer.characters.at(i) = *it;
+        characters.erase(it);
+    }
+
+    return offer;
+}
+
+Offer ChoiceSet::requestGadgetSelection() {
+    std::lock_guard<std::mutex> guard(selectionMutex);
+
+    Offer offer;
+
+    if (gadgets.size() < 3) {
+        throw std::invalid_argument("Not enough selections available!");
+    }
+
+    offer.gadgets.resize(3);
+
+    for (auto i = 0; i < 3; i++) {
+        std::uniform_int_distribution<unsigned int> randPos(0, gadgets.size() - 1);
+        auto index = randPos(rng);
+
+        auto it = gadgets.begin();
+        std::advance(it, index);
+
+        offer.gadgets.at(i) = *it;
+        gadgets.erase(it);
+    }
 
     return offer;
 }
 
 bool ChoiceSet::isOfferPossible() const {
-    return (characters.size() > 3 && gadgets.size() > 3);
+    std::lock_guard<std::mutex> guard(selectionMutex);
+    return (characters.size() >= 3 && gadgets.size() >= 3);
 }
+
+bool ChoiceSet::isCharacterOfferPossible() const {
+    return (characters.size() >= 3);
+}
+
+bool ChoiceSet::isGadgetOfferPossible() const {
+    return (gadgets.size() >= 3);
+}
+
+unsigned int ChoiceSet::getNumberOfCharacters() const {
+    std::lock_guard<std::mutex> guard(selectionMutex);
+    return characters.size();
+}
+
+unsigned int ChoiceSet::getNumberOfGadgets() const {
+    std::lock_guard<std::mutex> guard(selectionMutex);
+    return gadgets.size();
+}
+
+
