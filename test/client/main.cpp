@@ -6,6 +6,7 @@
 #include <iostream>
 #include <network/messages/Hello.hpp>
 #include <variant>
+#include <random>
 #include <network/messages/ItemChoice.hpp>
 #include <network/messages/RequestItemChoice.hpp>
 #include <network/messages/HelloReply.hpp>
@@ -21,13 +22,25 @@ struct TestClient {
     websocket::network::WebSocketClient wsClient{"localhost", "/", 7007, "no-time-to-spy"};
     std::string name;
     unsigned int choiceCounter = 0;
+    unsigned int numberOfCharacters = 0;
+    std::random_device rd{};
+    std::mt19937 rng{rd()};
 
     explicit TestClient(const std::string &clientName) {
         using spy::network::messages::MessageTypeEnum;
 
+        spdlog::set_level(spdlog::level::level_enum::trace);
+
         name = clientName;
+
+        // decide randomly how many characters are chosen [2 - 4]
+        std::uniform_int_distribution<unsigned int> randNum(2, 4);
+        numberOfCharacters = randNum(rng);
+
+        spdlog::trace("{} will choose {} characters and {} gadgets", name, numberOfCharacters, 8 - numberOfCharacters);
+
         wsClient.receiveListener.subscribe([this](const std::string &message) {
-            std::cout << name << ": " << message << std::endl;
+            spdlog::info("{}: {}", name, message);
 
             auto j = nlohmann::json::parse(message);
             auto container = j.get<spy::network::MessageContainer>();
@@ -37,16 +50,17 @@ struct TestClient {
                     std::variant<spy::util::UUID, spy::gadget::GadgetEnum> choice;
                     auto offer = j.get<spy::network::messages::RequestItemChoice>();
 
-                    spdlog::info("{} received Request item choice", name);
+                    spdlog::info("{} received Request item choice {}", name, choiceCounter);
+                    std::uniform_int_distribution<unsigned int> randNum(0, 2);
+                    auto chosenIdx = randNum(rng);
 
-                    if (choiceCounter < 3) {
-                        // select character in the first 3 offers
-                        choice = offer.getOfferedCharacterIds()[0];
+                    if (choiceCounter < numberOfCharacters) {
+                        choice = offer.getOfferedCharacterIds()[chosenIdx];
                     } else if (choiceCounter < 8) {
-                        // select character in the second 3 offers
-                        choice = offer.getOfferedGadgets()[0];
+                        choice = offer.getOfferedGadgets()[chosenIdx];
                     } else {
-                        std::cout << "### ERROR, server offering to many rounds! ###" << std::endl;
+                        spdlog::critical("### ERROR, server offering to many rounds! ###");
+                        std::exit(-1);
                     }
 
                     sendChoice(choice);
@@ -59,18 +73,20 @@ struct TestClient {
 
                     spdlog::info("{} received Request equipment choice", name);
 
-                    const auto &gadgets = m.getChosenGadgets();
-                    const auto &chars   = m.getChosenCharacterIds();
-
                     std::set<spy::gadget::GadgetEnum> gadgetSet;
                     std::map<spy::util::UUID, std::set<spy::gadget::GadgetEnum>> choice;
 
-                    for (const auto &g : gadgets) {
-                        gadgetSet.insert(g);
+                    // Add all characters with empty gadget set to the map
+                    for (const auto &c : m.getChosenCharacterIds()) {
+                        choice[c] = std::set<spy::gadget::GadgetEnum>();
                     }
 
-                    // give all gadgets to the first character
-                    choice[chars.at(0)] = gadgetSet;
+                    // decide randomly to which character the gadget is added
+                    std::uniform_int_distribution<unsigned int> randNum(0, numberOfCharacters-1);
+                    for (const auto g : m.getChosenGadgets()) {
+                        auto charNum = randNum(rng);
+                        choice.at(m.getChosenCharacterIds().at(charNum)).insert(g);
+                    }
 
                     sendEquipmentChoice(choice);
                     choiceCounter++;
@@ -81,7 +97,7 @@ struct TestClient {
                     auto m = j.get<spy::network::messages::HelloReply>();
                     id = m.getClientId();
 
-                    std::cout << name << ": was assigned id: " << id << std::endl;
+                    spdlog::info("{} was assigned id: {}", name, id.to_string());
                     break;
                 }
 
@@ -96,7 +112,7 @@ struct TestClient {
         nlohmann::json mj = message;
         wsClient.send(mj.dump());
 
-        spdlog::info("{} sent item choice", name);
+        spdlog::info("{} sent item choice\n", name);
     }
 
     void sendEquipmentChoice(std::map<spy::util::UUID, std::set<spy::gadget::GadgetEnum>> choice) {
@@ -104,7 +120,7 @@ struct TestClient {
         nlohmann::json mj = message;
         wsClient.send(mj.dump());
 
-        spdlog::info("{} sent item choice", name);
+        spdlog::info("{} sent equipment choice\n", name);
     }
 
     void sendHello() {
@@ -119,7 +135,7 @@ int main() {
     auto c2 = TestClient("TestClient2");
 
     c1.sendHello();
-    std::this_thread::sleep_for(std::chrono::seconds{5});
+    std::this_thread::sleep_for(std::chrono::seconds{1});
     c2.sendHello();
 
     std::cout << "done" << std::endl;
