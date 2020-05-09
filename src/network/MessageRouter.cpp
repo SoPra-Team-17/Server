@@ -72,7 +72,7 @@ void MessageRouter::receiveListener(const MessageRouter::connectionPtr &connecti
             gameOperationListener(messageJson.get<spy::network::messages::GameOperation>());
             return;
         case spy::network::messages::MessageTypeEnum::GAME_LEAVE:
-            spdlog::info("MessageRouter GameLeave Hello message.");
+            spdlog::info("MessageRouter received GameLeave message.");
             gameLeaveListener(messageJson.get<spy::network::messages::GameLeave>());
             return;
         case spy::network::messages::MessageTypeEnum::REQUEST_GAME_PAUSE:
