@@ -16,4 +16,5 @@ jobs:
         destination: "gitlab.informatik.uni-ulm.de/sopra/ws19-no-time-to-spy/teams/team0017.git"
         pat: oauth2:${{ secrets.GITLAB_PAT_OTTOJO }}
         branch: Server
+        srcbranch: develop
 
