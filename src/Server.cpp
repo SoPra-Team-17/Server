@@ -15,6 +15,7 @@
 #include <utility>
 #include <datatypes/character/CharacterInformation.hpp>
 #include <network/messages/HelloReply.hpp>
+#include <network/MessageTypeTraits.hpp>
 
 const std::map<unsigned int, spdlog::level::level_enum> Server::verbosityMap = {
         {0, spdlog::level::level_enum::trace},
@@ -97,16 +98,34 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         spdlog::info("Registering UUID {} at router", msg.getClientId());
         router.registerUUIDforConnection(msg.getClientId(), con);
         spdlog::info("Posting event to FSM now");
+        clientRoles[msg.getClientId()] = msg.getRole();
         fsm.process_event(msg);
     });
 
-    auto forwardMessage = [&fsm](auto msg) { fsm.process_event(msg); };
+    router.addGameLeaveListener([&fsm, this](spy::network::messages::GameLeave msg) {
+        clientRoles.erase(msg.getClientId());
+        fsm.process_event(msg);
+    });
+
+    auto forwardMessage = [&fsm, this](auto msg) {
+        auto clientRole = clientRoles.at(msg.getClientId());
+
+        if (clientRole == spy::network::RoleEnum::PLAYER
+            && receivableFromPlayer<decltype(msg)>::value) {
+            fsm.process_event(msg);
+        } else if (clientRole == spy::network::RoleEnum::AI
+                   && receivableFromAI<decltype(msg)>::value) {
+            fsm.process_event(msg);
+        } else if (clientRole == spy::network::RoleEnum::SPECTATOR
+                   && receivableFromSpectator<decltype(msg)>::value) {
+            fsm.process_event(msg);
+        }
+    };
 
     //router.addReconnectListener(forwardMessage);
     router.addItemChoiceListener(forwardMessage);
     router.addEquipmentChoiceListener(forwardMessage);
     router.addGameOperationListener(forwardMessage);
-    router.addGameLeaveListener(forwardMessage);
     //router.addPauseRequestListener(forwardMessage);
     //router.addMetaInformationRequestListener(forwardMessage);
     //router.addReplayRequestListener(forwardMessage);
