@@ -10,8 +10,7 @@
 namespace events {
     struct triggerNPCmove {
     };
-    struct gameFinished {
-    };
+
     struct roundInitDone {
     };
 }

@@ -164,9 +164,6 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
             // @formatter:on
         };
 
-        struct gameOver : state<gameOver> {
-        };
-
         using initial_state = decltype(choicePhase);
 
         template<typename FSM, typename Event>
@@ -178,8 +175,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
         using transitions = transition_table <
         // Start                  Event                                    Next        Action                                                                 Guard
         tr<decltype(choicePhase), spy::network::messages::ItemChoice,      equipPhase, actions::multiple<actions::handleChoice, actions::createCharacterSet>, and_<guards::lastChoice, guards::choiceValid>>,
-        tr<equipPhase,            spy::network::messages::EquipmentChoice, gamePhase,  actions::handleEquipmentChoice,                                        and_<guards::lastEquipmentChoice, guards::equipmentChoiceValid>>,
-        tr<gamePhase,             events::gameFinished,                    gameOver>
+        tr<equipPhase,            spy::network::messages::EquipmentChoice, gamePhase,  actions::handleEquipmentChoice,                                        and_<guards::lastEquipmentChoice, guards::equipmentChoiceValid>>
         >;
         // @formatter:on
 };
