@@ -119,6 +119,10 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         } else if (clientRole == spy::network::RoleEnum::SPECTATOR
                    && receivableFromSpectator<decltype(msg)>::value) {
             fsm.process_event(msg);
+        } else {
+            // message dropped
+            spdlog::warn("Client {} sent an {} message that was dropped due to role filtering",
+                    msg.getClientId(), fmt::json(msg.getType()));
         }
     };
 

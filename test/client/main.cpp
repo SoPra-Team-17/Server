@@ -103,11 +103,6 @@ struct TestClient {
                     break;
                 }
 
-                case MessageTypeEnum::REQUEST_GAME_OPERATION:
-                    // hijacked to test message filtering
-                    sendGameLeave();
-                    break;
-
                 default:
                     break;
             }
@@ -150,7 +145,7 @@ struct TestClient {
 };
 
 int main() {
-    auto c1 = TestClient("TestClient1", spy::network::RoleEnum::AI);
+    auto c1 = TestClient("TestClient1");
     auto c2 = TestClient("TestClient2", spy::network::RoleEnum::AI);
 
     c1.sendHello();
