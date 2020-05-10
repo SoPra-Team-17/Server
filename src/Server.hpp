@@ -86,6 +86,11 @@ class Server : public afsm::def::state_machine<Server> {
         std::map<Player, spy::util::UUID> playerIds;
 
         /**
+         * Roles of the connected clients.
+         */
+        std::map<spy::util::UUID, spy::network::RoleEnum> clientRoles;
+
+        /**
          * Names for both players
          */
         std::map<Player, std::string> playerNames;
