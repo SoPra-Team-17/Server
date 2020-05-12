@@ -68,7 +68,9 @@ namespace actions {
             spdlog::info("Generating NPC action");
 
             using spy::gameplay::ActionGenerator;
-            auto npcAction = ActionGenerator::generateNPCAction(root_machine(fsm).gameState, fsm.activeCharacter);
+            auto npcAction = ActionGenerator::generateNPCAction(root_machine(fsm).gameState,
+                                                                fsm.activeCharacter,
+                                                                root_machine(fsm).matchConfig);
 
             if (npcAction != nullptr) {
                 executeOperation(npcAction,
