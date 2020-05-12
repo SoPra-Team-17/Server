@@ -99,11 +99,11 @@ namespace actions {
     struct closeGame {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
-            spy::gameplay::State &state = root_machine(fsm).gameState;
+            const spy::gameplay::State &state = root_machine(fsm).gameState;
 
-            spy::character::FactionEnum  winningFaction = spy::util::RoundUtils::determineWinningFaction(state);
+            spy::character::FactionEnum winningFaction = spy::util::RoundUtils::determineWinningFaction(state);
             Player winner;
-            switch(winningFaction){
+            switch (winningFaction) {
                 case spy::character::FactionEnum::PLAYER1:
                     winner = Player::one;
                     break;
@@ -115,12 +115,14 @@ namespace actions {
                     break;
             }
 
+            spdlog::info("Winning player is {}", fmt::json(winner));
+
             std::map<Player, spy::util::UUID> &playerIds = root_machine(fsm).playerIds;
 
             using spy::network::messages::StatisticsMessage;
             StatisticsMessage statisticsMessage{
                     {},
-                    {}, // TODO: statistics
+                    {}, // TODO: statistics (optional requirement)
                     playerIds.at(winner),
                     spy::statistics::VictoryEnum::VICTORY_BY_DRINKING, // TODO: determine victory reason
                     false
