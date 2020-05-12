@@ -29,8 +29,9 @@ struct TestClient {
     std::random_device rd{};
     std::mt19937 rng{rd()};
 
-    explicit TestClient(const std::string &clientName, spy::network::RoleEnum clientRole = spy::network::RoleEnum::PLAYER) :
-        name(clientName), role(clientRole) {
+    explicit TestClient(std::string clientName, spy::network::RoleEnum clientRole = spy::network::RoleEnum::PLAYER) :
+            name(std::move(clientName)),
+            role(clientRole) {
         using spy::network::messages::MessageTypeEnum;
 
         spdlog::set_level(spdlog::level::level_enum::trace);
@@ -41,18 +42,22 @@ struct TestClient {
 
         spdlog::trace("{} will choose {} characters and {} gadgets", name, numberOfCharacters, 8 - numberOfCharacters);
 
+        wsClient.closeListener.subscribe([clientName]() {
+            spdlog::critical("{}: Connection Closed", clientName);
+        });
+
         wsClient.receiveListener.subscribe([this](const std::string &message) {
-            spdlog::info("{}: {}", name, message);
+            spdlog::trace("{}: {}", name, message);
 
             auto j = nlohmann::json::parse(message);
             auto container = j.get<spy::network::MessageContainer>();
 
-            switch(container.getType()) {
+            switch (container.getType()) {
                 case MessageTypeEnum::REQUEST_ITEM_CHOICE: {
                     std::variant<spy::util::UUID, spy::gadget::GadgetEnum> choice;
                     auto offer = j.get<spy::network::messages::RequestItemChoice>();
 
-                    spdlog::info("{} received Request item choice {}", name, choiceCounter);
+                    spdlog::info("{} received Request item choice nr. {}", name, choiceCounter);
                     std::uniform_int_distribution<unsigned int> randNum(0, 2);
                     auto chosenIdx = randNum(rng);
 
@@ -62,7 +67,7 @@ struct TestClient {
                         choice = offer.getOfferedGadgets()[chosenIdx];
                     } else {
                         spdlog::critical("### ERROR, server offering to many rounds! ###");
-                        std::exit(-1);
+                        std::exit(1);
                     }
 
                     sendChoice(choice);
@@ -84,7 +89,7 @@ struct TestClient {
                     }
 
                     // decide randomly to which character the gadget is added
-                    std::uniform_int_distribution<unsigned int> randNum(0, numberOfCharacters-1);
+                    std::uniform_int_distribution<unsigned int> randNum(0, numberOfCharacters - 1);
                     for (const auto g : m.getChosenGadgets()) {
                         auto charNum = randNum(rng);
                         choice.at(m.getChosenCharacterIds().at(charNum)).insert(g);
@@ -104,6 +109,7 @@ struct TestClient {
                 }
 
                 default:
+                    spdlog::warn("{} received unhandled message : {}", name, message);
                     break;
             }
         });
