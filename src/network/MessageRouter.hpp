@@ -25,7 +25,7 @@ class MessageRouter {
         using connection = std::pair<connectionPtr, std::optional<spy::util::UUID>>;
         using connectionMap = std::vector<connection>;
 
-        MessageRouter(uint16_t closedConnection, std::string protocol);
+        MessageRouter(uint16_t port, std::string protocol);
 
         template<typename MessageType>
         void broadcastMessage(MessageType message) {
