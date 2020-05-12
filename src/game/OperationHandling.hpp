@@ -53,7 +53,7 @@ namespace actions {
                     fsm.activeCharacter,
                     fsm.operations,
                     state,
-                    root_machine(fsm).isGameOver};
+                    spy::util::RoundUtils::isGameOver(state)};
             router.broadcastMessage(g);
             fsm.operations.clear();
         }
@@ -71,14 +71,12 @@ namespace actions {
             auto npcAction = ActionGenerator::generateNPCAction(root_machine(fsm).gameState, fsm.activeCharacter);
 
             if (npcAction != nullptr) {
-                root_machine(fsm).isGameOver = executeOperation(npcAction,
-                                                                root_machine(fsm).gameState,
-                                                                root_machine(fsm).matchConfig,
-                                                                fsm.operations);
+                executeOperation(npcAction,
+                                 root_machine(fsm).gameState,
+                                 root_machine(fsm).matchConfig,
+                                 fsm.operations);
             } else {
                 spdlog::error("Generating NPC action failed.");
-                spdlog::warn("Pretending this NPC action won the game");
-                root_machine(fsm).isGameOver = true;
             }
 
             if (!fsm.remainingCharacters.empty()) {
