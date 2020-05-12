@@ -173,9 +173,9 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
 
         // @formatter:off
         using transitions = transition_table <
-        // Start                  Event                                    Next        Action                                                                 Guard
-        tr<decltype(choicePhase), spy::network::messages::ItemChoice,      equipPhase, actions::multiple<actions::handleChoice, actions::createCharacterSet>, and_<guards::lastChoice, guards::choiceValid>>,
-        tr<equipPhase,            spy::network::messages::EquipmentChoice, gamePhase,  actions::handleEquipmentChoice,                                        and_<guards::lastEquipmentChoice, guards::equipmentChoiceValid>>
+        // Start                  Event                                    Next        Action                                                                  Guard
+        tr<decltype(choicePhase), spy::network::messages::ItemChoice,      equipPhase, actions::multiple<actions::handleChoice, actions::createCharacterSet>,  and_<guards::lastChoice, guards::choiceValid>>,
+        tr<equipPhase,            spy::network::messages::EquipmentChoice, gamePhase,  actions::multiple<actions::handleEquipmentChoice, actions::prepareGame>, and_<guards::lastEquipmentChoice, guards::equipmentChoiceValid>>
         >;
         // @formatter:on
 };
