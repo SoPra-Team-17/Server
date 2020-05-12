@@ -136,35 +136,6 @@ namespace actions {
             // TODO: Keep replay available for 5 minutes, then close connections
         }
     };
-
-    struct prepareGame {
-        template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
-            spy::gameplay::State &state = root_machine(fsm).gameState;
-
-            // Randomly distribute characters
-            for (auto &character: state.getCharacters()) {
-                auto randomField =
-                        spy::util::GameLogicUtils::getRandomMapPoint(state, [&state](const spy::util::Point &p) {
-                            // Random free/seat without character
-
-                            auto field = state.getMap().getField(p);
-                            using spy::scenario::FieldStateEnum;
-                            if (field.getFieldState() != FieldStateEnum::BAR_SEAT
-                                and field.getFieldState() != FieldStateEnum::FREE) {
-                                // Wrong field type
-                                return false;
-                            }
-                            return !spy::util::GameLogicUtils::isPersonOnField(state, p);
-                        });
-                if (!randomField.has_value()) {
-                    spdlog::critical("No field to place character");
-                    std::exit(1);
-                }
-                character.setCoordinates(randomField.value());
-            }
-        }
-    };
 }
 
 #endif //SERVER017_ACTIONS_HPP
