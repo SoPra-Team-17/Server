@@ -45,10 +45,15 @@ namespace actions {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
             spdlog::info("Broadcasting state");
-            spy::gameplay::State &s = root_machine(fsm).gameState;
+            spy::gameplay::State &state = root_machine(fsm).gameState;
             MessageRouter &router = root_machine(fsm).router;
 
-            spy::network::messages::GameStatus g{{}, fsm.activeCharacter, fsm.operations, s, false};
+            spy::network::messages::GameStatus g{
+                    {}, // clientId filled out by router when broadcasting
+                    fsm.activeCharacter,
+                    fsm.operations,
+                    state,
+                    spy::util::RoundUtils::isGameOver(state)};
             router.broadcastMessage(g);
             fsm.operations.clear();
         }
@@ -63,7 +68,9 @@ namespace actions {
             spdlog::info("Generating NPC action");
 
             using spy::gameplay::ActionGenerator;
-            auto npcAction = ActionGenerator::generateNPCAction(root_machine(fsm).gameState, fsm.activeCharacter);
+            auto npcAction = ActionGenerator::generateNPCAction(root_machine(fsm).gameState,
+                                                                fsm.activeCharacter,
+                                                                root_machine(fsm).matchConfig);
 
             if (npcAction != nullptr) {
                 executeOperation(npcAction,
@@ -89,6 +96,14 @@ namespace actions {
         void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
             spdlog::trace("requestNextOperation for character {}", fsm.activeCharacter);
             spy::gameplay::State &state = root_machine(fsm).gameState;
+            using spy::util::RoundUtils;
+
+            if (RoundUtils::isGameOver(state)) {
+                // There are still characters remaining, but the game has been won with the last action
+                // We do not have to request a new operation, and abort early
+                spdlog::info("Skipping requestNextOperation because game is already over.");
+                return;
+            }
 
             // Find character object by UUID to determine faction
             auto activeChar = std::find_if(state.getCharacters().begin(),

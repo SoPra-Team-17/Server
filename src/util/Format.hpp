@@ -12,7 +12,7 @@ namespace fmt {
     template<typename T>
     std::string json(T t){
         nlohmann::json j = t;
-        return j;
+        return j.dump();
     }
 }
 

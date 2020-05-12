@@ -13,6 +13,7 @@
 #include <util/Player.hpp>
 #include <util/Format.hpp>
 #include <gameLogic/validation/ActionValidator.hpp>
+#include <util/RoundUtils.hpp>
 
 namespace guards {
     struct operationValid {
@@ -126,6 +127,13 @@ namespace guards {
             auto idP2 = playerIds.at(Player::two);
 
             return (state.hasChosen.at(idP1) || state.hasChosen.at(idP2));
+        }
+    };
+
+    struct gameOver {
+        template<typename FSM, typename FSMState, typename Event>
+        bool operator()(FSM const &fsm, FSMState const &, Event const &) {
+            return spy::util::RoundUtils::isGameOver(root_machine(fsm).gameState);
         }
     };
 }

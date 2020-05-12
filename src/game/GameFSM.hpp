@@ -30,11 +30,11 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
             // Maps from clientId to the vector of chosen character uuids
             using CharacterMap = std::map<spy::util::UUID, std::vector<spy::util::UUID>>;
             // Maps from clientId to the vector of chosen gadget types
-            using GadgetMap    = std::map<spy::util::UUID, std::vector<spy::gadget::GadgetEnum>>;
+            using GadgetMap = std::map<spy::util::UUID, std::vector<spy::gadget::GadgetEnum>>;
 
 
             CharacterMap chosenCharacters;              ///< Stores the character choice of the players
-            GadgetMap    chosenGadgets;                 ///< Stores the gadget choice of the players
+            GadgetMap chosenGadgets;                 ///< Stores the gadget choice of the players
             std::map<spy::util::UUID, bool> hasChosen;  ///< Stores whether the client has already sent his equip choice
 
             template<typename FSM, typename Event>
@@ -50,8 +50,10 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                 hasChosen[idP1] = false;
                 hasChosen[idP2] = false;
 
-                spy::network::messages::RequestEquipmentChoice messageP1(idP1, chosenCharacters.at(idP1), chosenGadgets.at(idP1));
-                spy::network::messages::RequestEquipmentChoice messageP2(idP2, chosenCharacters.at(idP2), chosenGadgets.at(idP2));
+                spy::network::messages::RequestEquipmentChoice messageP1(idP1, chosenCharacters.at(idP1),
+                                                                         chosenGadgets.at(idP1));
+                spy::network::messages::RequestEquipmentChoice messageP2(idP2, chosenCharacters.at(idP2),
+                                                                         chosenGadgets.at(idP2));
 
                 router.sendMessage(messageP1);
                 spdlog::info("Sending request for equipment choice to player1 ({})", idP1);
@@ -83,13 +85,37 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
 
                 // Initialize roulette tables with random amount of chips
                 gameState.getMap().forAllFields([&rng, &config](spy::scenario::Field &field) {
-                   if (field.getFieldState() == spy::scenario::FieldStateEnum::ROULETTE_TABLE) {
-                       std::uniform_int_distribution<unsigned int> randChips(config.getMinChipsRoulette(),
-                                                                           config.getMaxChipsRoulette());
+                    if (field.getFieldState() == spy::scenario::FieldStateEnum::ROULETTE_TABLE) {
+                        std::uniform_int_distribution<unsigned int> randChips(config.getMinChipsRoulette(),
+                                                                              config.getMaxChipsRoulette());
 
-                       field.setChipAmount(randChips(rng));
-                   }
+                        field.setChipAmount(randChips(rng));
+                    }
                 });
+
+                // Randomly distribute characters
+                spdlog::info("Distributing characters");
+                for (auto &character: gameState.getCharacters()) {
+                    auto randomField =
+                            spy::util::GameLogicUtils::getRandomMapPoint(gameState, [&gameState](const auto &p) {
+                                // Random free/seat without character
+
+                                auto field = gameState.getMap().getField(p);
+                                using spy::scenario::FieldStateEnum;
+                                if (field.getFieldState() != FieldStateEnum::BAR_SEAT
+                                    and field.getFieldState() != FieldStateEnum::FREE) {
+                                    // Wrong field type
+                                    return false;
+                                }
+                                return !spy::util::GameLogicUtils::isPersonOnField(gameState, p);
+                            });
+                    if (!randomField.has_value()) {
+                        spdlog::critical("No field to place character");
+                        std::exit(1);
+                    }
+                    spdlog::debug("Placing {} at {}", character.getName(), fmt::json(randomField.value()));
+                    character.setCoordinates(randomField.value());
+                }
 
             }
 
@@ -164,9 +190,6 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
             // @formatter:on
         };
 
-        struct gameOver : state<gameOver> {
-        };
-
         using initial_state = decltype(choicePhase);
 
         template<typename FSM, typename Event>
@@ -178,8 +201,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
         using transitions = transition_table <
         // Start                  Event                                    Next        Action                                                                 Guard
         tr<decltype(choicePhase), spy::network::messages::ItemChoice,      equipPhase, actions::multiple<actions::handleChoice, actions::createCharacterSet>, and_<guards::lastChoice, guards::choiceValid>>,
-        tr<equipPhase,            spy::network::messages::EquipmentChoice, gamePhase,  actions::handleEquipmentChoice,                                        and_<guards::lastEquipmentChoice, guards::equipmentChoiceValid>>,
-        tr<gamePhase,             events::gameFinished,                    gameOver>
+        tr<equipPhase,            spy::network::messages::EquipmentChoice, gamePhase,  actions::handleEquipmentChoice,                                        and_<guards::lastEquipmentChoice, guards::equipmentChoiceValid>>
         >;
         // @formatter:on
 };
