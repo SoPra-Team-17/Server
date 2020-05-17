@@ -12,6 +12,7 @@
 #include <network/messages/StatisticsMessage.hpp>
 #include <util/Player.hpp>
 #include <util/GameLogicUtils.hpp>
+#include <network/messages/MetaInformation.hpp>
 
 namespace actions {
 
@@ -134,6 +135,50 @@ namespace actions {
             router.broadcastMessage(statisticsMessage);
 
             // TODO: Keep replay available for 5 minutes, then close connections
+        }
+    };
+
+    /**
+     * This action replies to the sender of a MetaInformation request with a MetaInformationMessage
+     */
+    struct sendMetaInformation {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(Event &&event, FSM &fsm, SourceState &, TargetState &) {
+            using spy::network::messages::MetaInformationKey;
+            using spy::network::messages::MetaInformation;
+
+            spy::network::messages::RequestMetaInformation &metaInformationRequest = event;
+            std::map<MetaInformationKey, MetaInformation::Info> information;
+
+            for (const auto &key: metaInformationRequest.getKeys()) {
+                switch (key) {
+                    case MetaInformationKey::CONFIGURATION_SCENARIO:
+                        information.emplace(key, root_machine(fsm).scenarioConfig);
+                        break;
+                    case MetaInformationKey::CONFIGURATION_MATCH_CONFIG:
+                        [[fallthrough]];
+                    case MetaInformationKey::CONFIGURATION_CHARACTER_INFORMATION:
+                        [[fallthrough]];
+                    case MetaInformationKey::GAME_REMAINING_PAUSE_TIME:
+                        [[fallthrough]];
+                    case MetaInformationKey::FACTION_PLAYER1:
+                        [[fallthrough]];
+                    case MetaInformationKey::FACTION_PLAYER2:
+                        [[fallthrough]];
+                    case MetaInformationKey::FACTION_NEUTRAL:
+                        [[fallthrough]];
+                    case MetaInformationKey::GADGETS_PLAYER1:
+                        [[fallthrough]];
+                    case MetaInformationKey::GADGETS_PLAYER2:
+                        [[fallthrough]];
+                    default:
+                        spdlog::warn("Unsupported MetaInformation key requested: {}.", fmt::json(key));
+                        break;
+                }
+            }
+
+            MetaInformation metaInformationReply{metaInformationRequest.getClientId(), information};
+            root_machine(fsm).router.sendMessage(metaInformationReply);
         }
     };
 }
