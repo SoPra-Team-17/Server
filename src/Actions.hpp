@@ -147,8 +147,12 @@ namespace actions {
             using spy::network::messages::MetaInformationKey;
             using spy::network::messages::MetaInformation;
 
-            spy::network::messages::RequestMetaInformation &metaInformationRequest = event;
+            const spy::network::messages::RequestMetaInformation &metaInformationRequest = event;
             std::map<MetaInformationKey, MetaInformation::Info> information;
+
+            const std::map<Player, spy::util::UUID> &playerIds = root_machine(fsm).playerIds;
+            const spy::gameplay::State &gameState = root_machine(fsm).gameState;
+
 
             for (const auto &key: metaInformationRequest.getKeys()) {
                 switch (key) {
@@ -156,21 +160,99 @@ namespace actions {
                         information.emplace(key, root_machine(fsm).scenarioConfig);
                         break;
                     case MetaInformationKey::CONFIGURATION_MATCH_CONFIG:
-                        [[fallthrough]];
+                        information.emplace(key, root_machine(fsm).matchConfig);
+                        break;
                     case MetaInformationKey::CONFIGURATION_CHARACTER_INFORMATION:
-                        [[fallthrough]];
-                    case MetaInformationKey::GAME_REMAINING_PAUSE_TIME:
-                        [[fallthrough]];
-                    case MetaInformationKey::FACTION_PLAYER1:
-                        [[fallthrough]];
-                    case MetaInformationKey::FACTION_PLAYER2:
-                        [[fallthrough]];
-                    case MetaInformationKey::FACTION_NEUTRAL:
-                        [[fallthrough]];
-                    case MetaInformationKey::GADGETS_PLAYER1:
-                        [[fallthrough]];
-                    case MetaInformationKey::GADGETS_PLAYER2:
-                        [[fallthrough]];
+                        information.emplace(key, root_machine(fsm).characterInformations);
+                        break;
+                    case MetaInformationKey::FACTION_PLAYER1: {
+                        //if not requested by P1 or spectator, continue
+                        if (playerIds.at(Player::one) != metaInformationRequest.getClientId()) {
+                            // TODO: also allow spectators to request FACTION_PLAYER1
+                            continue;
+                        }
+
+                        // Send all characters with faction PLAYER1
+                        std::vector<spy::util::UUID> characters;
+                        // copy all characters with faction PLAYER1 to characters
+                        for(const spy::character::Character &character: gameState.getCharacters()){
+                            if(character.getFaction() == spy::character::FactionEnum::PLAYER1){
+                                characters.push_back(character.getCharacterId());
+                            }
+                        }
+
+                        information.emplace(key, std::move(characters));
+                        break;
+                    }
+                    case MetaInformationKey::FACTION_PLAYER2: {
+                        //if not requested by P1 or spectator, continue
+                        if (playerIds.at(Player::two) != metaInformationRequest.getClientId()) {
+                            // TODO: also allow spectators to request FACTION_PLAYER1
+                            continue;
+                        }
+
+                        // Send all characters with faction PLAYER2
+                        std::vector<spy::util::UUID> characters;
+                        // copy all characters with faction PLAYER2 to characters
+                        for(const spy::character::Character &character: gameState.getCharacters()){
+                            if(character.getFaction() == spy::character::FactionEnum::PLAYER2){
+                                characters.push_back(character.getCharacterId());
+                            }
+                        }
+                        information.emplace(key, std::move(characters));
+                        break;
+                    }
+                    case MetaInformationKey::FACTION_NEUTRAL: {
+                        // Send all NPCs
+                        // TODO: check if requester was spectator, do not send otherwise
+                        std::vector<spy::util::UUID> characters;
+                        // copy all characters with faction NEUTRAL to characters
+                        for(const spy::character::Character &character: gameState.getCharacters()){
+                            if(character.getFaction() == spy::character::FactionEnum::NEUTRAL){
+                                characters.push_back(character.getCharacterId());
+                            }
+                        }
+                        information.emplace(key, std::move(characters));
+                        break;
+                    }
+                    case MetaInformationKey::GADGETS_PLAYER1: {
+                        if (playerIds.at(Player::one) != metaInformationRequest.getClientId()) {
+                            // TODO: also allow spectators to request GADGETS_PLAYER1
+                            continue;
+                        }
+                        std::vector<spy::gadget::GadgetEnum> gadgets;
+                        for (const auto &character: gameState.getCharacters()) {
+                            // if character belongs to faction player1
+                            // add it's gadgets to list
+                            if (character.getFaction() == spy::character::FactionEnum::PLAYER1) {
+                                for (const auto &gadget: character.getGadgets()) {
+                                    gadgets.emplace_back(gadget->getType());
+                                }
+                            }
+                        }
+
+                        information.emplace(key, std::move(gadgets));
+                        break;
+                    }
+                    case MetaInformationKey::GADGETS_PLAYER2: {
+                        if (playerIds.at(Player::one) != metaInformationRequest.getClientId()) {
+                            // TODO: also allow spectators to request GADGETS_PLAYER2
+                            continue;
+                        }
+                        std::vector<spy::gadget::GadgetEnum> gadgets;
+                        for (const auto &character: gameState.getCharacters()) {
+                            // if character belongs to faction player2
+                            // add it's gadgets to list
+                            if (character.getFaction() == spy::character::FactionEnum::PLAYER2) {
+                                for (const auto &gadget: character.getGadgets()) {
+                                    gadgets.emplace_back(gadget->getType());
+                                }
+                            }
+                        }
+
+                        information.emplace(key, gadgets);
+                        break;
+                    }
                     default:
                         spdlog::warn("Unsupported MetaInformation key requested: {}.", fmt::json(key));
                         break;

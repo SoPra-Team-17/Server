@@ -155,7 +155,10 @@ struct TestClient {
 
         using namespace spy::network::messages;
         auto msg = RequestMetaInformation{id, {MetaInformationKey::CONFIGURATION_SCENARIO,
-                                               MetaInformationKey::SPECTATOR_COUNT}};
+                                               MetaInformationKey::SPECTATOR_COUNT,
+                                               // Expected: only own characters get returned
+                                               MetaInformationKey::FACTION_PLAYER1,
+                                               MetaInformationKey::FACTION_PLAYER2}};
         nlohmann::json mj = msg;
         wsClient.send(mj.dump());
     }
