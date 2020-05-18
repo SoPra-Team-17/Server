@@ -113,7 +113,8 @@ namespace actions {
                 } else if (std::find(charsP2.begin(), charsP2.end(), c.getCharacterId()) != charsP2.end()) {
                     faction = spy::character::FactionEnum::PLAYER2;
                 } else {
-                    faction = spy::character::FactionEnum::INVALID;
+                    // not chosen -> NPC
+                    faction = spy::character::FactionEnum::NEUTRAL;
                 }
 
                 auto character = spy::character::Character{c.getCharacterId(), c.getName()};

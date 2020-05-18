@@ -6,7 +6,8 @@ set(SOURCES
         Server.cpp
         util/Player.cpp
         util/ChoiceSet.cpp
-        util/Operation.cpp)
+        util/Operation.cpp
+        util/Util.cpp)
 
 include_directories(.)
 
