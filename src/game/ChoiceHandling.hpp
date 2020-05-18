@@ -62,7 +62,7 @@ namespace actions {
                     if (s.characterChoices.at(playerId).size() >= 4 && root_machine(fsm).choiceSet.isGadgetOfferPossible()) {
                         // client has chosen maximum number of characters, thus offer only gadgets
                         offer = root_machine(fsm).choiceSet.requestGadgetSelection();
-                    } else if (s.characterChoices.at(playerId).size() >= 6 && root_machine(fsm).choiceSet.isCharacterOfferPossible()) {
+                    } else if (s.gadgetChoices.at(playerId).size() >= 6 && root_machine(fsm).choiceSet.isCharacterOfferPossible()) {
                         // client has chosen maximum number of gadgets, thus offer only characters
                         offer = root_machine(fsm).choiceSet.requestCharacterSelection();
                     } else if (root_machine(fsm).choiceSet.isOfferPossible()) {
