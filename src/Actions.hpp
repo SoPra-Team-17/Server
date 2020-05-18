@@ -167,7 +167,7 @@ namespace actions {
                     case MetaInformationKey::CONFIGURATION_CHARACTER_INFORMATION:
                         information.emplace(key, root_machine(fsm).characterInformations);
                         break;
-                    case MetaInformationKey::FACTION_PLAYER1: {
+                    case MetaInformationKey::FACTION_PLAYER1:
                         //if not requested by P1 or spectator, continue
                         if (playerIds.at(Player::one) != metaInformationRequest.getClientId()) {
                             // TODO: also allow spectators to request FACTION_PLAYER1
@@ -178,7 +178,6 @@ namespace actions {
                         information.emplace(key, Util::getFactionCharacters(gameState.getCharacters(),
                                                                             FactionEnum::PLAYER1));
                         break;
-                    }
                     case MetaInformationKey::FACTION_PLAYER2: {
                         //if not requested by P1 or spectator, continue
                         if (playerIds.at(Player::two) != metaInformationRequest.getClientId()) {
