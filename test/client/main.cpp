@@ -16,6 +16,7 @@
 #include <network/messages/EquipmentChoice.hpp>
 #include <network/messages/RequestGamePause.hpp>
 #include <network/messages/GameLeave.hpp>
+#include <network/messages/RequestMetaInformation.hpp>
 
 using namespace std::string_literals;
 
@@ -148,6 +149,19 @@ struct TestClient {
         nlohmann::json mj = msg;
         wsClient.send(mj.dump());
     }
+
+    void requestMetaInformation() {
+        spdlog::info("{}: requesting meta information", name);
+
+        using namespace spy::network::messages;
+        auto msg = RequestMetaInformation{id, {MetaInformationKey::CONFIGURATION_SCENARIO,
+                                               MetaInformationKey::SPECTATOR_COUNT,
+                                               // Expected: only own characters get returned
+                                               MetaInformationKey::FACTION_PLAYER1,
+                                               MetaInformationKey::FACTION_PLAYER2}};
+        nlohmann::json mj = msg;
+        wsClient.send(mj.dump());
+    }
 };
 
 int main() {
@@ -157,6 +171,10 @@ int main() {
     c1.sendHello();
     std::this_thread::sleep_for(std::chrono::seconds{1});
     c2.sendHello();
+
+    std::this_thread::sleep_for(std::chrono::seconds{5});
+
+    c1.requestMetaInformation();
 
     std::cout << "done" << std::endl;
     std::this_thread::sleep_for(std::chrono::hours{100});

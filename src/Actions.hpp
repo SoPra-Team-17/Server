@@ -12,6 +12,8 @@
 #include <network/messages/StatisticsMessage.hpp>
 #include <util/Player.hpp>
 #include <util/GameLogicUtils.hpp>
+#include <network/messages/MetaInformation.hpp>
+#include <util/Util.hpp>
 
 namespace actions {
 
@@ -134,6 +136,91 @@ namespace actions {
             router.broadcastMessage(statisticsMessage);
 
             // TODO: Keep replay available for 5 minutes, then close connections
+        }
+    };
+
+    /**
+     * This action replies to the sender of a MetaInformation request with a MetaInformationMessage
+     */
+    struct sendMetaInformation {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(Event &&event, FSM &fsm, SourceState &, TargetState &) {
+            using spy::network::messages::MetaInformationKey;
+            using spy::network::messages::MetaInformation;
+            using spy::character::FactionEnum;
+
+            const spy::network::messages::RequestMetaInformation &metaInformationRequest = event;
+            std::map<MetaInformationKey, MetaInformation::Info> information;
+
+            const std::map<Player, spy::util::UUID> &playerIds = root_machine(fsm).playerIds;
+            const spy::gameplay::State &gameState = root_machine(fsm).gameState;
+
+
+            for (const auto &key: metaInformationRequest.getKeys()) {
+                switch (key) {
+                    case MetaInformationKey::CONFIGURATION_SCENARIO:
+                        information.emplace(key, root_machine(fsm).scenarioConfig);
+                        break;
+                    case MetaInformationKey::CONFIGURATION_MATCH_CONFIG:
+                        information.emplace(key, root_machine(fsm).matchConfig);
+                        break;
+                    case MetaInformationKey::CONFIGURATION_CHARACTER_INFORMATION:
+                        information.emplace(key, root_machine(fsm).characterInformations);
+                        break;
+                    case MetaInformationKey::FACTION_PLAYER1:
+                        //if not requested by P1 or spectator, continue
+                        if (playerIds.at(Player::one) != metaInformationRequest.getClientId()) {
+                            // TODO: also allow spectators to request FACTION_PLAYER1
+                            continue;
+                        }
+
+                        // Send all characters with faction PLAYER1
+                        information.emplace(key, Util::getFactionCharacters(gameState.getCharacters(),
+                                                                            FactionEnum::PLAYER1));
+                        break;
+                    case MetaInformationKey::FACTION_PLAYER2:
+                        //if not requested by P1 or spectator, continue
+                        if (playerIds.at(Player::two) != metaInformationRequest.getClientId()) {
+                            // TODO: also allow spectators to request FACTION_PLAYER1
+                            continue;
+                        }
+
+                        // Send all characters with faction PLAYER2
+                        information.emplace(key, Util::getFactionCharacters(gameState.getCharacters(),
+                                                                            FactionEnum::PLAYER2));
+                        break;
+                    case MetaInformationKey::FACTION_NEUTRAL:
+                        // Send all NPCs
+                        // TODO: check if requester was spectator, do not send otherwise
+                        information.emplace(key, Util::getFactionCharacters(gameState.getCharacters(),
+                                                                            FactionEnum::NEUTRAL));
+                        break;
+                    case MetaInformationKey::GADGETS_PLAYER1:
+                        if (playerIds.at(Player::one) != metaInformationRequest.getClientId()) {
+                            // TODO: also allow spectators to request GADGETS_PLAYER1
+                            continue;
+                        }
+
+                        information.emplace(key, Util::getFactionGadgets(gameState.getCharacters(),
+                                                                         FactionEnum::PLAYER1));
+                        break;
+                    case MetaInformationKey::GADGETS_PLAYER2:
+                        if (playerIds.at(Player::two) != metaInformationRequest.getClientId()) {
+                            // TODO: also allow spectators to request GADGETS_PLAYER2
+                            continue;
+                        }
+
+                        information.emplace(key, Util::getFactionGadgets(gameState.getCharacters(),
+                                                                         FactionEnum::PLAYER2));
+                        break;
+                    default:
+                        spdlog::warn("Unsupported MetaInformation key requested: {}.", fmt::json(key));
+                        break;
+                }
+            }
+
+            MetaInformation metaInformationReply{metaInformationRequest.getClientId(), information};
+            root_machine(fsm).router.sendMessage(metaInformationReply);
         }
     };
 }
