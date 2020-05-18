@@ -182,10 +182,10 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
 
             // @formatter:off
             using transitions = transition_table <
-            //  Start               Event                                  Next                 Action                                                                Guard
-            tr<roundInit,           events::roundInitDone,                 waitingForOperation, actions::requestNextOperation>,
-            tr<waitingForOperation, spy::network::messages::GameOperation, roundInit,           actions::multiple<actions::handleOperation, actions::broadcastState>, not_<guards::charactersRemaining>>,
-            tr<waitingForOperation, events::triggerNPCmove,                roundInit,           actions::multiple<actions::npcMove, actions::broadcastState>,         not_<guards::charactersRemaining>>
+            //  Start               Event                                  Next                 Action                                                                      Guard
+            tr<roundInit,           events::roundInitDone,                 waitingForOperation, actions::multiple<actions::broadcastState, actions::requestNextOperation>>,
+            tr<waitingForOperation, spy::network::messages::GameOperation, roundInit,           actions::multiple<actions::handleOperation, actions::broadcastState>,        not_<guards::charactersRemaining>>,
+            tr<waitingForOperation, events::triggerNPCmove,                roundInit,           actions::multiple<actions::npcMove, actions::broadcastState>,                not_<guards::charactersRemaining>>
             >;
             // @formatter:on
         };
