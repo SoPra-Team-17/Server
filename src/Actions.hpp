@@ -178,7 +178,7 @@ namespace actions {
                         information.emplace(key, Util::getFactionCharacters(gameState.getCharacters(),
                                                                             FactionEnum::PLAYER1));
                         break;
-                    case MetaInformationKey::FACTION_PLAYER2: {
+                    case MetaInformationKey::FACTION_PLAYER2:
                         //if not requested by P1 or spectator, continue
                         if (playerIds.at(Player::two) != metaInformationRequest.getClientId()) {
                             // TODO: also allow spectators to request FACTION_PLAYER1
@@ -189,14 +189,12 @@ namespace actions {
                         information.emplace(key, Util::getFactionCharacters(gameState.getCharacters(),
                                                                             FactionEnum::PLAYER2));
                         break;
-                    }
-                    case MetaInformationKey::FACTION_NEUTRAL: {
+                    case MetaInformationKey::FACTION_NEUTRAL:
                         // Send all NPCs
                         // TODO: check if requester was spectator, do not send otherwise
                         information.emplace(key, Util::getFactionCharacters(gameState.getCharacters(),
                                                                             FactionEnum::NEUTRAL));
                         break;
-                    }
                     case MetaInformationKey::GADGETS_PLAYER1:
                         if (playerIds.at(Player::one) != metaInformationRequest.getClientId()) {
                             // TODO: also allow spectators to request GADGETS_PLAYER1
@@ -206,7 +204,6 @@ namespace actions {
                         information.emplace(key, Util::getFactionGadgets(gameState.getCharacters(),
                                                                          FactionEnum::PLAYER1));
                         break;
-
                     case MetaInformationKey::GADGETS_PLAYER2:
                         if (playerIds.at(Player::two) != metaInformationRequest.getClientId()) {
                             // TODO: also allow spectators to request GADGETS_PLAYER2
@@ -216,7 +213,6 @@ namespace actions {
                         information.emplace(key, Util::getFactionGadgets(gameState.getCharacters(),
                                                                          FactionEnum::PLAYER2));
                         break;
-
                     default:
                         spdlog::warn("Unsupported MetaInformation key requested: {}.", fmt::json(key));
                         break;
