@@ -204,6 +204,11 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
         tr<equipPhase,            spy::network::messages::EquipmentChoice, gamePhase,  actions::handleEquipmentChoice,                                        and_<guards::lastEquipmentChoice, guards::equipmentChoiceValid>>
         >;
         // @formatter:on
+
+        using internal_transitions = transition_table <
+        // Event                                           Action
+        // Reply to MetaInformation request at any time during the game
+        in<spy::network::messages::RequestMetaInformation, actions::sendMetaInformation>>;
 };
 
 #endif //SERVER017_GAMEFSM_HPP
