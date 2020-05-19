@@ -126,13 +126,17 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         }
     };
 
-    //router.addReconnectListener(forwardMessage);
+    auto discardNotImplemented = [](auto msg){
+        spdlog::warn("Received message of type {}, handling is not implemented.", fmt::json(msg.getType()));
+    };
+
+    router.addReconnectListener(discardNotImplemented);
     router.addItemChoiceListener(forwardMessage);
     router.addEquipmentChoiceListener(forwardMessage);
     router.addGameOperationListener(forwardMessage);
-    //router.addPauseRequestListener(forwardMessage);
-    //router.addMetaInformationRequestListener(forwardMessage);
-    //router.addReplayRequestListener(forwardMessage);
+    router.addPauseRequestListener(discardNotImplemented);
+    router.addMetaInformationRequestListener(forwardMessage);
+    router.addReplayRequestListener(discardNotImplemented);
 }
 
 void Server::configureLogging() const {
