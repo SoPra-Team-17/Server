@@ -59,6 +59,7 @@ struct ChoicePhase : afsm::def::state_def<ChoicePhase> {
         MessageRouter &router = root_machine(fsm).router;
         const std::map<Player, spy::util::UUID> &playerIds = root_machine(fsm).playerIds;
 
+        choiceSet.clear();
         choiceSet.addForSelection(characterInformations, possibleGadgets);
 
         auto idP1 = playerIds.at(Player::one);

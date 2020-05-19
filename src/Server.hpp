@@ -20,6 +20,8 @@
 #include <random>
 #include<Actions.hpp>
 
+constexpr unsigned int defaultMaxNPCs = 8;
+
 
 class Server : public afsm::def::state_machine<Server> {
     public:
@@ -104,6 +106,8 @@ class Server : public afsm::def::state_machine<Server> {
          * Holds all characters and gadgets currently available to choose from.
          */
         ChoiceSet choiceSet;
+
+        unsigned int maxNumberOfNPCs = defaultMaxNPCs;
 
     private:
         const static std::map<unsigned int, spdlog::level::level_enum> verbosityMap;

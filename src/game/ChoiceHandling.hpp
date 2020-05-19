@@ -8,6 +8,8 @@
 #ifndef SERVER017_CHOICE_HANDLING_HPP
 #define SERVER017_CHOICE_HANDLING_HPP
 
+#include <datatypes/gadgets/WiretapWithEarplugs.hpp>
+
 namespace actions {
     /**
      * @brief Action to apply if a choice is received.
@@ -88,7 +90,7 @@ namespace actions {
     };
 
     /**
-     * @brief intended to create the final character set after the choices of the
+     * Creates the final character set after the choices of the clients.
      */
     struct createCharacterSet {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
@@ -99,6 +101,8 @@ namespace actions {
             const std::vector<spy::character::CharacterInformation> &charInfos =
                     root_machine(fsm).characterInformations;
             spy::gameplay::State &gameState = root_machine(fsm).gameState;
+            ChoiceSet &choiceSet = root_machine(fsm).choiceSet;
+            const unsigned int maxNumberOfNPCs = root_machine(fsm).maxNumberOfNPCs;
 
             auto charsP1 = s.characterChoices.at(playerIds.at(Player::one));
             auto charsP2 = s.characterChoices.at(playerIds.at(Player::two));
@@ -106,15 +110,31 @@ namespace actions {
             spy::character::CharacterSet charSet;
 
             spy::character::FactionEnum faction;
-            //TODO: check if all non-chosen characters are NPCs
+
+            auto remainingCharacters = choiceSet.getRemainingCharacters();
+            auto remainingGadgets    = choiceSet.getRemainingGadgets();
+
+            std::list<spy::util::UUID> npcCharacters;
+            // choose characters that will be NPCs
+            if (remainingCharacters.size() <= maxNumberOfNPCs) {
+                npcCharacters = remainingCharacters;
+            } else {
+                for (auto i = 0U; i < maxNumberOfNPCs; i++) {
+                    auto uuidIterator = spy::util::GameLogicUtils::getRandomItemFromContainer(remainingCharacters);
+                    npcCharacters.push_back(*uuidIterator);
+                    remainingCharacters.erase(uuidIterator);
+                }
+            }
+
             for (const auto &c : charInfos) {
                 if (std::find(charsP1.begin(), charsP1.end(), c.getCharacterId()) != charsP1.end()) {
                     faction = spy::character::FactionEnum::PLAYER1;
                 } else if (std::find(charsP2.begin(), charsP2.end(), c.getCharacterId()) != charsP2.end()) {
                     faction = spy::character::FactionEnum::PLAYER2;
-                } else {
-                    // not chosen -> NPC
+                } else if (std::find(npcCharacters.begin(), npcCharacters.end(), c.getCharacterId()) != npcCharacters.end()) {
                     faction = spy::character::FactionEnum::NEUTRAL;
+                } else {
+                    continue;
                 }
 
                 auto character = spy::character::Character{c.getCharacterId(), c.getName()};
@@ -122,6 +142,28 @@ namespace actions {
                         std::set<spy::character::PropertyEnum>{c.getFeatures().begin(), c.getFeatures().end()});
                 character.setFaction(faction);
                 charSet.insert(character);
+            }
+
+            // distribute remaining gadgets to NPCs
+            for (const auto &g : remainingGadgets) {
+                auto uuidIterator = spy::util::GameLogicUtils::getRandomItemFromContainer(npcCharacters);
+                if (g == spy::gadget::GadgetEnum::WIRETAP_WITH_EARPLUGS) {
+                    charSet.getByUUID(*uuidIterator)->addGadget(std::make_shared<spy::gadget::WiretapWithEarplugs>());
+                } else if (g != spy::gadget::GadgetEnum::NUGGET
+                           && g != spy::gadget::GadgetEnum::MIRROR_OF_WILDERNESS
+                           && g != spy::gadget::GadgetEnum::CHICKEN_FEED) {
+                    charSet.getByUUID(*uuidIterator)->addGadget(std::make_shared<spy::gadget::Gadget>(g));
+                }
+            }
+
+            // log the initial gadgets of the NPCs
+            spdlog::info("NPCs:");
+            for (const auto &characterId : npcCharacters) {
+                auto character = charSet.findByUUID(characterId);
+                spdlog::info("Character: {} ({})", character->getName(), characterId);
+                for (const auto &g : character->getGadgets()) {
+                    spdlog::info("\t {}", fmt::json(g->getType()));
+                }
             }
 
             gameState.setCharacters(charSet);
