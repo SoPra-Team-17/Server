@@ -101,7 +101,7 @@ namespace actions {
             const std::vector<spy::character::CharacterInformation> &charInfos =
                     root_machine(fsm).characterInformations;
             spy::gameplay::State &gameState = root_machine(fsm).gameState;
-            ChoiceSet &choiceSet = root_machine(fsm).choiceSet;
+            const ChoiceSet &choiceSet = root_machine(fsm).choiceSet;
             const unsigned int maxNumberOfNPCs = root_machine(fsm).maxNumberOfNPCs;
 
             auto charsP1 = s.characterChoices.at(playerIds.at(Player::one));
