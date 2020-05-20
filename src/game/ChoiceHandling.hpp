@@ -126,7 +126,11 @@ namespace actions {
                 }
             }
 
+            // for each character, insert it into the character set if it has been chosen by a client or
+            // assigned to the NPC faction
             for (const auto &c : charInfos) {
+                // search for the character UUID in the list of characters of the players and the NPCs and
+                // set it's faction to the corresponding value
                 if (std::find(charsP1.begin(), charsP1.end(), c.getCharacterId()) != charsP1.end()) {
                     faction = spy::character::FactionEnum::PLAYER1;
                 } else if (std::find(charsP2.begin(), charsP2.end(), c.getCharacterId()) != charsP2.end()) {
