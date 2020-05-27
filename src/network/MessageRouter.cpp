@@ -47,6 +47,14 @@ void MessageRouter::receiveListener(const MessageRouter::connectionPtr &connecti
         return;
     }
     auto messageContainer = messageJson.get<spy::network::MessageContainer>();
+
+    //check if client sends with his own UUID
+    if (messageContainer.getType() != spy::network::messages::MessageTypeEnum::HELLO
+        && messageContainer.getClientId() != con.second.value()) {
+            spdlog::warn("Client {} sent a message with false uuid: {}", con.second.value(), messageContainer.getClientId());
+            messageJson.at("clientId") = con.second.value(); // correct the uuid
+    }
+
     switch (messageContainer.getType()) {
         case spy::network::messages::MessageTypeEnum::INVALID:
             spdlog::error("Received message with invalid type: " + message);
