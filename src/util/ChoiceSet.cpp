@@ -145,4 +145,18 @@ unsigned int ChoiceSet::getNumberOfGadgets() const {
     return gadgets.size();
 }
 
+std::list<spy::util::UUID> ChoiceSet::getRemainingCharacters() const {
+    std::lock_guard<std::mutex> guard(selectionMutex);
+    return characters;
+}
 
+std::list<spy::gadget::GadgetEnum> ChoiceSet::getRemainingGadgets() const {
+    std::lock_guard<std::mutex> guard(selectionMutex);
+    return gadgets;
+}
+
+void ChoiceSet::clear() {
+    std::lock_guard<std::mutex> guard(selectionMutex);
+    characters.clear();
+    gadgets.clear();
+}

@@ -125,6 +125,22 @@ class ChoiceSet {
          */
         [[nodiscard]] unsigned int getNumberOfGadgets() const;
 
+        /**
+         * Getter for the remaining character uuids.
+         * @return List of remaining character uuids.
+         */
+        std::list<spy::util::UUID> getRemainingCharacters() const;
+
+        /**
+         * Getter for the remaining gadgets.
+         * @return List of remaining gadgets.
+         */
+        std::list<spy::gadget::GadgetEnum> getRemainingGadgets() const;
+
+        /**
+         * Clears the internal lists of character uuids and gadgets.
+         */
+        void clear();
 
     private:
         std::list<spy::util::UUID> characters;
