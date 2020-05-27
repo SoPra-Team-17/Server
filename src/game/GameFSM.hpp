@@ -79,6 +79,8 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
             void on_enter(Event &&, FSM &fsm) {
                 spdlog::info("Initial entering to game phase");
 
+                root_machine(fsm).isIngame = true;
+
                 spy::gameplay::State &gameState = root_machine(fsm).gameState;
                 spy::MatchConfig &config = root_machine(fsm).matchConfig;
                 std::mt19937 &rng = root_machine(fsm).rng;
@@ -117,6 +119,12 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                     character.setCoordinates(randomField.value());
                 }
 
+            }
+
+            template<typename FSM, typename Event>
+            void on_exit(Event &&, FSM &fsm) {
+                spdlog::debug("Exiting state gamePhase");
+                root_machine(fsm).isIngame = false;
             }
 
             /**

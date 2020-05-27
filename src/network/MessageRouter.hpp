@@ -117,6 +117,8 @@ class MessageRouter {
          */
         void registerUUIDforConnection(const spy::util::UUID &id, const connectionPtr &connection);
 
+        void clearConnections();
+
     private:
         websocket::network::WebSocketServer server;
 

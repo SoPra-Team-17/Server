@@ -64,9 +64,9 @@ namespace actions {
             // Register first player in Server
             spdlog::info("Player one is now {} ({})", helloMessage.getName(), helloMessage.getClientId());
             std::map<Player, spy::util::UUID> &playerIds = fsm.playerIds;
-            playerIds.insert({Player::one, helloMessage.getClientId()});
+            playerIds.operator[](Player::one) = helloMessage.getClientId();
             std::map<Player, std::string> &playerNames = fsm.playerNames;
-            playerNames.insert({Player::one, helloMessage.getName()});
+            playerNames.operator[](Player::one) = helloMessage.getName();
         }
     };
 
@@ -79,12 +79,14 @@ namespace actions {
         void operator()(Event &&event, FSM &fsm, SourceState &, TargetState &) {
             spy::network::messages::Hello &helloMessage = event;
 
+            spdlog::info("Starting Game (action StartGame)");
+
             // Register second player in server
             spdlog::info("Player two is now {} ({})", helloMessage.getName(), helloMessage.getClientId());
             std::map<Player, spy::util::UUID> &playerIds = fsm.playerIds;
-            playerIds.insert({Player::two, helloMessage.getClientId()});
+            playerIds.operator[](Player::two) = helloMessage.getClientId();
             std::map<Player, std::string> &playerNames = fsm.playerNames;
-            playerNames.insert({Player::two, helloMessage.getName()});
+            playerNames.operator[](Player::two) = helloMessage.getName();
 
             spy::network::messages::GameStarted gameStarted{
                     spy::util::UUID{}, // UUID gets set in MessageRouter::sendMessage
@@ -94,7 +96,10 @@ namespace actions {
                     fsm.playerNames.find(Player::two)->second,
                     fsm.sessionId
             };
+            spdlog::debug("PlayerIDs: {}", fmt::json(fsm.playerIds));
+            spdlog::info("Sending GameStarted message to player one");
             fsm.router.sendMessage(fsm.playerIds.find(Player::one)->second, gameStarted);
+            spdlog::info("Sending GameStarted message to player two");
             fsm.router.sendMessage(fsm.playerIds.find(Player::two)->second, gameStarted);
         }
     };
@@ -103,6 +108,8 @@ namespace actions {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
             const spy::gameplay::State &state = root_machine(fsm).gameState;
+
+            spdlog::info("Closing game");
 
             spy::character::FactionEnum winningFaction = spy::util::RoundUtils::determineWinningFaction(state);
             Player winner;
@@ -136,6 +143,9 @@ namespace actions {
             router.broadcastMessage(statisticsMessage);
 
             // TODO: Keep replay available for 5 minutes, then close connections
+
+            spdlog::debug("Clearing all connections from router");
+            router.clearConnections();
         }
     };
 

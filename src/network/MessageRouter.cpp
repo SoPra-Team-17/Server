@@ -27,8 +27,15 @@ void MessageRouter::connectListener(const MessageRouter::connectionPtr &newConne
 }
 
 void MessageRouter::disconnectListener(const MessageRouter::connectionPtr &closedConnection) {
-    auto &foundConnection = connectionFromPtr(closedConnection);
-    spdlog::info("Connection {} closed.", foundConnection.second.value());
+    std::optional<spy::util::UUID> connectionUUID;
+    try {
+        const auto &foundConnection = connectionFromPtr(closedConnection);
+        connectionUUID = foundConnection.second;
+    } catch (std::invalid_argument &e) {
+        spdlog::info("Not registered connection closed.");
+        return;
+    }
+    spdlog::info("Connection {} closed.", connectionUUID.value_or(spy::util::UUID{}));
 
     auto con = std::find_if(activeConnections.begin(), activeConnections.end(), [closedConnection](const auto &c) {
         return c.first == closedConnection;
@@ -37,8 +44,16 @@ void MessageRouter::disconnectListener(const MessageRouter::connectionPtr &close
 }
 
 void MessageRouter::receiveListener(const MessageRouter::connectionPtr &connectionPtr, const std::string &message) {
-    auto &con = connectionFromPtr(connectionPtr);
-    spdlog::trace("Received message from client {} : {}", con.second.value_or(spy::util::UUID{}), message);
+    std::optional<spy::util::UUID> connectionId = std::nullopt;
+    try {
+        const auto &con = connectionFromPtr(connectionPtr);
+        connectionId = con.second;
+    } catch (const std::invalid_argument &) {
+        spdlog::warn("Received message from kicked client");
+        return;
+    }
+
+    spdlog::trace("Received message from client {} : {}", connectionId.value_or(spy::util::UUID{}), message);
     nlohmann::json messageJson;
     try {
         messageJson = nlohmann::json::parse(message);
@@ -50,9 +65,10 @@ void MessageRouter::receiveListener(const MessageRouter::connectionPtr &connecti
 
     //check if client sends with his own UUID
     if (messageContainer.getType() != spy::network::messages::MessageTypeEnum::HELLO
-        && messageContainer.getClientId() != con.second.value()) {
-            spdlog::warn("Client {} sent a message with false uuid: {}", con.second.value(), messageContainer.getClientId());
-            messageJson.at("clientId") = con.second.value(); // correct the uuid
+        && messageContainer.getClientId() != connectionId.value()) {
+        spdlog::warn("Client {} sent a message with false uuid: {}", connectionId.value(),
+                     messageContainer.getClientId());
+        messageJson.at("clientId") = connectionId.value(); // correct the uuid
     }
 
     switch (messageContainer.getType()) {
@@ -122,4 +138,8 @@ MessageRouter::connection &MessageRouter::connectionFromUUID(const spy::util::UU
         }
     }
     throw std::invalid_argument("UUID not in list of known connections");
+}
+
+void MessageRouter::clearConnections() {
+    activeConnections.clear();
 }
