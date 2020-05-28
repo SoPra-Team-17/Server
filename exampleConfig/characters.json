@@ -1,213 +1,156 @@
 [
-	{
-		"name": "James Bond",
-		"description": "Bester Geheimagent aller Zeiten mit 00-Status.",
-		"gender": "DIVERSE",
-		"features": [
-		"SPRYNESS",
-		"TOUGHNESS",
-		"ROBUST_STOMACH",
-		"LUCKY_DEVIL",
-		"TRADECRAFT"
-		]
-	},
-	{
-		"name": "James Bond 2",
-		"description": "Bester Geheimagent aller Zeiten mit 00-Status.",
-		"gender": "DIVERSE",
-		"features": [
-			"SPRYNESS",
-			"TOUGHNESS",
-			"ROBUST_STOMACH",
-			"LUCKY_DEVIL",
-			"TRADECRAFT"
-		]
-	},
-	{
-		"name": "James Bond 3",
-		"description": "Bester Geheimagent aller Zeiten mit 00-Status.",
-		"gender": "DIVERSE",
-		"features": [
-			"SPRYNESS",
-			"TOUGHNESS",
-			"ROBUST_STOMACH",
-			"LUCKY_DEVIL",
-			"TRADECRAFT"
-		]
-	},
-	{
-		"name": "James Bond 4",
-		"description": "Bester Geheimagent aller Zeiten mit 00-Status.",
-		"gender": "DIVERSE",
-		"features": [
-			"SPRYNESS",
-			"TOUGHNESS",
-			"ROBUST_STOMACH",
-			"LUCKY_DEVIL",
-			"TRADECRAFT"
-		]
-	},
-	{
-		"name": "James Bond 5",
-		"description": "Bester Geheimagent aller Zeiten mit 00-Status.",
-		"gender": "DIVERSE",
-		"features": [
-			"SPRYNESS",
-			"TOUGHNESS",
-			"ROBUST_STOMACH",
-			"LUCKY_DEVIL",
-			"TRADECRAFT"
-		]
-	},
-	{
-		"name": "James Bond 6",
-		"description": "Bester Geheimagent aller Zeiten mit 00-Status.",
-		"gender": "DIVERSE",
-		"features": [
-			"SPRYNESS",
-			"TOUGHNESS",
-			"ROBUST_STOMACH",
-			"LUCKY_DEVIL",
-			"TRADECRAFT"
-		]
-	},
-	{
-		"name": "James Bond 7",
-		"description": "Bester Geheimagent aller Zeiten mit 00-Status.",
-		"gender": "DIVERSE",
-		"features": [
-			"SPRYNESS",
-			"TOUGHNESS",
-			"ROBUST_STOMACH",
-			"LUCKY_DEVIL",
-			"TRADECRAFT"
-		]
-	},
-	{
-		"name": "James Bond 8",
-		"description": "Bester Geheimagent aller Zeiten mit 00-Status.",
-		"gender": "DIVERSE",
-		"features": [
-			"SPRYNESS",
-			"TOUGHNESS",
-			"ROBUST_STOMACH",
-			"LUCKY_DEVIL",
-			"TRADECRAFT"
-		]
-	},
   {
-    "name": "James Bond 9",
+    "name": "James Bond",
     "description": "Bester Geheimagent aller Zeiten mit 00-Status.",
     "gender": "DIVERSE",
     "features": [
       "SPRYNESS",
-      "TOUGHNESS",
-      "ROBUST_STOMACH",
       "LUCKY_DEVIL",
+      "ROBUST_STOMACH",
+      "TOUGHNESS",
       "TRADECRAFT"
     ]
   },
   {
-    "name": "James Bond 10",
-    "description": "Bester Geheimagent aller Zeiten mit 00-Status.",
-    "gender": "DIVERSE",
+    "name": "Terry Wood",
+    "description": "Dueling is legal in Paraguay, as long as both parties are registered blood donors.",
+    "gender": "FEMALE",
     "features": [
+      "CLAMMY_CLOTHES",
+      "OBSERVATION",
+      "ROBUST_STOMACH",
+      "FLAPS_AND_SEALS",
+      "TRADECRAFT",
+      "BANG_AND_BURN",
+      "LUCKY_DEVIL",
+      "JINX",
       "SPRYNESS",
+      "PONDEROUSNESS"
+    ]
+  },
+  {
+    "name": "Lewis Holl",
+    "description": "There are over 58 million dogs in the U.S!",
+    "gender": "MALE",
+    "features": [
+      "BABYSITTER",
+      "FLAPS_AND_SEALS"
+    ]
+  },
+  {
+    "name": "Aria Jones",
+    "description": "Kids ask 300 questions a day.",
+    "gender": "MALE",
+    "features": [
+      "SLUGGISHNESS",
+      "AGILITY",
+      "BANG_AND_BURN",
+      "CONSTANT_CLAMMY_CLOTHES",
+      "OBSERVATION",
+      "JINX",
+      "FLAPS_AND_SEALS",
+      "CLAMMY_CLOTHES",
       "TOUGHNESS",
       "ROBUST_STOMACH",
-      "LUCKY_DEVIL",
+      "PONDEROUSNESS",
       "TRADECRAFT"
     ]
   },
   {
-    "name": "James Bond 11",
-    "description": "Bester Geheimagent aller Zeiten mit 00-Status.",
+    "name": "Arran Fassbender",
+    "description": "A dozen bodies were once found in Benjamin Franklin\u0027s basement.",
     "gender": "DIVERSE",
     "features": [
-      "SPRYNESS",
-      "TOUGHNESS",
-      "ROBUST_STOMACH",
-      "LUCKY_DEVIL",
-      "TRADECRAFT"
+      "HONEY_TRAP",
+      "BABYSITTER",
+      "CLAMMY_CLOTHES"
     ]
   },
   {
-    "name": "James Bond 12",
-    "description": "Bester Geheimagent aller Zeiten mit 00-Status.",
-    "gender": "DIVERSE",
+    "name": "Holly Harrington",
+    "description": "The earth is .02 degrees hotter during a full moon.",
+    "gender": "FEMALE",
     "features": [
       "SPRYNESS",
+      "OBSERVATION",
       "TOUGHNESS",
-      "ROBUST_STOMACH",
+      "PONDEROUSNESS",
+      "CONSTANT_CLAMMY_CLOTHES",
       "LUCKY_DEVIL",
-      "TRADECRAFT"
+      "JINX"
     ]
   },
   {
-    "name": "James Bond 13",
-    "description": "Bester Geheimagent aller Zeiten mit 00-Status.",
-    "gender": "DIVERSE",
+    "name": "Charlotte Taylor",
+    "description": "George Washington and Thomas Jefferson grew marijuana on their plantations!",
+    "gender": "FEMALE",
     "features": [
+      "CONSTANT_CLAMMY_CLOTHES",
+      "FLAPS_AND_SEALS",
+      "TRADECRAFT",
       "SPRYNESS",
-      "TOUGHNESS",
-      "ROBUST_STOMACH",
       "LUCKY_DEVIL",
-      "TRADECRAFT"
+      "PONDEROUSNESS"
     ]
   },
   {
-    "name": "James Bond 14",
-    "description": "Bester Geheimagent aller Zeiten mit 00-Status.",
+    "name": "Holly Norton",
+    "description": "The healthiest place in the world is in Panama.",
     "gender": "DIVERSE",
     "features": [
-      "SPRYNESS",
-      "TOUGHNESS",
+      "TRADECRAFT",
       "ROBUST_STOMACH",
+      "BABYSITTER",
+      "FLAPS_AND_SEALS",
       "LUCKY_DEVIL",
-      "TRADECRAFT"
+      "TOUGHNESS",
+      "HONEY_TRAP",
+      "SLUGGISHNESS",
+      "JINX"
     ]
   },
   {
-    "name": "James Bond 15",
-    "description": "Bester Geheimagent aller Zeiten mit 00-Status.",
-    "gender": "DIVERSE",
+    "name": "Rosie Hoelle",
+    "description": "Playing the accordion was once required for teachers in North Korea.",
+    "gender": "FEMALE",
     "features": [
-      "SPRYNESS",
       "TOUGHNESS",
-      "ROBUST_STOMACH",
-      "LUCKY_DEVIL",
-      "TRADECRAFT"
+      "BABYSITTER",
+      "AGILITY",
+      "SLUGGISHNESS",
+      "LUCKY_DEVIL"
     ]
   },
   {
-    "name": "James Bond 16",
-    "description": "Bester Geheimagent aller Zeiten mit 00-Status.",
+    "name": "Zoe Nonnenmache",
+    "description": "There\u0027s a giant fish with a transparent head.",
     "gender": "DIVERSE",
     "features": [
-      "SPRYNESS",
-      "TOUGHNESS",
+      "AGILITY",
+      "BABYSITTER",
+      "OBSERVATION",
       "ROBUST_STOMACH",
-      "LUCKY_DEVIL",
-      "TRADECRAFT"
+      "TRADECRAFT",
+      "NIMBLENESS",
+      "CLAMMY_CLOTHES",
+      "PONDEROUSNESS"
     ]
   },
-	{
-		"name": "Meister Yoda",
-		"description": "Yoda (* 896 VSY; † 4 NSY auf Dagobah) gehörte einer unbekannten Spezies an, war 66 cm groß und war am Ende seines Lebens 900 Jahre alt. Er hatte in über 800 Jahren als Jedi-(Groß-)Meister zahlreiche Schüler in der Macht ausgebildet, darunter u. a. Luke Skywalker und Count Dooku, und war ein Meister im Umgang mit dem Lichtschwert.",
-		"features": [
-		"LUCKY_DEVIL",
-		"OBSERVATION",
-		"TOUGHNESS"
-		]
-	},
-	{
-		"name": "Tracy Bond",
-		"description": "Hat kein glückliches Händchen im Spiel und bringt sich selbst ständig\nin Schwierigkeiten. Wenn jemand anders sie braucht, ist sie aber immer zur Stelle.",
-		"features": [
-			"AGILITY",
-			"BABYSITTER",
-			"HONEY_TRAP",
-			"JINX"
-		]
-	}
+  {
+    "name": "Karen Dayton",
+    "description": "In Florida, It is illegal to sing in a public place while attired in a swimsuit.",
+    "gender": "DIVERSE",
+    "features": []
+  },
+  {
+    "name": "Claire Norton",
+    "description": "Pringles aren\u0027t actually potato chips.",
+    "gender": "MALE",
+    "features": [
+      "NIMBLENESS",
+      "HONEY_TRAP",
+      "TRADECRAFT",
+      "FLAPS_AND_SEALS"
+    ]
+  }
 ]
