@@ -31,8 +31,9 @@ void MessageRouter::disconnectListener(const MessageRouter::connectionPtr &close
     try {
         const auto &foundConnection = connectionFromPtr(closedConnection);
         connectionUUID = foundConnection.second;
-    } catch (std::invalid_argument &e) {
-        spdlog::info("Not registered connection closed.");
+    } catch (const std::invalid_argument &e) {
+        using std::string_literals::operator ""s;
+        spdlog::info("Not registered connection closed. (Exception: "s + e.what() + ")");
         return;
     }
     spdlog::info("Connection {} closed.", connectionUUID.value_or(spy::util::UUID{}));
