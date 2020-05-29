@@ -102,7 +102,9 @@ namespace guards {
 
             bool alreadyChosen = state.hasChosen.at(clientId);
 
-            bool messageValid = e.validate(spy::network::RoleEnum::PLAYER, state.chosenCharacters.at(clientId), state.chosenGadgets.at(clientId));
+            bool messageValid = e.validate(spy::network::RoleEnum::PLAYER,
+                                           state.chosenCharacters.at(clientId),
+                                           state.chosenGadgets.at(clientId));
 
             if (!alreadyChosen && messageValid) {
                 return true;
@@ -133,7 +135,8 @@ namespace guards {
     struct gameOver {
         template<typename FSM, typename FSMState, typename Event>
         bool operator()(FSM const &fsm, FSMState const &, Event const &) {
-            return spy::util::RoundUtils::isGameOver(root_machine(fsm).gameState);
+            spdlog::debug("Testing GameOver condition");
+            return root_machine(fsm).isIngame && spy::util::RoundUtils::isGameOver(root_machine(fsm).gameState);
         }
     };
 }

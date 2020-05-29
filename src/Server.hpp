@@ -33,6 +33,12 @@ class Server : public afsm::def::state_machine<Server> {
                std::map<std::string, std::string> additionalOptions);
 
         struct emptyLobby : state<emptyLobby> {
+            template<typename FSM, typename Event>
+            void on_enter(Event &&, FSM &fsm) {
+                spdlog::debug("Entering state emptyLobby");
+
+                root_machine(fsm).isIngame = false;
+            }
         };
 
         struct waitFor2Player : state<waitFor2Player> {
@@ -52,7 +58,7 @@ class Server : public afsm::def::state_machine<Server> {
         tr<emptyLobby,         spy::network::messages::Hello,      waitFor2Player, actions::multiple<actions::InitializeSession, actions::HelloReply>>,
         tr<waitFor2Player,     spy::network::messages::GameLeave,  emptyLobby>,
         tr<waitFor2Player,     spy::network::messages::Hello,      decltype(game), actions::multiple<actions::HelloReply, actions::StartGame>>,
-        tr<GameFSM::gamePhase, none,                               emptyLobby,     actions::closeGame,                                                  guards::gameOver>
+        tr<GameFSM, none,                               emptyLobby,     actions::closeGame,                                                  guards::gameOver>
         >;
         // @formatter:on
 
@@ -72,6 +78,12 @@ class Server : public afsm::def::state_machine<Server> {
          * Current game state, contains characters and faction information after successful equipment phase.
          */
         spy::gameplay::State gameState;
+
+        /**
+         * This should be true when the current state is GameFSM::gamePhase
+         * (direct checking not possible in guards::gameOver)
+         */
+        bool isIngame = false;
 
         /**
          * Safe combinations by safe index
