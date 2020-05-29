@@ -37,6 +37,12 @@ namespace actions {
             if (!fsm.remainingCharacters.empty()) {
                 fsm.activeCharacter = fsm.remainingCharacters.front();
                 fsm.remainingCharacters.pop_front();
+
+                //check if character owns the anti plague mask and apply it's effect if necessary
+                auto character = root_machine(fsm).gameState.getCharacters().getByUUID(fsm.activeCharacter);
+                if (character->hasGadget(spy::gadget::GadgetEnum::ANTI_PLAGUE_MASK)) {
+                    character->addHealthPoints(10);
+                }
             }
         }
     };
