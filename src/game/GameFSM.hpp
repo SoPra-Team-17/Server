@@ -95,22 +95,23 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                     }
                 });
 
+                auto fieldSelector = [&gameState](const auto &p) {
+                    // Random free/seat without character
+
+                    auto field = gameState.getMap().getField(p);
+                    using spy::scenario::FieldStateEnum;
+                    if (field.getFieldState() != FieldStateEnum::BAR_SEAT
+                        and field.getFieldState() != FieldStateEnum::FREE) {
+                        // Wrong field type
+                        return false;
+                    }
+                    return !spy::util::GameLogicUtils::isPersonOnField(gameState, p);
+                };
+
                 // Randomly distribute characters
                 spdlog::info("Distributing characters");
                 for (auto &character: gameState.getCharacters()) {
-                    auto randomField =
-                            spy::util::GameLogicUtils::getRandomMapPoint(gameState, [&gameState](const auto &p) {
-                                // Random free/seat without character
-
-                                auto field = gameState.getMap().getField(p);
-                                using spy::scenario::FieldStateEnum;
-                                if (field.getFieldState() != FieldStateEnum::BAR_SEAT
-                                    and field.getFieldState() != FieldStateEnum::FREE) {
-                                    // Wrong field type
-                                    return false;
-                                }
-                                return !spy::util::GameLogicUtils::isPersonOnField(gameState, p);
-                            });
+                    auto randomField = spy::util::GameLogicUtils::getRandomMapPoint(gameState, fieldSelector);
                     if (!randomField.has_value()) {
                         spdlog::critical("No field to place character");
                         std::exit(1);
@@ -118,6 +119,15 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                     spdlog::debug("Placing {} at {}", character.getName(), fmt::json(randomField.value()));
                     character.setCoordinates(randomField.value());
                 }
+
+                // place the cat on a random field
+                auto randomField = spy::util::GameLogicUtils::getRandomMapPoint(gameState, fieldSelector);
+                if (!randomField.has_value()) {
+                    spdlog::critical("No field to place the white cat");
+                    std::exit(1);
+                }
+                spdlog::debug("Placing white cat at {}", fmt::json(randomField.value()));
+                gameState.setCatCoordinates(randomField.value());
 
             }
 
