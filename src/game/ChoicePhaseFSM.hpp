@@ -34,6 +34,7 @@ static const std::vector<spy::gadget::GadgetEnum> possibleGadgets = {
         spy::gadget::GadgetEnum::NUGGET,
         spy::gadget::GadgetEnum::MIRROR_OF_WILDERNESS,
         spy::gadget::GadgetEnum::POCKET_LITTER,
+        spy::gadget::GadgetEnum::ANTI_PLAGUE_MASK
 };
 
 struct ChoicePhase : afsm::def::state_def<ChoicePhase> {
