@@ -14,10 +14,8 @@ void executeOperation(const std::shared_ptr<const spy::gameplay::BaseOperation>&
     using spy::gameplay::ActionExecutor;
 
     spdlog::info("Executing {} action", fmt::json(operation->getType()));
-    bool operationSuccessful = ActionExecutor::execute(state, operation, matchConfig);
+    auto operationWithResult = ActionExecutor::execute(state, operation, matchConfig);
 
-    auto operationWithResult = operation->clone();
-    operationWithResult->setSuccessful(operationSuccessful);
     operationList.push_back(operationWithResult);
 
     // TODO: execute potentially resulting exfiltration, add those to fsm.operations
