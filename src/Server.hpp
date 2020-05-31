@@ -115,6 +115,16 @@ class Server : public afsm::def::state_machine<Server> {
         std::mt19937 rng{rd()};
 
         /**
+         * UUID of the cat
+         */
+        spy::util::UUID catId;
+
+        /**
+         * UUID of the janitor
+         */
+        spy::util::UUID janitorId;
+
+        /**
          * Holds all characters and gadgets currently available to choose from.
          */
         ChoiceSet choiceSet;

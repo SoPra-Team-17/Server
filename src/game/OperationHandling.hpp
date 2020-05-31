@@ -111,36 +111,105 @@ namespace actions {
                 return;
             }
 
-            // Find character object by UUID to determine faction
-            auto activeChar = std::find_if(state.getCharacters().begin(),
-                                           state.getCharacters().end(),
-                                           [&fsm](const spy::character::Character &c) {
-                                               return c.getCharacterId() == fsm.activeCharacter;
-                                           });
+            if (fsm.activeCharacter == root_machine(fsm).catId) {
+                spdlog::debug("requestNextOperation determined that next character is the white cat"
+                              "-> Not requesting, triggering cat move instead.");
 
-            Player activePlayer;
-            switch (activeChar->getFaction()) {
-                case spy::character::FactionEnum::PLAYER1:
-                    activePlayer = Player::one;
-                    break;
-                case spy::character::FactionEnum::PLAYER2:
-                    activePlayer = Player::two;
-                    break;
-                default:
-                    // Do not request when next is NPCmove
-                    spdlog::debug("requestNextOperation determined that next character is not a PC"
-                                  "-> Not requesting, triggering NPC move instead.");
-                    root_machine(fsm).process_event(events::triggerNPCmove{});
-                    return;
+                root_machine(fsm).process_event(events::triggerCatMove{});
+                return;
+            } else if (fsm.activeCharacter == root_machine(fsm).janitorId) {
+                spdlog::debug("requestNextOperation determined that next character is the janitor"
+                              "-> Not requesting, triggering janitor move instead.");
+
+                root_machine(fsm).process_event(events::triggerJanitorMove{});
+                return;
+            } else {
+                // Find character object by UUID to determine faction
+                auto activeChar = std::find_if(state.getCharacters().begin(),
+                                               state.getCharacters().end(),
+                                               [&fsm](const spy::character::Character &c) {
+                                                   return c.getCharacterId() == fsm.activeCharacter;
+                                               });
+
+                Player activePlayer;
+                switch (activeChar->getFaction()) {
+                    case spy::character::FactionEnum::PLAYER1:
+                        activePlayer = Player::one;
+                        break;
+                    case spy::character::FactionEnum::PLAYER2:
+                        activePlayer = Player::two;
+                        break;
+                    default:
+                        // Do not request when next is NPCmove
+                        spdlog::debug("requestNextOperation determined that next character is not a PC"
+                                      "-> Not requesting, triggering NPC move instead.");
+                        root_machine(fsm).process_event(events::triggerNPCmove{});
+                        return;
+                }
+
+                spy::network::messages::RequestGameOperation request{
+                        root_machine(fsm).playerIds.find(activePlayer)->second,
+                        fsm.activeCharacter
+                };
+                MessageRouter &router = root_machine(fsm).router;
+                spdlog::info("Requesting Operation for character {} from player {}", activeChar->getName(), activePlayer);
+                router.sendMessage(request);
+            }
+        }
+    };
+
+    /**
+     * @brief Generates and executes a cat movement and sets next character as active
+     */
+    struct catMove {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
+            spdlog::info("Generating cat action");
+
+            auto &map = root_machine(fsm).gameState.getMap();
+
+            // Check if the diamond collar is somewhere on the map
+            spy::util::Point collarPos{-1, -1};
+            map.forAllPoints([&collarPos, &map](const spy::util::Point &p) {
+                auto field = map.getField(p);
+                if (field.getGadget().has_value()
+                    && field.getGadget().value()->getType() == spy::gadget::GadgetEnum::DIAMOND_COLLAR) {
+                    collarPos = p;
+                }
+            });
+
+            if (collarPos == spy::util::Point{-1, -1}) {
+                // cat moves towards the diamond collar
+            } else {
+                // cat moves randomly, with 50% chance of staying in place
+                if (spy::util::GameLogicUtils::probabilityTest(0.5)) {
+                    //TODO: generate and execute cat movement
+                }
             }
 
-            spy::network::messages::RequestGameOperation request{
-                    root_machine(fsm).playerIds.find(activePlayer)->second,
-                    fsm.activeCharacter
-            };
-            MessageRouter &router = root_machine(fsm).router;
-            spdlog::info("Requesting Operation for character {} from player {}", activeChar->getName(), activePlayer);
-            router.sendMessage(request);
+            if (!fsm.remainingCharacters.empty()) {
+                fsm.activeCharacter = fsm.remainingCharacters.front();
+                fsm.remainingCharacters.pop_front();
+            }
+        }
+    };
+
+    /**
+     * @brief Generates and executes a janitor movement and sets next character as active
+     */
+    struct janitorMove {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
+            spdlog::info("Generating janitor action");
+
+            //auto &map = root_machine(fsm).gameState.getMap();
+
+            // TODO: generate and execute janitor movement
+
+            if (!fsm.remainingCharacters.empty()) {
+                fsm.activeCharacter = fsm.remainingCharacters.front();
+                fsm.remainingCharacters.pop_front();
+            }
         }
     };
 }
