@@ -85,12 +85,13 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                 spy::MatchConfig &config = root_machine(fsm).matchConfig;
                 std::mt19937 &rng = root_machine(fsm).rng;
 
-                unsigned int numberOfSafes = spy::util::GameLogicUtils::getAllFieldsWith(gameState, [&gameState](const spy::util::Point &p) {
-                    return (gameState.getMap().getField(p).getFieldState() == spy::scenario::FieldStateEnum::SAFE);
-                }).size();
+                std::vector<unsigned int> safeIndexes;
 
-                std::vector<unsigned int> safeIndexes(numberOfSafes);
-                std::iota(safeIndexes.begin(), safeIndexes.end(), 1);
+                gameState.getMap().forAllFields([&safeIndexes](const spy::scenario::Field &f) {
+                    if (f.getFieldState() == spy::scenario::FieldStateEnum::SAFE) {
+                        safeIndexes.push_back(safeIndexes.size() + 1);
+                    }
+                });
 
                 std::shuffle(safeIndexes.begin(), safeIndexes.end(), root_machine(fsm).rng);
 
