@@ -139,6 +139,17 @@ namespace guards {
             return root_machine(fsm).isIngame && spy::util::RoundUtils::isGameOver(root_machine(fsm).gameState);
         }
     };
+
+    /**
+     * @brief Guard passes if RequestGamePause::gamePause is true
+     */
+    struct isPauseRequest {
+        template<typename FSM, typename FSMState, typename Event>
+        bool operator()(FSM const &, FSMState const &, Event const &event) {
+            const spy::network::messages::RequestGamePause &pauseRequest = event;
+            return pauseRequest.getGamePause();
+        }
+    };
 }
 
 

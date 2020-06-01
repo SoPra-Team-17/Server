@@ -233,6 +233,16 @@ namespace actions {
             root_machine(fsm).router.sendMessage(metaInformationReply);
         }
     };
+
+    struct pauseGame {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(Event &&, FSM &, SourceState &, TargetState &target) {
+            //const spy::network::messages::RequestGamePause &pauseRequest = event;
+            target.serverEnforced = false;
+            spdlog::info("Pausing game");
+            // TODO start timer, broadcast pause message
+        }
+    };
 }
 
 #endif //SERVER017_ACTIONS_HPP
