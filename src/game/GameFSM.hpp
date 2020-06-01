@@ -84,6 +84,10 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                 spy::gameplay::State &gameState = root_machine(fsm).gameState;
                 spy::MatchConfig &config = root_machine(fsm).matchConfig;
                 std::mt19937 &rng = root_machine(fsm).rng;
+                auto &knownCombinations = root_machine(fsm).knownCombinations;
+
+                knownCombinations[Player::one] = {};
+                knownCombinations[Player::two] = {};
 
                 std::vector<unsigned int> safeIndexes;
 
