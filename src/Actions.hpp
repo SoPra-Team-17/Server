@@ -10,10 +10,12 @@
 #include <network/messages/GameStarted.hpp>
 #include <network/messages/HelloReply.hpp>
 #include <network/messages/StatisticsMessage.hpp>
+#include <network/messages/GamePause.hpp>
 #include <util/Player.hpp>
 #include <util/GameLogicUtils.hpp>
 #include <network/messages/MetaInformation.hpp>
 #include <util/Util.hpp>
+#include "Events.hpp"
 
 namespace actions {
 
@@ -236,11 +238,24 @@ namespace actions {
 
     struct pauseGame {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(Event &&, FSM &, SourceState &, TargetState &target) {
-            //const spy::network::messages::RequestGamePause &pauseRequest = event;
+        void operator()(Event &&, FSM &fsm, SourceState &, TargetState &target) {
             target.serverEnforced = false;
             spdlog::info("Pausing game");
-            // TODO start timer, broadcast pause message
+            MessageRouter &router = root_machine(fsm).router;
+            router.broadcastMessage(spy::network::messages::GamePause{{}, true, false});
+        }
+    };
+
+    struct unpauseGame {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
+            bool isForced = false;
+            if constexpr(std::is_same<Event, events::forceUnpause>::value) {
+                isForced = true;
+            }
+            spdlog::info("Unpausing, forced={}", isForced);
+            MessageRouter &router = root_machine(fsm).router;
+            router.broadcastMessage(spy::network::messages::GamePause{{}, false, isForced});
         }
     };
 }

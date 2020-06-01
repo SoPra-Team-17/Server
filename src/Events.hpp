@@ -13,5 +13,8 @@ namespace events {
 
     struct roundInitDone {
     };
+
+    struct forceUnpause {
+    };
 }
 #endif //SERVER017_EVENTS_HPP
