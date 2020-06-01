@@ -145,10 +145,12 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
             struct roundInit : state<roundInit> {
                 template<typename FSM, typename Event>
                 void on_enter(Event &&, FSM &fsm) {
-                    spdlog::info("Entering state roundInit");
                     const auto &characters = root_machine(fsm).gameState.getCharacters();
                     spy::gameplay::State &state = root_machine(fsm).gameState;
                     const spy::MatchConfig &matchConfig = root_machine(fsm).matchConfig;
+                    state.incrementRoundCounter();
+
+                    spdlog::info("Entering state roundInit for round {}", state.getCurrentRound());
 
                     for (const auto &c: characters) {
                         if (c.getCoordinates().has_value()) {
@@ -240,12 +242,12 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
         tr<decltype(choicePhase), spy::network::messages::ItemChoice,      equipPhase, actions::multiple<actions::handleChoice, actions::createCharacterSet>, and_<guards::lastChoice, guards::choiceValid>>,
         tr<equipPhase,            spy::network::messages::EquipmentChoice, gamePhase,  actions::handleEquipmentChoice,                                        and_<guards::lastEquipmentChoice, guards::equipmentChoiceValid>>
         >;
-        // @formatter:on
 
         using internal_transitions = transition_table <
         // Event                                           Action
         // Reply to MetaInformation request at any time during the game
         in<spy::network::messages::RequestMetaInformation, actions::sendMetaInformation>>;
+        // @formatter:on
 };
 
 #endif //SERVER017_GAMEFSM_HPP

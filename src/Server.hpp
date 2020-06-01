@@ -58,7 +58,7 @@ class Server : public afsm::def::state_machine<Server> {
         tr<emptyLobby,         spy::network::messages::Hello,      waitFor2Player, actions::multiple<actions::InitializeSession, actions::HelloReply>>,
         tr<waitFor2Player,     spy::network::messages::GameLeave,  emptyLobby>,
         tr<waitFor2Player,     spy::network::messages::Hello,      decltype(game), actions::multiple<actions::HelloReply, actions::StartGame>>,
-        tr<GameFSM, none,                               emptyLobby,     actions::closeGame,                                                  guards::gameOver>
+        tr<GameFSM,            none,                               emptyLobby,     actions::closeGame,                                                  guards::gameOver>
         >;
         // @formatter:on
 

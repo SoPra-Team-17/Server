@@ -146,6 +146,11 @@ namespace actions {
 
             spdlog::debug("Clearing all connections from router");
             router.clearConnections();
+
+            spdlog::debug("Resetting the game state for the next game");
+            root_machine(fsm).gameState = spy::gameplay::State{0, spy::scenario::FieldMap{
+                    root_machine(fsm).scenarioConfig}, {}, {}, spy::util::Point{},
+                                                               spy::util::Point{}};
         }
     };
 
