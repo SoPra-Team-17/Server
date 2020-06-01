@@ -12,6 +12,7 @@
 #include <network/messages/GameStatus.hpp>
 #include <util/RoundUtils.hpp>
 #include <gameLogic/generation/ActionGenerator.hpp>
+#include <gameLogic/execution/ActionExecutor.hpp>
 #include "util/Format.hpp"
 #include "util/Player.hpp"
 #include "util/Operation.hpp"
@@ -166,26 +167,16 @@ namespace actions {
         void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
             spdlog::info("Generating cat action");
 
-            auto &map = root_machine(fsm).gameState.getMap();
+            using spy::gameplay::State;
+            using spy::gameplay::ActionExecutor;
+            using spy::gameplay::ActionGenerator;
+            using spy::gameplay::CatAction;
 
-            // Check if the diamond collar is somewhere on the map
-            spy::util::Point collarPos{-1, -1};
-            map.forAllPoints([&collarPos, &map](const spy::util::Point &p) {
-                auto field = map.getField(p);
-                if (field.getGadget().has_value()
-                    && field.getGadget().value()->getType() == spy::gadget::GadgetEnum::DIAMOND_COLLAR) {
-                    collarPos = p;
-                }
-            });
+            State &state = root_machine(fsm).gameState;
 
-            if (collarPos == spy::util::Point{-1, -1}) {
-                // cat moves towards the diamond collar
-            } else {
-                // cat moves randomly, with 50% chance of staying in place
-                if (spy::util::GameLogicUtils::probabilityTest(0.5)) {
-                    //TODO: generate and execute cat movement
-                }
-            }
+            auto catAction = ActionGenerator::generateCatAction(state);
+
+            ActionExecutor::executeCat(state, *std::dynamic_pointer_cast<const CatAction>(catAction));
 
             if (!fsm.remainingCharacters.empty()) {
                 fsm.activeCharacter = fsm.remainingCharacters.front();
@@ -201,10 +192,16 @@ namespace actions {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
             spdlog::info("Generating janitor action");
+            using spy::gameplay::State;
+            using spy::gameplay::ActionExecutor;
+            using spy::gameplay::ActionGenerator;
+            using spy::gameplay::JanitorAction;
 
-            //auto &map = root_machine(fsm).gameState.getMap();
+            State &state = root_machine(fsm).gameState;
 
-            // TODO: generate and execute janitor movement
+            auto janitorAction = ActionGenerator::generateJanitorAction(state);
+
+            ActionExecutor::executeJanitor(state, *std::dynamic_pointer_cast<const JanitorAction>(janitorAction));
 
             if (!fsm.remainingCharacters.empty()) {
                 fsm.activeCharacter = fsm.remainingCharacters.front();
