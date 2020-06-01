@@ -249,10 +249,8 @@ namespace actions {
     struct unpauseGame {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
-            bool isForced = false;
-            if constexpr(std::is_same<Event, events::forceUnpause>::value) {
-                isForced = true;
-            }
+            bool isForced = std::is_same<Event, events::forceUnpause>::value;
+
             spdlog::info("Unpausing, forced={}", isForced);
             MessageRouter &router = root_machine(fsm).router;
             router.broadcastMessage(spy::network::messages::GamePause{{}, false, isForced});
