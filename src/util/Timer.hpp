@@ -22,6 +22,22 @@ class Timer {
          */
         Timer() = default;
 
+        Timer(const Timer &other) = delete;
+
+        Timer &operator=(const Timer &other) = delete;
+
+        Timer(Timer &&t) : stopped{std::move(t.stopped)} {};
+
+        Timer &operator=(Timer &&t) {
+            stop();
+            stopped = std::move(t.stopped);
+            return *this;
+        }
+
+        ~Timer() {
+            stop();
+        }
+
         /**
          * Starts the timer to execute a function after the specified timeout
          * @param timeout Timer duration
@@ -57,10 +73,6 @@ class Timer {
 
         [[nodiscard]] bool isRunning() const {
             return not(*stopped);
-        }
-
-        ~Timer() {
-            stop();
         }
 
     private:
