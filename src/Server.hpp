@@ -86,11 +86,6 @@ class Server : public afsm::def::state_machine<Server> {
         bool isIngame = false;
 
         /**
-         * Safe combinations by safe index
-         */
-        std::map<unsigned int, int> safeCombinations;
-
-        /**
          * Known safe combinations (not indices) for both players
          */
         std::map<Player, std::set<int>> knownCombinations;

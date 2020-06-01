@@ -24,14 +24,37 @@ namespace actions {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&e, FSM &fsm, SourceState &, TargetState &) {
             using spy::network::messages::GameOperation;
+            using spy::gameplay::State;
+
             spdlog::info("Handling some operation");
+
+            State &state = root_machine(fsm).gameState;
+            auto &knownCombinations = root_machine(fsm).knownCombinations;
 
             const GameOperation &operationMessage = std::forward<GameOperation>(e);
 
+            // update the state with the current players safe combination knowledge
+            auto activeCharacter = state.getCharacters().findByUUID(fsm.activeCharacter);
+            Player player;
+            if (activeCharacter->getFaction() == spy::character::FactionEnum::PLAYER1) {
+                player = Player::one;
+            } else if (activeCharacter->getFaction() == spy::character::FactionEnum::PLAYER2) {
+                player = Player::two;
+            } else {
+                spdlog::error("[HandleOperation] active character is no player character");
+                return;
+            }
+
+            state.setKnownSafeCombinations(knownCombinations.at(player));
+
+
             executeOperation(operationMessage.getOperation(),
-                             root_machine(fsm).gameState,
+                             state,
                              root_machine(fsm).matchConfig,
                              fsm.operations);
+
+            // copy the potentially changed known combinations back to the map
+            knownCombinations[player] = state.getMySafeCombinations();
 
             // Choose next character
             if (!fsm.remainingCharacters.empty()) {
