@@ -176,6 +176,8 @@ int main() {
 
     c1.requestMetaInformation();
 
+    c1.sendRequestPause();
+
     std::cout << "done" << std::endl;
     std::this_thread::sleep_for(std::chrono::hours{100});
 }
