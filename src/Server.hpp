@@ -117,12 +117,13 @@ class Server : public afsm::def::state_machine<Server> {
         /**
          * UUID of the cat
          */
-        spy::util::UUID catId;
+        spy::util::UUID catId = spy::util::UUID::generate();
+
 
         /**
          * UUID of the janitor
          */
-        spy::util::UUID janitorId;
+        spy::util::UUID janitorId = spy::util::UUID::generate();
 
         /**
          * Holds all characters and gadgets currently available to choose from.

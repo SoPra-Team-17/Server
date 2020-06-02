@@ -35,9 +35,6 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         router(port, "no-time-to-spy") {
     configureLogging();
 
-    catId = spy::util::UUID::generate();
-    janitorId = spy::util::UUID::generate();
-
     spdlog::info("Server called with following arguments: ");
     spdlog::info(" -> character configuration: {}", characterPath);
     spdlog::info(" -> match configuration:     {}", matchPath);
