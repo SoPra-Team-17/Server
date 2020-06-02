@@ -82,43 +82,36 @@ namespace actions {
             const auto &playerIds = root_machine(fsm).playerIds;
             const auto &clientRoles = root_machine(fsm).clientRoles;
 
-            // Generate the different state views and messages
+            // spectators
             spy::gameplay::State stateSpec = root_machine(fsm).gameState;
             bool gameOver = spy::util::RoundUtils::isGameOver(stateSpec);
             stateSpec.setKnownSafeCombinations({});
             spy::network::messages::GameStatus messageSpec(
-                    {}, // dynamically filled out
+                    {}, // filled out by the message router
                     fsm.activeCharacter,
                     fsm.operations,
                     stateSpec,
                     gameOver);
-
-            spy::gameplay::State stateP1 = root_machine(fsm).gameState;
-            stateP1.setKnownSafeCombinations(root_machine(fsm).knownCombinations.at(Player::one));
-            spy::network::messages::GameStatus messageP1(
-                    playerIds.at(Player::one),
-                    fsm.activeCharacter,
-                    fsm.operations,
-                    stateP1,
-                    gameOver);
-
-            spy::gameplay::State stateP2 = root_machine(fsm).gameState;
-            stateP1.setKnownSafeCombinations(root_machine(fsm).knownCombinations.at(Player::two));
-            spy::network::messages::GameStatus messageP2(
-                    playerIds.at(Player::two),
-                    fsm.activeCharacter,
-                    fsm.operations,
-                    stateSpec,
-                    gameOver);
-
-            router.sendMessage(messageP1);
-            router.sendMessage(messageP2);
 
             // send the spectator state to all spectators
             for (const auto &[uuid, role] : clientRoles) {
                 if (role == spy::network::RoleEnum::SPECTATOR) {
                     router.sendMessage(uuid, messageSpec);
                 }
+            }
+
+            // players
+            for (const auto &player : {Player::one, Player::two}) {
+                spy::gameplay::State state = root_machine(fsm).gameState;
+                state.setKnownSafeCombinations(root_machine(fsm).knownCombinations.at(player));
+                spy::network::messages::GameStatus message(
+                        playerIds.at(player),
+                        fsm.activeCharacter,
+                        fsm.operations,
+                        state,
+                        gameOver);
+
+                router.sendMessage(message);
             }
 
             fsm.operations.clear();
