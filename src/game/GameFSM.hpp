@@ -145,22 +145,39 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
             struct roundInit : state<roundInit> {
                 template<typename FSM, typename Event>
                 void on_enter(Event &&, FSM &fsm) {
-                    spdlog::info("Entering state roundInit");
                     const auto &characters = root_machine(fsm).gameState.getCharacters();
+                    spy::gameplay::State &state = root_machine(fsm).gameState;
+                    const spy::MatchConfig &matchConfig = root_machine(fsm).matchConfig;
+                    state.incrementRoundCounter();
+
+                    spdlog::info("Entering state roundInit for round {}", state.getCurrentRound());
 
                     for (const auto &c: characters) {
-                        fsm.remainingCharacters.push_back(c.getCharacterId());
+                        if (c.getCoordinates().has_value()) {
+                            fsm.remainingCharacters.push_back(c.getCharacterId());
+                        }
                     }
+                    fsm.remainingCharacters.push_back(root_machine(fsm).catId);
+
+                    // janitor is only active after the round limit was reached
+                    if (state.getCurrentRound() >= matchConfig.getRoundLimit()) {
+                        fsm.remainingCharacters.push_back(root_machine(fsm).janitorId);
+                    }
+
                     std::shuffle(fsm.remainingCharacters.begin(), fsm.remainingCharacters.end(), root_machine(fsm).rng);
 
                     fsm.activeCharacter = fsm.remainingCharacters.front();
 
                     spdlog::info("Initialized round order:");
                     for (const auto &uuid: fsm.remainingCharacters) {
-                        spdlog::info("{} \t({})", characters.findByUUID(uuid)->getName(), uuid);
+                        if (uuid == root_machine(fsm).catId) {
+                            spdlog::info("White cat");
+                        } else if (uuid == root_machine(fsm).janitorId) {
+                            spdlog::info("Janitor");
+                        } else {
+                            spdlog::info("{} \t({})", characters.findByUUID(uuid)->getName(), uuid);
+                        }
                     }
-                    spy::gameplay::State &state = root_machine(fsm).gameState;
-                    const spy::MatchConfig &matchConfig = root_machine(fsm).matchConfig;
 
                     using spy::util::RoundUtils;
 
@@ -190,7 +207,9 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                 using internal_transitions = transition_table <
                 // Event                                  Action                                                                                               Guard
                 in<spy::network::messages::GameOperation, actions::multiple<actions::handleOperation, actions::broadcastState, actions::requestNextOperation>, and_<guards::operationValid, guards::charactersRemaining>>,
-                in<events::triggerNPCmove,                actions::multiple<actions::npcMove, actions::broadcastState, actions::requestNextOperation>>
+                in<events::triggerNPCmove,                actions::multiple<actions::npcMove, actions::broadcastState, actions::requestNextOperation>>,
+                in<events::triggerCatMove,                actions::multiple<actions::catMove, actions::broadcastState, actions::requestNextOperation>>,
+                in<events::triggerJanitorMove,            actions::multiple<actions::janitorMove, actions::broadcastState, actions::requestNextOperation>>
                 >;
                 // @formatter:on
             };
@@ -203,7 +222,9 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
             //  Start               Event                                  Next                 Action                                                                      Guard
             tr<roundInit,           events::roundInitDone,                 waitingForOperation, actions::multiple<actions::broadcastState, actions::requestNextOperation>>,
             tr<waitingForOperation, spy::network::messages::GameOperation, roundInit,           actions::multiple<actions::handleOperation, actions::broadcastState>,        not_<guards::charactersRemaining>>,
-            tr<waitingForOperation, events::triggerNPCmove,                roundInit,           actions::multiple<actions::npcMove, actions::broadcastState>,                not_<guards::charactersRemaining>>
+            tr<waitingForOperation, events::triggerNPCmove,                roundInit,           actions::multiple<actions::npcMove, actions::broadcastState>,                not_<guards::charactersRemaining>>,
+            tr<waitingForOperation, events::triggerCatMove,                roundInit,           actions::multiple<actions::catMove, actions::broadcastState>,                not_<guards::charactersRemaining>>,
+            tr<waitingForOperation, events::triggerJanitorMove,            roundInit,           actions::multiple<actions::janitorMove, actions::broadcastState>,            not_<guards::charactersRemaining>>
             >;
             // @formatter:on
         };
@@ -221,12 +242,12 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
         tr<decltype(choicePhase), spy::network::messages::ItemChoice,      equipPhase, actions::multiple<actions::handleChoice, actions::createCharacterSet>, and_<guards::lastChoice, guards::choiceValid>>,
         tr<equipPhase,            spy::network::messages::EquipmentChoice, gamePhase,  actions::handleEquipmentChoice,                                        and_<guards::lastEquipmentChoice, guards::equipmentChoiceValid>>
         >;
-        // @formatter:on
 
         using internal_transitions = transition_table <
         // Event                                           Action
         // Reply to MetaInformation request at any time during the game
         in<spy::network::messages::RequestMetaInformation, actions::sendMetaInformation>>;
+        // @formatter:on
 };
 
 #endif //SERVER017_GAMEFSM_HPP

@@ -84,7 +84,7 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         std::exit(1);
     }
 
-    gameState = spy::gameplay::State{1, spy::scenario::FieldMap{scenarioConfig}, {}, {}, spy::util::Point{1, 1},
+    gameState = spy::gameplay::State{0, spy::scenario::FieldMap{scenarioConfig}, {}, {}, spy::util::Point{},
                                      spy::util::Point{}};
 
     using serverFSM = afsm::state_machine<Server>;
@@ -122,11 +122,11 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         } else {
             // message dropped
             spdlog::warn("Client {} sent an {} message that was dropped due to role filtering",
-                    msg.getClientId(), fmt::json(msg.getType()));
+                         msg.getClientId(), fmt::json(msg.getType()));
         }
     };
 
-    auto discardNotImplemented = [](auto msg){
+    auto discardNotImplemented = [](auto msg) {
         spdlog::warn("Received message of type {}, handling is not implemented.", fmt::json(msg.getType()));
     };
 

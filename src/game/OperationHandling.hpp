@@ -12,6 +12,7 @@
 #include <network/messages/GameStatus.hpp>
 #include <util/RoundUtils.hpp>
 #include <gameLogic/generation/ActionGenerator.hpp>
+#include <gameLogic/execution/ActionExecutor.hpp>
 #include "util/Format.hpp"
 #include "util/Player.hpp"
 #include "util/Operation.hpp"
@@ -111,36 +112,101 @@ namespace actions {
                 return;
             }
 
-            // Find character object by UUID to determine faction
-            auto activeChar = std::find_if(state.getCharacters().begin(),
-                                           state.getCharacters().end(),
-                                           [&fsm](const spy::character::Character &c) {
-                                               return c.getCharacterId() == fsm.activeCharacter;
-                                           });
+            if (fsm.activeCharacter == root_machine(fsm).catId) {
+                spdlog::debug("requestNextOperation determined that next character is the white cat"
+                              "-> Not requesting, triggering cat move instead.");
 
-            Player activePlayer;
-            switch (activeChar->getFaction()) {
-                case spy::character::FactionEnum::PLAYER1:
-                    activePlayer = Player::one;
-                    break;
-                case spy::character::FactionEnum::PLAYER2:
-                    activePlayer = Player::two;
-                    break;
-                default:
-                    // Do not request when next is NPCmove
-                    spdlog::debug("requestNextOperation determined that next character is not a PC"
-                                  "-> Not requesting, triggering NPC move instead.");
-                    root_machine(fsm).process_event(events::triggerNPCmove{});
-                    return;
+                root_machine(fsm).process_event(events::triggerCatMove{});
+                return;
+            } else if (fsm.activeCharacter == root_machine(fsm).janitorId) {
+                spdlog::debug("requestNextOperation determined that next character is the janitor"
+                              "-> Not requesting, triggering janitor move instead.");
+
+                root_machine(fsm).process_event(events::triggerJanitorMove{});
+                return;
+            } else {
+                // Find character object by UUID to determine faction
+                auto activeChar = std::find_if(state.getCharacters().begin(),
+                                               state.getCharacters().end(),
+                                               [&fsm](const spy::character::Character &c) {
+                                                   return c.getCharacterId() == fsm.activeCharacter;
+                                               });
+
+                Player activePlayer;
+                switch (activeChar->getFaction()) {
+                    case spy::character::FactionEnum::PLAYER1:
+                        activePlayer = Player::one;
+                        break;
+                    case spy::character::FactionEnum::PLAYER2:
+                        activePlayer = Player::two;
+                        break;
+                    default:
+                        // Do not request when next is NPCmove
+                        spdlog::debug("requestNextOperation determined that next character is not a PC"
+                                      "-> Not requesting, triggering NPC move instead.");
+                        root_machine(fsm).process_event(events::triggerNPCmove{});
+                        return;
+                }
+
+                spy::network::messages::RequestGameOperation request{
+                        root_machine(fsm).playerIds.find(activePlayer)->second,
+                        fsm.activeCharacter
+                };
+                MessageRouter &router = root_machine(fsm).router;
+                spdlog::info("Requesting Operation for character {} from player {}", activeChar->getName(), activePlayer);
+                router.sendMessage(request);
             }
+        }
+    };
 
-            spy::network::messages::RequestGameOperation request{
-                    root_machine(fsm).playerIds.find(activePlayer)->second,
-                    fsm.activeCharacter
-            };
-            MessageRouter &router = root_machine(fsm).router;
-            spdlog::info("Requesting Operation for character {} from player {}", activeChar->getName(), activePlayer);
-            router.sendMessage(request);
+    /**
+     * @brief Generates and executes a cat movement and sets next character as active
+     */
+    struct catMove {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
+            spdlog::info("Generating cat action");
+
+            using spy::gameplay::State;
+            using spy::gameplay::ActionExecutor;
+            using spy::gameplay::ActionGenerator;
+            using spy::gameplay::CatAction;
+
+            State &state = root_machine(fsm).gameState;
+
+            auto catAction = ActionGenerator::generateCatAction(state);
+
+            ActionExecutor::executeCat(state, *std::dynamic_pointer_cast<const CatAction>(catAction));
+
+            if (!fsm.remainingCharacters.empty()) {
+                fsm.activeCharacter = fsm.remainingCharacters.front();
+                fsm.remainingCharacters.pop_front();
+            }
+        }
+    };
+
+    /**
+     * @brief Generates and executes a janitor movement and sets next character as active
+     */
+    struct janitorMove {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
+            spdlog::info("Generating janitor action");
+            using spy::gameplay::State;
+            using spy::gameplay::ActionExecutor;
+            using spy::gameplay::ActionGenerator;
+            using spy::gameplay::JanitorAction;
+
+            State &state = root_machine(fsm).gameState;
+
+            auto janitorAction = ActionGenerator::generateJanitorAction(state);
+
+            ActionExecutor::executeJanitor(state, *std::dynamic_pointer_cast<const JanitorAction>(janitorAction));
+
+            if (!fsm.remainingCharacters.empty()) {
+                fsm.activeCharacter = fsm.remainingCharacters.front();
+                fsm.remainingCharacters.pop_front();
+            }
         }
     };
 }
