@@ -117,8 +117,7 @@ namespace actions {
             // send the spectator state to all spectators
             for (const auto &[uuid, role] : clientRoles) {
                 if (role == spy::network::RoleEnum::SPECTATOR) {
-                    messageSpec.setClientId(uuid);
-                    router.sendMessage(messageSpec);
+                    router.sendMessage(uuid, messageSpec);
                 }
             }
 
