@@ -84,14 +84,33 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                 spy::gameplay::State &gameState = root_machine(fsm).gameState;
                 spy::MatchConfig &config = root_machine(fsm).matchConfig;
                 std::mt19937 &rng = root_machine(fsm).rng;
+                auto &knownCombinations = root_machine(fsm).knownCombinations;
 
-                // Initialize roulette tables with random amount of chips
-                gameState.getMap().forAllFields([&rng, &config](spy::scenario::Field &field) {
+                knownCombinations[Player::one] = {};
+                knownCombinations[Player::two] = {};
+
+                std::vector<unsigned int> safeIndexes;
+
+                gameState.getMap().forAllFields([&safeIndexes](const spy::scenario::Field &f) {
+                    if (f.getFieldState() == spy::scenario::FieldStateEnum::SAFE) {
+                        safeIndexes.push_back(safeIndexes.size() + 1);
+                    }
+                });
+
+                std::shuffle(safeIndexes.begin(), safeIndexes.end(), root_machine(fsm).rng);
+
+                auto indexIterator = safeIndexes.begin();
+
+                // Initialize roulette tables with random amount of chips, safes with an index
+                gameState.getMap().forAllFields([&rng, &config, &indexIterator](spy::scenario::Field &field) {
                     if (field.getFieldState() == spy::scenario::FieldStateEnum::ROULETTE_TABLE) {
                         std::uniform_int_distribution<unsigned int> randChips(config.getMinChipsRoulette(),
                                                                               config.getMaxChipsRoulette());
 
                         field.setChipAmount(randChips(rng));
+                    } else if (field.getFieldState() == spy::scenario::FieldStateEnum::SAFE) {
+                        field.setSafeIndex(*indexIterator);
+                        indexIterator++;
                     }
                 });
 
