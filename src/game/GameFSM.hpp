@@ -34,7 +34,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
 
 
             CharacterMap chosenCharacters;              ///< Stores the character choice of the players
-            GadgetMap chosenGadgets;                 ///< Stores the gadget choice of the players
+            GadgetMap chosenGadgets;                    ///< Stores the gadget choice of the players
             std::map<spy::util::UUID, bool> hasChosen;  ///< Stores whether the client has already sent his equip choice
 
             template<typename FSM, typename Event>
@@ -145,6 +145,10 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
             struct roundInit : state<roundInit> {
                 template<typename FSM, typename Event>
                 void on_enter(Event &&, FSM &fsm) {
+                    using spy::util::GameLogicUtils;
+                    using spy::scenario::FieldStateEnum;
+                    using spy::util::RoundUtils;
+
                     const auto &characters = root_machine(fsm).gameState.getCharacters();
                     spy::gameplay::State &state = root_machine(fsm).gameState;
                     const spy::MatchConfig &matchConfig = root_machine(fsm).matchConfig;
@@ -161,6 +165,26 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
 
                     // janitor is only active after the round limit was reached
                     if (state.getCurrentRound() >= matchConfig.getRoundLimit()) {
+                        if (!state.getJanitorCoordinates().has_value()) {
+                            auto randomField = GameLogicUtils::getRandomMapPoint(state, [&state](const auto &p) {
+                                // Random free/seat without character
+                                auto field = state.getMap().getField(p);
+                                if (field.getFieldState() != FieldStateEnum::BAR_SEAT
+                                    and field.getFieldState() != FieldStateEnum::FREE) {
+                                    // Wrong field type
+                                    return false;
+                                }
+                                return !GameLogicUtils::isPersonOnField(state, p);
+                            });
+
+                            if (!randomField.has_value()) {
+                                spdlog::critical("No field to place the janitor");
+                                std::exit(1);
+                            }
+                            spdlog::debug("Initial placement of the janitor at {}", fmt::json(randomField.value()));
+                            state.setJanitorCoordinates(randomField.value());
+                        }
+
                         fsm.remainingCharacters.push_back(root_machine(fsm).janitorId);
                     }
 
@@ -178,8 +202,6 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                             spdlog::info("{} \t({})", characters.findByUUID(uuid)->getName(), uuid);
                         }
                     }
-
-                    using spy::util::RoundUtils;
 
                     RoundUtils::refillBarTables(state);
                     RoundUtils::updateFog(state);
