@@ -84,8 +84,8 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         std::exit(1);
     }
 
-    gameState = spy::gameplay::State{0, spy::scenario::FieldMap{scenarioConfig}, {}, {}, spy::util::Point{},
-                                     spy::util::Point{}};
+    gameState = spy::gameplay::State{0, spy::scenario::FieldMap{scenarioConfig}, {}, {}, std::nullopt,
+                                     std::nullopt};
 
     using serverFSM = afsm::state_machine<Server>;
     auto &fsm = static_cast<serverFSM &>(*this);
