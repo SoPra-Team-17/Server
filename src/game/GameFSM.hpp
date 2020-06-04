@@ -179,7 +179,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
 
                             if (!randomField.has_value()) {
                                 spdlog::critical("No field to place the janitor");
-                                std::exit(1);
+                                throw std::invalid_argument("No field to place the janitor");
                             }
                             spdlog::debug("Initial placement of the janitor at {}", fmt::json(randomField.value()));
                             state.setJanitorCoordinates(randomField.value());
