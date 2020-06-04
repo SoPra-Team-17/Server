@@ -25,14 +25,37 @@ namespace actions {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&e, FSM &fsm, SourceState &, TargetState &) {
             using spy::network::messages::GameOperation;
+            using spy::gameplay::State;
+
             spdlog::info("Handling some operation");
+
+            State &state = root_machine(fsm).gameState;
+            auto &knownCombinations = root_machine(fsm).knownCombinations;
 
             const GameOperation &operationMessage = std::forward<GameOperation>(e);
 
+            // update the state with the current players safe combination knowledge
+            auto activeCharacter = state.getCharacters().findByUUID(fsm.activeCharacter);
+            Player player;
+            if (activeCharacter->getFaction() == spy::character::FactionEnum::PLAYER1) {
+                player = Player::one;
+            } else if (activeCharacter->getFaction() == spy::character::FactionEnum::PLAYER2) {
+                player = Player::two;
+            } else {
+                spdlog::error("[HandleOperation] active character is no player character");
+                return;
+            }
+
+            state.setKnownSafeCombinations(knownCombinations.at(player));
+
+
             executeOperation(operationMessage.getOperation(),
-                             root_machine(fsm).gameState,
+                             state,
                              root_machine(fsm).matchConfig,
                              fsm.operations);
+
+            // copy the potentially changed known combinations back to the map
+            knownCombinations[player] = state.getMySafeCombinations();
 
             // Choose next character
             if (!fsm.remainingCharacters.empty()) {
@@ -48,20 +71,50 @@ namespace actions {
         }
     };
 
+    /**
+     * Broadcasts the current state to the players and the spectators. Spectators receive no information about
+     * the known safe combinations, the players receive their respective knowledge.
+     */
     struct broadcastState {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
             spdlog::info("Broadcasting state");
-            spy::gameplay::State &state = root_machine(fsm).gameState;
             MessageRouter &router = root_machine(fsm).router;
+            const auto &playerIds = root_machine(fsm).playerIds;
+            const auto &clientRoles = root_machine(fsm).clientRoles;
 
-            spy::network::messages::GameStatus g{
-                    {}, // clientId filled out by router when broadcasting
+            // spectators
+            spy::gameplay::State stateSpec = root_machine(fsm).gameState;
+            bool gameOver = spy::util::RoundUtils::isGameOver(stateSpec);
+            stateSpec.setKnownSafeCombinations({});
+            spy::network::messages::GameStatus messageSpec(
+                    {}, // filled out by the message router
                     fsm.activeCharacter,
                     fsm.operations,
-                    state,
-                    spy::util::RoundUtils::isGameOver(state)};
-            router.broadcastMessage(g);
+                    stateSpec,
+                    gameOver);
+
+            // send the spectator state to all spectators
+            for (const auto &[uuid, role] : clientRoles) {
+                if (role == spy::network::RoleEnum::SPECTATOR) {
+                    router.sendMessage(uuid, messageSpec);
+                }
+            }
+
+            // players
+            for (const auto &player : {Player::one, Player::two}) {
+                spy::gameplay::State state = root_machine(fsm).gameState;
+                state.setKnownSafeCombinations(root_machine(fsm).knownCombinations.at(player));
+                spy::network::messages::GameStatus message(
+                        playerIds.at(player),
+                        fsm.activeCharacter,
+                        fsm.operations,
+                        state,
+                        gameOver);
+
+                router.sendMessage(message);
+            }
+
             fsm.operations.clear();
         }
     };

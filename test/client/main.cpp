@@ -138,8 +138,8 @@ struct TestClient {
         wsClient.send(hj.dump());
     }
 
-    void sendRequestPause() {
-        auto msg = spy::network::messages::RequestGamePause{id, true};
+    void sendRequestPause(bool pause) {
+        auto msg = spy::network::messages::RequestGamePause{id, pause};
         nlohmann::json mj = msg;
         wsClient.send(mj.dump());
     }
@@ -175,6 +175,15 @@ int main() {
     std::this_thread::sleep_for(std::chrono::seconds{5});
 
     c1.requestMetaInformation();
+
+    // Pause, unpause within time limit
+    c1.sendRequestPause(true);
+    std::this_thread::sleep_for(std::chrono::seconds{3});
+    // Unpause
+    c1.sendRequestPause(false);
+
+    // Pause, wait for time limit to expire
+    c1.sendRequestPause(true);
 
     std::cout << "done" << std::endl;
     std::this_thread::sleep_for(std::chrono::hours{100});

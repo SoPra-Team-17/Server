@@ -21,6 +21,7 @@
 #include "util/ChoiceSet.hpp"
 #include "ChoicePhaseFSM.hpp"
 #include "EquipChoiceHandling.hpp"
+#include "util/Timer.hpp"
 
 class GameFSM : public afsm::def::state_machine<GameFSM> {
     public:
@@ -84,14 +85,33 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                 spy::gameplay::State &gameState = root_machine(fsm).gameState;
                 spy::MatchConfig &config = root_machine(fsm).matchConfig;
                 std::mt19937 &rng = root_machine(fsm).rng;
+                auto &knownCombinations = root_machine(fsm).knownCombinations;
 
-                // Initialize roulette tables with random amount of chips
-                gameState.getMap().forAllFields([&rng, &config](spy::scenario::Field &field) {
+                knownCombinations[Player::one] = {};
+                knownCombinations[Player::two] = {};
+
+                std::vector<unsigned int> safeIndexes;
+
+                gameState.getMap().forAllFields([&safeIndexes](const spy::scenario::Field &f) {
+                    if (f.getFieldState() == spy::scenario::FieldStateEnum::SAFE) {
+                        safeIndexes.push_back(safeIndexes.size() + 1);
+                    }
+                });
+
+                std::shuffle(safeIndexes.begin(), safeIndexes.end(), root_machine(fsm).rng);
+
+                auto indexIterator = safeIndexes.begin();
+
+                // Initialize roulette tables with random amount of chips, safes with an index
+                gameState.getMap().forAllFields([&rng, &config, &indexIterator](spy::scenario::Field &field) {
                     if (field.getFieldState() == spy::scenario::FieldStateEnum::ROULETTE_TABLE) {
                         std::uniform_int_distribution<unsigned int> randChips(config.getMinChipsRoulette(),
                                                                               config.getMaxChipsRoulette());
 
                         field.setChipAmount(randChips(rng));
+                    } else if (field.getFieldState() == spy::scenario::FieldStateEnum::SAFE) {
+                        field.setSafeIndex(*indexIterator);
+                        indexIterator++;
                     }
                 });
 
@@ -236,17 +256,41 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                 // @formatter:on
             };
 
+            struct paused : state<paused> {
+                template<typename FSM, typename Event>
+                void on_enter(Event &&, FSM &fsm) {
+                    spdlog::info("Entering state paused, serverEnforced={}", serverEnforced);
+                    spy::MatchConfig matchConfig = root_machine(fsm).matchConfig;
+                    if (not serverEnforced and matchConfig.getPauseLimit().has_value()) {
+                        spdlog::info("Starting pause timer for {} seconds", matchConfig.getPauseLimit().value());
+                        timer.restart(std::chrono::seconds{matchConfig.getPauseLimit().value()}, [&fsm]() {
+                            spdlog::info("Pause time limit reached, unpausing.");
+                            root_machine(fsm).process_event(events::forceUnpause{});
+                        });
+                    }
+                }
+
+                bool serverEnforced = false;
+                Timer timer;
+            };
+
             using initial_state = roundInit;
 
 
             // @formatter:off
             using transitions = transition_table <
-            //  Start               Event                                  Next                 Action                                                                      Guard
-            tr<roundInit,           events::roundInitDone,                 waitingForOperation, actions::multiple<actions::broadcastState, actions::requestNextOperation>>,
-            tr<waitingForOperation, spy::network::messages::GameOperation, roundInit,           actions::multiple<actions::handleOperation, actions::broadcastState>,        not_<guards::charactersRemaining>>,
-            tr<waitingForOperation, events::triggerNPCmove,                roundInit,           actions::multiple<actions::npcMove, actions::broadcastState>,                not_<guards::charactersRemaining>>,
-            tr<waitingForOperation, events::triggerCatMove,                roundInit,           actions::multiple<actions::catMove, actions::broadcastState>,                not_<guards::charactersRemaining>>,
-            tr<waitingForOperation, events::triggerJanitorMove,            roundInit,           actions::multiple<actions::janitorMove, actions::broadcastState>,            not_<guards::charactersRemaining>>
+            //  Start               Event                                     Next                 Action                                                                      Guard
+            tr<roundInit,           events::roundInitDone,                    waitingForOperation, actions::multiple<actions::broadcastState, actions::requestNextOperation>>,
+            tr<waitingForOperation, spy::network::messages::GameOperation,    roundInit,           actions::multiple<actions::handleOperation, actions::broadcastState>,        not_<guards::charactersRemaining>>,
+            tr<waitingForOperation, events::triggerNPCmove,                   roundInit,           actions::multiple<actions::npcMove, actions::broadcastState>,                not_<guards::charactersRemaining>>,
+            tr<waitingForOperation, events::triggerCatMove,                   roundInit,           actions::multiple<actions::catMove, actions::broadcastState>,                not_<guards::charactersRemaining>>,
+            tr<waitingForOperation, events::triggerJanitorMove,               roundInit,           actions::multiple<actions::janitorMove, actions::broadcastState>,            not_<guards::charactersRemaining>>,
+            // Player requested pause
+            tr<waitingForOperation, spy::network::messages::RequestGamePause, paused,              actions::pauseGame,                                                          guards::isPauseRequest>,
+            // Player requested unpause
+            tr<paused,              spy::network::messages::RequestGamePause, waitingForOperation, actions::unpauseGame,                                                        guards::isUnPauseRequest>,
+            // Server forced unpause
+            tr<paused,              events::forceUnpause,                     waitingForOperation, actions::unpauseGame>
             >;
             // @formatter:on
         };
@@ -268,7 +312,8 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
         using internal_transitions = transition_table <
         // Event                                           Action
         // Reply to MetaInformation request at any time during the game
-        in<spy::network::messages::RequestMetaInformation, actions::sendMetaInformation>>;
+        in<spy::network::messages::RequestMetaInformation, actions::sendMetaInformation>,
+        in<spy::network::messages::Hello,         actions::HelloReply,    guards::isSpectator>>;
         // @formatter:on
 };
 
