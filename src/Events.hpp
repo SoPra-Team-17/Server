@@ -16,5 +16,11 @@ namespace events {
 
     struct forceUnpause {
     };
+
+    struct triggerCatMove {
+    };
+
+    struct triggerJanitorMove {
+    };
 }
 #endif //SERVER017_EVENTS_HPP

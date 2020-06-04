@@ -85,14 +85,33 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                 spy::gameplay::State &gameState = root_machine(fsm).gameState;
                 spy::MatchConfig &config = root_machine(fsm).matchConfig;
                 std::mt19937 &rng = root_machine(fsm).rng;
+                auto &knownCombinations = root_machine(fsm).knownCombinations;
 
-                // Initialize roulette tables with random amount of chips
-                gameState.getMap().forAllFields([&rng, &config](spy::scenario::Field &field) {
+                knownCombinations[Player::one] = {};
+                knownCombinations[Player::two] = {};
+
+                std::vector<unsigned int> safeIndexes;
+
+                gameState.getMap().forAllFields([&safeIndexes](const spy::scenario::Field &f) {
+                    if (f.getFieldState() == spy::scenario::FieldStateEnum::SAFE) {
+                        safeIndexes.push_back(safeIndexes.size() + 1);
+                    }
+                });
+
+                std::shuffle(safeIndexes.begin(), safeIndexes.end(), root_machine(fsm).rng);
+
+                auto indexIterator = safeIndexes.begin();
+
+                // Initialize roulette tables with random amount of chips, safes with an index
+                gameState.getMap().forAllFields([&rng, &config, &indexIterator](spy::scenario::Field &field) {
                     if (field.getFieldState() == spy::scenario::FieldStateEnum::ROULETTE_TABLE) {
                         std::uniform_int_distribution<unsigned int> randChips(config.getMinChipsRoulette(),
                                                                               config.getMaxChipsRoulette());
 
                         field.setChipAmount(randChips(rng));
+                    } else if (field.getFieldState() == spy::scenario::FieldStateEnum::SAFE) {
+                        field.setSafeIndex(*indexIterator);
+                        indexIterator++;
                     }
                 });
 
@@ -146,22 +165,39 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
             struct roundInit : state<roundInit> {
                 template<typename FSM, typename Event>
                 void on_enter(Event &&, FSM &fsm) {
-                    spdlog::info("Entering state roundInit");
                     const auto &characters = root_machine(fsm).gameState.getCharacters();
+                    spy::gameplay::State &state = root_machine(fsm).gameState;
+                    const spy::MatchConfig &matchConfig = root_machine(fsm).matchConfig;
+                    state.incrementRoundCounter();
+
+                    spdlog::info("Entering state roundInit for round {}", state.getCurrentRound());
 
                     for (const auto &c: characters) {
-                        fsm.remainingCharacters.push_back(c.getCharacterId());
+                        if (c.getCoordinates().has_value()) {
+                            fsm.remainingCharacters.push_back(c.getCharacterId());
+                        }
                     }
+                    fsm.remainingCharacters.push_back(root_machine(fsm).catId);
+
+                    // janitor is only active after the round limit was reached
+                    if (state.getCurrentRound() >= matchConfig.getRoundLimit()) {
+                        fsm.remainingCharacters.push_back(root_machine(fsm).janitorId);
+                    }
+
                     std::shuffle(fsm.remainingCharacters.begin(), fsm.remainingCharacters.end(), root_machine(fsm).rng);
 
                     fsm.activeCharacter = fsm.remainingCharacters.front();
 
                     spdlog::info("Initialized round order:");
                     for (const auto &uuid: fsm.remainingCharacters) {
-                        spdlog::info("{} \t({})", characters.findByUUID(uuid)->getName(), uuid);
+                        if (uuid == root_machine(fsm).catId) {
+                            spdlog::info("White cat");
+                        } else if (uuid == root_machine(fsm).janitorId) {
+                            spdlog::info("Janitor");
+                        } else {
+                            spdlog::info("{} \t({})", characters.findByUUID(uuid)->getName(), uuid);
+                        }
                     }
-                    spy::gameplay::State &state = root_machine(fsm).gameState;
-                    const spy::MatchConfig &matchConfig = root_machine(fsm).matchConfig;
 
                     using spy::util::RoundUtils;
 
@@ -191,7 +227,9 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                 using internal_transitions = transition_table <
                 // Event                                  Action                                                                                               Guard
                 in<spy::network::messages::GameOperation, actions::multiple<actions::handleOperation, actions::broadcastState, actions::requestNextOperation>, and_<guards::operationValid, guards::charactersRemaining>>,
-                in<events::triggerNPCmove,                actions::multiple<actions::npcMove, actions::broadcastState, actions::requestNextOperation>>
+                in<events::triggerNPCmove,                actions::multiple<actions::npcMove, actions::broadcastState, actions::requestNextOperation>>,
+                in<events::triggerCatMove,                actions::multiple<actions::catMove, actions::broadcastState, actions::requestNextOperation>>,
+                in<events::triggerJanitorMove,            actions::multiple<actions::janitorMove, actions::broadcastState, actions::requestNextOperation>>
                 >;
                 // @formatter:on
             };
@@ -223,6 +261,8 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
             tr<roundInit,           events::roundInitDone,                    waitingForOperation, actions::multiple<actions::broadcastState, actions::requestNextOperation>>,
             tr<waitingForOperation, spy::network::messages::GameOperation,    roundInit,           actions::multiple<actions::handleOperation, actions::broadcastState>,        not_<guards::charactersRemaining>>,
             tr<waitingForOperation, events::triggerNPCmove,                   roundInit,           actions::multiple<actions::npcMove, actions::broadcastState>,                not_<guards::charactersRemaining>>,
+            tr<waitingForOperation, events::triggerCatMove,                   roundInit,           actions::multiple<actions::catMove, actions::broadcastState>,                not_<guards::charactersRemaining>>,
+            tr<waitingForOperation, events::triggerJanitorMove,               roundInit,           actions::multiple<actions::janitorMove, actions::broadcastState>,            not_<guards::charactersRemaining>>,
             // Player requested pause
             tr<waitingForOperation, spy::network::messages::RequestGamePause, paused,              actions::pauseGame,                                                          guards::isPauseRequest>,
             // Player requested unpause
@@ -246,12 +286,12 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
         tr<decltype(choicePhase), spy::network::messages::ItemChoice,      equipPhase, actions::multiple<actions::handleChoice, actions::createCharacterSet>, and_<guards::lastChoice, guards::choiceValid>>,
         tr<equipPhase,            spy::network::messages::EquipmentChoice, gamePhase,  actions::handleEquipmentChoice,                                        and_<guards::lastEquipmentChoice, guards::equipmentChoiceValid>>
         >;
-        // @formatter:on
 
         using internal_transitions = transition_table <
         // Event                                           Action
         // Reply to MetaInformation request at any time during the game
         in<spy::network::messages::RequestMetaInformation, actions::sendMetaInformation>>;
+        // @formatter:on
 };
 
 #endif //SERVER017_GAMEFSM_HPP
