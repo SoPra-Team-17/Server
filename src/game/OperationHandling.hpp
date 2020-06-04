@@ -68,7 +68,7 @@ namespace actions {
                 if (!fsm.remainingCharacters.empty()) {
                     fsm.activeCharacter = fsm.remainingCharacters.front();
                     fsm.remainingCharacters.pop_front();
-                    auto nextCharacter = state.getCharacters().findByUUID(fsm.activeCharacter);
+                    auto nextCharacter = state.getCharacters().getByUUID(fsm.activeCharacter);
                     spdlog::info("Chose {} as next character.", nextCharacter->getName());
                     //check if character owns the anti plague mask and apply it's effect if necessary
                     if (nextCharacter->hasGadget(spy::gadget::GadgetEnum::ANTI_PLAGUE_MASK)) {
