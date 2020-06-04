@@ -7,7 +7,8 @@ set(SOURCES
         util/Player.cpp
         util/ChoiceSet.cpp
         util/Operation.cpp
-        util/Util.cpp)
+        util/Util.cpp
+        util/Timer.cpp)
 
 include_directories(.)
 
