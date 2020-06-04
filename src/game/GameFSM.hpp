@@ -226,7 +226,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                 using internal_transitions = transition_table <
                 // Event                                  Action                                                                                               Guard
                 in<spy::network::messages::GameOperation, actions::multiple<actions::handleOperation, actions::broadcastState, actions::requestNextOperation>, and_<guards::operationValid, guards::charactersRemaining>>,
-                in<events::triggerNPCmove,                actions::multiple<actions::npcMove, actions::broadcastState, actions::requestNextOperation>>,
+                in<events::triggerNPCmove,                actions::multiple<actions::npcMove, actions::broadcastState>>,
                 in<events::triggerCatMove,                actions::multiple<actions::catMove, actions::broadcastState, actions::requestNextOperation>>,
                 in<events::triggerJanitorMove,            actions::multiple<actions::janitorMove, actions::broadcastState, actions::requestNextOperation>>
                 >;

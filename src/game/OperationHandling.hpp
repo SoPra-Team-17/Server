@@ -58,14 +58,25 @@ namespace actions {
             knownCombinations[player] = state.getMySafeCombinations();
 
             // Choose next character
-            if (!fsm.remainingCharacters.empty()) {
-                fsm.activeCharacter = fsm.remainingCharacters.front();
-                fsm.remainingCharacters.pop_front();
-
-                //check if character owns the anti plague mask and apply it's effect if necessary
-                auto character = root_machine(fsm).gameState.getCharacters().getByUUID(fsm.activeCharacter);
-                if (character->hasGadget(spy::gadget::GadgetEnum::ANTI_PLAGUE_MASK)) {
-                    character->addHealthPoints(10);
+            const auto &character = state.getCharacters().findByUUID(fsm.activeCharacter);
+            if (character->getActionPoints() > 0 or character->getMovePoints() > 0) {
+                spdlog::info("{} has AP/MP left, not choosing next character.", character->getName());
+                return;
+            } else {
+                spdlog::info("Choosing next character");
+                // Choose next character
+                if (!fsm.remainingCharacters.empty()) {
+                    fsm.activeCharacter = fsm.remainingCharacters.front();
+                    fsm.remainingCharacters.pop_front();
+                    auto nextCharacter = state.getCharacters().findByUUID(fsm.activeCharacter);
+                    spdlog::info("Chose {} as next character.", nextCharacter->getName());
+                    //check if character owns the anti plague mask and apply it's effect if necessary
+                    if (nextCharacter->hasGadget(spy::gadget::GadgetEnum::ANTI_PLAGUE_MASK)) {
+                        spdlog::info("Applying anti plague mask");
+                        nextCharacter->addHealthPoints(10);
+                    }
+                } else {
+                    spdlog::info("No characters remaining");
                 }
             }
         }
@@ -120,7 +131,7 @@ namespace actions {
     };
 
     /**
-     * @brief Generates and executes a NPC action and sets next character as active
+     * @brief Generates and a NPC action and posts it to the FSM
      */
     struct npcMove {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
@@ -133,28 +144,22 @@ namespace actions {
                                                                 root_machine(fsm).matchConfig);
 
             if (npcAction != nullptr) {
-                executeOperation(npcAction,
-                                 root_machine(fsm).gameState,
-                                 root_machine(fsm).matchConfig,
-                                 fsm.operations);
+                spy::network::messages::GameOperation op{{}, npcAction};
+                root_machine(fsm).process_event(op);
             } else {
                 spdlog::error("Generating NPC action failed.");
-            }
-
-            if (!fsm.remainingCharacters.empty()) {
-                fsm.activeCharacter = fsm.remainingCharacters.front();
-                fsm.remainingCharacters.pop_front();
             }
         }
     };
 
     /**
-     * Request operation from next character in list, emits events::triggerNPCmove if next is NPC
+     * Request operation from the currently active character, emits events::triggerNPCmove, triggerCatMove,
+     * triggerJanitorMove
      */
     struct requestNextOperation {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
-            spdlog::trace("requestNextOperation for character {}", fsm.activeCharacter);
+
             spy::gameplay::State &state = root_machine(fsm).gameState;
             using spy::util::RoundUtils;
 
@@ -179,11 +184,8 @@ namespace actions {
                 return;
             } else {
                 // Find character object by UUID to determine faction
-                auto activeChar = std::find_if(state.getCharacters().begin(),
-                                               state.getCharacters().end(),
-                                               [&fsm](const spy::character::Character &c) {
-                                                   return c.getCharacterId() == fsm.activeCharacter;
-                                               });
+                auto activeChar = state.getCharacters().findByUUID(fsm.activeCharacter);
+                spdlog::trace("requestNextOperation for character {}", activeChar->getName());
 
                 Player activePlayer;
                 switch (activeChar->getFaction()) {
