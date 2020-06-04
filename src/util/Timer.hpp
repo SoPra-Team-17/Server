@@ -26,9 +26,9 @@ class Timer {
 
         Timer &operator=(const Timer &other) = delete;
 
-        Timer(Timer &&t) : stopped{std::move(t.stopped)} {};
+        Timer(Timer &&t)  noexcept : stopped{std::move(t.stopped)} {};
 
-        Timer &operator=(Timer &&t) {
+        Timer &operator=(Timer &&t)  noexcept {
             stop();
             stopped = std::move(t.stopped);
             return *this;
@@ -39,14 +39,14 @@ class Timer {
         }
 
         /**
-         * Starts the timer to execute a function after the specified timeout
+         * Restarts the timer to execute a function after the specified timeout
          * @param timeout Timer duration
          * @param function Function to execute after timeout
          * @param args Arguments to function
          * @details If the timer is running already, this will stop the old and create a new timer
          */
         template<typename FunctionType, typename Rep, typename Period, typename ...Args>
-        void start(std::chrono::duration<Rep, Period> timeout, FunctionType function, Args &&... args) {
+        void restart(std::chrono::duration<Rep, Period> timeout, FunctionType function, Args &&... args) {
             // Stop old thread
             stop();
             // Create new status variable for new thread

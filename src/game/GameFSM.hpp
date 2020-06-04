@@ -203,7 +203,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                     spy::MatchConfig matchConfig = root_machine(fsm).matchConfig;
                     if (not serverEnforced and matchConfig.getPauseLimit().has_value()) {
                         spdlog::info("Starting pause timer for {} seconds", matchConfig.getPauseLimit().value());
-                        timer.start(std::chrono::seconds{matchConfig.getPauseLimit().value()}, [&fsm]() {
+                        timer.restart(std::chrono::seconds{matchConfig.getPauseLimit().value()}, [&fsm]() {
                             spdlog::info("Pause time limit reached, unpausing.");
                             root_machine(fsm).process_event(events::forceUnpause{});
                         });
