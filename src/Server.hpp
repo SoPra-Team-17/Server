@@ -39,6 +39,13 @@ class Server : public afsm::def::state_machine<Server> {
 
                 root_machine(fsm).isIngame = false;
             }
+
+            // @formatter:off
+            using internal_transitions = transition_table <
+            // Event                                  Action                  Guard
+            in<spy::network::messages::Hello,         actions::HelloReply,    guards::isSpectator>
+            >;
+            // @formatter:on
         };
 
         struct waitFor2Player : state<waitFor2Player> {
@@ -46,6 +53,13 @@ class Server : public afsm::def::state_machine<Server> {
             void on_enter(Event &&, FSM &) {
                 spdlog::debug("Entering state waitFor2Player");
             }
+
+            // @formatter:off
+            using internal_transitions = transition_table <
+            // Event                                  Action                  Guard
+            in<spy::network::messages::Hello,         actions::HelloReply,    guards::isSpectator>
+            >;
+            // @formatter:on
         };
 
         GameFSM game;
@@ -55,9 +69,9 @@ class Server : public afsm::def::state_machine<Server> {
         // @formatter:off
         using transitions = transition_table <
         // Start               Event                               Next            Action                                                               Guard
-        tr<emptyLobby,         spy::network::messages::Hello,      waitFor2Player, actions::multiple<actions::InitializeSession, actions::HelloReply>>,
+        tr<emptyLobby,         spy::network::messages::Hello,      waitFor2Player, actions::multiple<actions::InitializeSession, actions::HelloReply>, not_<guards::isSpectator>>,
         tr<waitFor2Player,     spy::network::messages::GameLeave,  emptyLobby>,
-        tr<waitFor2Player,     spy::network::messages::Hello,      decltype(game), actions::multiple<actions::HelloReply, actions::StartGame>>,
+        tr<waitFor2Player,     spy::network::messages::Hello,      decltype(game), actions::multiple<actions::HelloReply, actions::StartGame>,          not_<guards::isSpectator>>,
         tr<GameFSM,            none,                               emptyLobby,     actions::closeGame,                                                  guards::gameOver>
         >;
         // @formatter:on

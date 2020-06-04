@@ -165,6 +165,21 @@ namespace guards {
                                          state.serverEnforced);
         }
     };
+
+    /**
+     * @brief Guard passes if the chosen role of the client is spectator.
+     */
+    struct isSpectator {
+        template<typename FSM, typename FSMState, typename Event>
+        bool operator()(FSM const &fsm, FSMState const &, Event const &e) {
+            spdlog::debug("Testing spectator condition");
+
+            const auto &clientRoles = root_machine(fsm).clientRoles;
+            const spy::network::messages::Hello &message = e;
+
+            return (clientRoles.at(message.getClientId()) == spy::network::RoleEnum::SPECTATOR);
+        }
+    };
 }
 
 
