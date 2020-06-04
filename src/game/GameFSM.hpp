@@ -21,6 +21,7 @@
 #include "util/ChoiceSet.hpp"
 #include "ChoicePhaseFSM.hpp"
 #include "EquipChoiceHandling.hpp"
+#include "util/Timer.hpp"
 
 class GameFSM : public afsm::def::state_machine<GameFSM> {
     public:
@@ -233,17 +234,41 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                 // @formatter:on
             };
 
+            struct paused : state<paused> {
+                template<typename FSM, typename Event>
+                void on_enter(Event &&, FSM &fsm) {
+                    spdlog::info("Entering state paused, serverEnforced={}", serverEnforced);
+                    spy::MatchConfig matchConfig = root_machine(fsm).matchConfig;
+                    if (not serverEnforced and matchConfig.getPauseLimit().has_value()) {
+                        spdlog::info("Starting pause timer for {} seconds", matchConfig.getPauseLimit().value());
+                        timer.restart(std::chrono::seconds{matchConfig.getPauseLimit().value()}, [&fsm]() {
+                            spdlog::info("Pause time limit reached, unpausing.");
+                            root_machine(fsm).process_event(events::forceUnpause{});
+                        });
+                    }
+                }
+
+                bool serverEnforced = false;
+                Timer timer;
+            };
+
             using initial_state = roundInit;
 
 
             // @formatter:off
             using transitions = transition_table <
-            //  Start               Event                                  Next                 Action                                                                      Guard
-            tr<roundInit,           events::roundInitDone,                 waitingForOperation, actions::multiple<actions::broadcastState, actions::requestNextOperation>>,
-            tr<waitingForOperation, spy::network::messages::GameOperation, roundInit,           actions::multiple<actions::handleOperation, actions::broadcastState>,        not_<guards::charactersRemaining>>,
-            tr<waitingForOperation, events::triggerNPCmove,                roundInit,           actions::multiple<actions::npcMove, actions::broadcastState>,                not_<guards::charactersRemaining>>,
-            tr<waitingForOperation, events::triggerCatMove,                roundInit,           actions::multiple<actions::catMove, actions::broadcastState>,                not_<guards::charactersRemaining>>,
-            tr<waitingForOperation, events::triggerJanitorMove,            roundInit,           actions::multiple<actions::janitorMove, actions::broadcastState>,            not_<guards::charactersRemaining>>
+            //  Start               Event                                     Next                 Action                                                                      Guard
+            tr<roundInit,           events::roundInitDone,                    waitingForOperation, actions::multiple<actions::broadcastState, actions::requestNextOperation>>,
+            tr<waitingForOperation, spy::network::messages::GameOperation,    roundInit,           actions::multiple<actions::handleOperation, actions::broadcastState>,        not_<guards::charactersRemaining>>,
+            tr<waitingForOperation, events::triggerNPCmove,                   roundInit,           actions::multiple<actions::npcMove, actions::broadcastState>,                not_<guards::charactersRemaining>>,
+            tr<waitingForOperation, events::triggerCatMove,                   roundInit,           actions::multiple<actions::catMove, actions::broadcastState>,                not_<guards::charactersRemaining>>,
+            tr<waitingForOperation, events::triggerJanitorMove,               roundInit,           actions::multiple<actions::janitorMove, actions::broadcastState>,            not_<guards::charactersRemaining>>,
+            // Player requested pause
+            tr<waitingForOperation, spy::network::messages::RequestGamePause, paused,              actions::pauseGame,                                                          guards::isPauseRequest>,
+            // Player requested unpause
+            tr<paused,              spy::network::messages::RequestGamePause, waitingForOperation, actions::unpauseGame,                                                        guards::isUnPauseRequest>,
+            // Server forced unpause
+            tr<paused,              events::forceUnpause,                     waitingForOperation, actions::unpauseGame>
             >;
             // @formatter:on
         };

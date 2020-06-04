@@ -134,7 +134,7 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
     router.addItemChoiceListener(forwardMessage);
     router.addEquipmentChoiceListener(forwardMessage);
     router.addGameOperationListener(forwardMessage);
-    router.addPauseRequestListener(discardNotImplemented);
+    router.addPauseRequestListener(forwardMessage);
     router.addMetaInformationRequestListener(forwardMessage);
     router.addReplayRequestListener(discardNotImplemented);
 }
