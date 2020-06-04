@@ -20,23 +20,17 @@ class Timer {
         /**
          * Creates a stopped timer
          */
-        Timer() = default;
+        Timer();
 
         Timer(const Timer &other) = delete;
 
         Timer &operator=(const Timer &other) = delete;
 
-        Timer(Timer &&t)  noexcept : stopped{std::move(t.stopped)} {};
+        Timer(Timer &&t) noexcept;
 
-        Timer &operator=(Timer &&t)  noexcept {
-            stop();
-            stopped = std::move(t.stopped);
-            return *this;
-        }
+        Timer &operator=(Timer &&t) noexcept;
 
-        ~Timer() {
-            stop();
-        }
+        ~Timer();
 
         /**
          * Restarts the timer to execute a function after the specified timeout
@@ -67,13 +61,9 @@ class Timer {
          * @brief Stops the timer.
          * @details Timer thread will not terminate immediately, but will not execute function after time is up.
          */
-        void stop() {
-            *stopped = true;
-        }
+        void stop();
 
-        [[nodiscard]] bool isRunning() const {
-            return not(*stopped);
-        }
+        [[nodiscard]] bool isRunning() const;
 
     private:
         std::shared_ptr<bool> stopped = std::make_shared<bool>(true);
