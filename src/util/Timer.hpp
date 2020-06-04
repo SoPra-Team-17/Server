@@ -20,7 +20,7 @@ class Timer {
         /**
          * Creates a stopped timer
          */
-        Timer();
+        Timer() = default;
 
         Timer(const Timer &other) = delete;
 

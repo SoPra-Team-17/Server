@@ -26,8 +26,6 @@ Timer &Timer::operator=(Timer &&t) noexcept {
 
 Timer::Timer(Timer &&t) noexcept: stopped{std::move(t.stopped)} {}
 
-Timer::Timer() {}
-
 Timer::~Timer() {
     stop();
 }
