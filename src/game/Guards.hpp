@@ -141,13 +141,28 @@ namespace guards {
     };
 
     /**
-     * @brief Guard passes if RequestGamePause::gamePause is true
+     * @brief Guard passes if RequestGamePause message is a valid pause request
      */
     struct isPauseRequest {
         template<typename FSM, typename FSMState, typename Event>
-        bool operator()(FSM const &, FSMState const &, Event const &event) {
+        bool operator()(FSM const &fsm, FSMState const &, Event const &event) {
             const spy::network::messages::RequestGamePause &pauseRequest = event;
-            return pauseRequest.getGamePause();
+            return pauseRequest.validate(root_machine(fsm).clientRoles.at(pauseRequest.getClientId()),
+                                         false,
+                                         false);
+        }
+    };
+
+    /**
+     * @brief Guard passes if RequestGamePause message is a valid unpause request
+     */
+    struct isUnPauseRequest {
+        template<typename FSM, typename FSMState, typename Event>
+        bool operator()(FSM const &fsm, FSMState const &state, Event const &event) {
+            const spy::network::messages::RequestGamePause &pauseRequest = event;
+            return pauseRequest.validate(root_machine(fsm).clientRoles.at(pauseRequest.getClientId()),
+                                         true,
+                                         state.serverEnforced);
         }
     };
 }

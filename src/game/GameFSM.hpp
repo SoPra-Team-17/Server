@@ -226,7 +226,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
             // Player requested pause
             tr<waitingForOperation, spy::network::messages::RequestGamePause, paused,              actions::pauseGame,                                                          guards::isPauseRequest>,
             // Player requested unpause
-            tr<paused,              spy::network::messages::RequestGamePause, waitingForOperation, actions::unpauseGame,                                                        not_<guards::isPauseRequest>>,
+            tr<paused,              spy::network::messages::RequestGamePause, waitingForOperation, actions::unpauseGame,                                                        guards::isUnPauseRequest>,
             // Server forced unpause
             tr<paused,              events::forceUnpause,                     waitingForOperation, actions::unpauseGame>
             >;
