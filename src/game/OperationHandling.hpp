@@ -16,10 +16,11 @@
 #include "util/Format.hpp"
 #include "util/Player.hpp"
 #include "util/Operation.hpp"
+#include "util/Util.hpp"
 
 namespace actions {
     /**
-     * @brief Action to apply a valid operation to the state and set next character as active
+     * @brief Action to apply a valid operation to the state
      */
     struct handleOperation {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
@@ -36,14 +37,17 @@ namespace actions {
 
             // update the state with the current players safe combination knowledge
             auto activeCharacter = state.getCharacters().findByUUID(fsm.activeCharacter);
+
+            // Find player owning character
             Player player;
             if (activeCharacter->getFaction() == spy::character::FactionEnum::PLAYER1) {
                 player = Player::one;
+                spdlog::info("Character belongs to player one");
             } else if (activeCharacter->getFaction() == spy::character::FactionEnum::PLAYER2) {
                 player = Player::two;
+                spdlog::info("Character belongs to player two");
             } else {
-                spdlog::error("[HandleOperation] active character is no player character");
-                return;
+                spdlog::error("Character is NPC");
             }
 
             state.setKnownSafeCombinations(knownCombinations.at(player));
@@ -56,29 +60,6 @@ namespace actions {
 
             // copy the potentially changed known combinations back to the map
             knownCombinations[player] = state.getMySafeCombinations();
-
-            // Choose next character
-            const auto &character = state.getCharacters().findByUUID(fsm.activeCharacter);
-            if (character->getActionPoints() > 0 or character->getMovePoints() > 0) {
-                spdlog::info("{} has AP/MP left, not choosing next character.", character->getName());
-                return;
-            } else {
-                spdlog::info("Choosing next character");
-                // Choose next character
-                if (!fsm.remainingCharacters.empty()) {
-                    fsm.activeCharacter = fsm.remainingCharacters.front();
-                    fsm.remainingCharacters.pop_front();
-                    auto nextCharacter = state.getCharacters().getByUUID(fsm.activeCharacter);
-                    spdlog::info("Chose {} as next character.", nextCharacter->getName());
-                    //check if character owns the anti plague mask and apply it's effect if necessary
-                    if (nextCharacter->hasGadget(spy::gadget::GadgetEnum::ANTI_PLAGUE_MASK)) {
-                        spdlog::info("Applying anti plague mask");
-                        nextCharacter->addHealthPoints(10);
-                    }
-                } else {
-                    spdlog::info("No characters remaining");
-                }
-            }
         }
     };
 
@@ -131,9 +112,9 @@ namespace actions {
     };
 
     /**
-     * @brief Generates and a NPC action and posts it to the FSM
+     * @brief Generates a NPC action and posts it to the FSM
      */
-    struct npcMove {
+    struct generateNPCMove {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
             spdlog::info("Generating NPC action");
@@ -153,42 +134,66 @@ namespace actions {
     };
 
     /**
-     * Request operation from the currently active character, emits events::triggerNPCmove, triggerCatMove,
-     * triggerJanitorMove
+     * Chooses next Character and requests Operation.
+     * Emits events::triggerNPCmove, triggerCatMove, triggerJanitorMove, roundDone
      */
     struct requestNextOperation {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
-
+        void operator()(Event &&event, FSM &fsm, SourceState &, TargetState &) {
             spy::gameplay::State &state = root_machine(fsm).gameState;
-            using spy::util::RoundUtils;
 
-            if (RoundUtils::isGameOver(state)) {
-                // There are still characters remaining, but the game has been won with the last action
-                // We do not have to request a new operation, and abort early
+            if (spy::util::RoundUtils::isGameOver(state)) {
+                // There may still be characters remaining, but the game has been won with the last action.
+                // We do not have to request a new operation, and abort early.
                 spdlog::info("Skipping requestNextOperation because game is already over.");
                 return;
             }
 
-            if (fsm.activeCharacter == root_machine(fsm).catId) {
-                spdlog::debug("requestNextOperation determined that next character is the white cat"
-                              "-> Not requesting, triggering cat move instead.");
+            // Check if the current character has retired
+            bool isRetire = false;
+            if constexpr(std::is_same<Event, spy::network::messages::GameOperation>::value) {
+                const spy::network::messages::GameOperation &operation = event;
+                if (operation.getOperation()->getType() == spy::gameplay::OperationEnum::RETIRE) {
+                    isRetire = true;
+                }
+            }
 
-                root_machine(fsm).process_event(events::triggerCatMove{});
-                return;
-            } else if (fsm.activeCharacter == root_machine(fsm).janitorId) {
-                spdlog::debug("requestNextOperation determined that next character is the janitor"
-                              "-> Not requesting, triggering janitor move instead.");
+            if (isRetire or not Util::canMoveAgain(*state.getCharacters().findByUUID(fsm.activeCharacter))) {
+                spdlog::info("Character done. Choosing next.");
+                if (fsm.remainingCharacters.empty()) {
+                    spdlog::info("No characters remaining. Sending events::roundDone to FSM");
+                    root_machine(fsm).process_event(events::roundDone{});
+                    return;
+                }
 
-                root_machine(fsm).process_event(events::triggerJanitorMove{});
-                return;
-            } else {
-                // Find character object by UUID to determine faction
-                auto activeChar = state.getCharacters().findByUUID(fsm.activeCharacter);
-                spdlog::trace("requestNextOperation for character {}", activeChar->getName());
+                // Characters are remaining, take next:
+                fsm.activeCharacter = fsm.remainingCharacters.front();
+                fsm.remainingCharacters.pop_front();
+                spdlog::info("Chose {} as next character.", fsm.activeCharacter);
 
-                Player activePlayer;
-                switch (activeChar->getFaction()) {
+                // Check if special handling for Cat and Janitor is required
+                if (fsm.activeCharacter == root_machine(fsm).catId) {
+                    spdlog::debug("requestNextOperation determined that next character is the white cat"
+                                  "-> Not requesting, triggering cat move instead.");
+
+                    root_machine(fsm).process_event(events::triggerCatMove{});
+                    return;
+                } else if (fsm.activeCharacter == root_machine(fsm).janitorId) {
+                    spdlog::debug("requestNextOperation determined that next character is the janitor"
+                                  "-> Not requesting, triggering janitor move instead.");
+
+                    root_machine(fsm).process_event(events::triggerJanitorMove{});
+                    return;
+                }
+
+                // Regular character
+                spy::character::CharacterSet::iterator nextCharacter =
+                        state.getCharacters().getByUUID(fsm.activeCharacter);
+                spdlog::info("Next character is regular character {}", nextCharacter->getName());
+
+                // Determine which player the character belongs to
+                std::optional<Player> activePlayer;
+                switch (nextCharacter->getFaction()) {
                     case spy::character::FactionEnum::PLAYER1:
                         activePlayer = Player::one;
                         break;
@@ -196,28 +201,30 @@ namespace actions {
                         activePlayer = Player::two;
                         break;
                     default:
-                        // Do not request when next is NPCmove
-                        spdlog::debug("requestNextOperation determined that next character is not a PC"
-                                      "-> Not requesting, triggering NPC move instead.");
-                        root_machine(fsm).process_event(events::triggerNPCmove{});
-                        return;
+                        activePlayer = std::nullopt;
                 }
 
-                spy::network::messages::RequestGameOperation request{
-                        root_machine(fsm).playerIds.find(activePlayer)->second,
-                        fsm.activeCharacter
-                };
-                MessageRouter &router = root_machine(fsm).router;
-                spdlog::info("Requesting Operation for character {} from player {}", activeChar->getName(), activePlayer);
-                router.sendMessage(request);
+                if (activePlayer.has_value()) {
+                    spy::network::messages::RequestGameOperation request{
+                            root_machine(fsm).playerIds.find(activePlayer.value())->second,
+                            fsm.activeCharacter
+                    };
+                    MessageRouter &router = root_machine(fsm).router;
+                    spdlog::info("Requesting Operation from player {}", activePlayer.value());
+                    router.sendMessage(request);
+                } else {
+                    spdlog::debug("requestNextOperation determined that next character is not a PC"
+                                  "-> Not requesting, triggering NPC move instead.");
+                    root_machine(fsm).process_event(events::triggerNPCmove{});
+                }
             }
         }
     };
 
     /**
-     * @brief Generates and executes a cat movement and sets next character as active
+     * @brief Generates and executes a cat movement
      */
-    struct catMove {
+    struct executeCatMove {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
             spdlog::info("Generating cat action");
@@ -232,18 +239,13 @@ namespace actions {
             auto catAction = ActionGenerator::generateCatAction(state);
 
             ActionExecutor::executeCat(state, *std::dynamic_pointer_cast<const CatAction>(catAction));
-
-            if (!fsm.remainingCharacters.empty()) {
-                fsm.activeCharacter = fsm.remainingCharacters.front();
-                fsm.remainingCharacters.pop_front();
-            }
         }
     };
 
     /**
-     * @brief Generates and executes a janitor movement and sets next character as active
+     * @brief Generates and executes a janitor movement
      */
-    struct janitorMove {
+    struct executeJanitorMove {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
             spdlog::info("Generating janitor action");
@@ -257,11 +259,6 @@ namespace actions {
             auto janitorAction = ActionGenerator::generateJanitorAction(state);
 
             ActionExecutor::executeJanitor(state, *std::dynamic_pointer_cast<const JanitorAction>(janitorAction));
-
-            if (!fsm.remainingCharacters.empty()) {
-                fsm.activeCharacter = fsm.remainingCharacters.front();
-                fsm.remainingCharacters.pop_front();
-            }
         }
     };
 }
