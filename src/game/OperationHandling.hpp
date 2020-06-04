@@ -264,17 +264,6 @@ namespace actions {
             auto catAction = ActionGenerator::generateCatAction(state);
 
             ActionExecutor::executeCat(state, *std::dynamic_pointer_cast<const CatAction>(catAction));
-
-           /* spdlog::info("Done executing cat move. advancing activeCharacter.");
-            if (!fsm.remainingCharacters.empty()) {
-                fsm.activeCharacter = fsm.remainingCharacters.front();
-                fsm.remainingCharacters.pop_front();
-            } else {
-                spdlog::info("No more chars, sending roundDone");
-                root_machine(fsm).process_event(events::roundDone{});
-                return;
-            }
-            spdlog::info("activeCharacter is now {}", fsm.activeCharacter);*/
         }
     };
 
@@ -295,18 +284,6 @@ namespace actions {
             auto janitorAction = ActionGenerator::generateJanitorAction(state);
 
             ActionExecutor::executeJanitor(state, *std::dynamic_pointer_cast<const JanitorAction>(janitorAction));
-            spdlog::info("Done executing janitor move. advancing activeCharacter.");
-/*
-            if (!fsm.remainingCharacters.empty()) {
-                fsm.activeCharacter = fsm.remainingCharacters.front();
-                fsm.remainingCharacters.pop_front();
-            } else {
-                spdlog::info("No more chars, sending roundDone");
-
-                root_machine(fsm).process_event(events::roundDone{});
-                return;
-            }
-            spdlog::info("activeCharacter is now {}", fsm.activeCharacter);*/
         }
     };
 }
