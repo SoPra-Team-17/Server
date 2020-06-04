@@ -47,7 +47,7 @@ namespace actions {
                 player = Player::two;
                 spdlog::info("Character belongs to player two");
             } else {
-                spdlog::error("Character is NPC");
+                spdlog::info("Character is NPC");
             }
 
             state.setKnownSafeCombinations(knownCombinations.at(player));
@@ -117,7 +117,7 @@ namespace actions {
     struct generateNPCMove {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
-            spdlog::info("Generating NPC action");
+            spdlog::info("Generating NPC action for {}", fsm.activeCharacter);
 
             using spy::gameplay::ActionGenerator;
             auto npcAction = ActionGenerator::generateNPCAction(root_machine(fsm).gameState,
@@ -140,6 +140,7 @@ namespace actions {
     struct requestNextOperation {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&event, FSM &fsm, SourceState &, TargetState &) {
+            spdlog::info("RequestNextOperation: last active character was {}", fsm.activeCharacter);
             spy::gameplay::State &state = root_machine(fsm).gameState;
 
             if (spy::util::RoundUtils::isGameOver(state)) {
@@ -158,7 +159,25 @@ namespace actions {
                 }
             }
 
-            if (isRetire or not Util::canMoveAgain(*state.getCharacters().findByUUID(fsm.activeCharacter))) {
+            // Check if the next character has to be chosen or not
+            bool advanceCharacter = true;
+            if (fsm.activeCharacter != spy::util::UUID{}) {
+                // Some character was already active this round
+                if (state.getCharacters().findByUUID(fsm.activeCharacter) != state.getCharacters().end()) {
+                    spdlog::debug("Last character was a regular character that might make another action");
+
+                    const spy::character::Character &activeCharacter = *state.getCharacters().findByUUID(
+                            fsm.activeCharacter);
+
+                    if (not isRetire and Util::canMoveAgain(activeCharacter)) {
+                        spdlog::info("Character {} has not retired and can make another move.",
+                                     activeCharacter.getName());
+                        advanceCharacter = false;
+                    }
+                }
+            }
+
+            if (advanceCharacter) {
                 spdlog::info("Character done. Choosing next.");
                 if (fsm.remainingCharacters.empty()) {
                     spdlog::info("No characters remaining. Sending events::roundDone to FSM");
@@ -170,54 +189,60 @@ namespace actions {
                 fsm.activeCharacter = fsm.remainingCharacters.front();
                 fsm.remainingCharacters.pop_front();
                 spdlog::info("Chose {} as next character.", fsm.activeCharacter);
-
-                // Check if special handling for Cat and Janitor is required
-                if (fsm.activeCharacter == root_machine(fsm).catId) {
-                    spdlog::debug("requestNextOperation determined that next character is the white cat"
-                                  "-> Not requesting, triggering cat move instead.");
-
-                    root_machine(fsm).process_event(events::triggerCatMove{});
-                    return;
-                } else if (fsm.activeCharacter == root_machine(fsm).janitorId) {
-                    spdlog::debug("requestNextOperation determined that next character is the janitor"
-                                  "-> Not requesting, triggering janitor move instead.");
-
-                    root_machine(fsm).process_event(events::triggerJanitorMove{});
-                    return;
-                }
-
-                // Regular character
-                spy::character::CharacterSet::iterator nextCharacter =
-                        state.getCharacters().getByUUID(fsm.activeCharacter);
-                spdlog::info("Next character is regular character {}", nextCharacter->getName());
-
-                // Determine which player the character belongs to
-                std::optional<Player> activePlayer;
-                switch (nextCharacter->getFaction()) {
-                    case spy::character::FactionEnum::PLAYER1:
-                        activePlayer = Player::one;
-                        break;
-                    case spy::character::FactionEnum::PLAYER2:
-                        activePlayer = Player::two;
-                        break;
-                    default:
-                        activePlayer = std::nullopt;
-                }
-
-                if (activePlayer.has_value()) {
-                    spy::network::messages::RequestGameOperation request{
-                            root_machine(fsm).playerIds.find(activePlayer.value())->second,
-                            fsm.activeCharacter
-                    };
-                    MessageRouter &router = root_machine(fsm).router;
-                    spdlog::info("Requesting Operation from player {}", activePlayer.value());
-                    router.sendMessage(request);
-                } else {
-                    spdlog::debug("requestNextOperation determined that next character is not a PC"
-                                  "-> Not requesting, triggering NPC move instead.");
-                    root_machine(fsm).process_event(events::triggerNPCmove{});
-                }
+            } else {
+                spdlog::info("Not choosing a new character.");
             }
+
+            // Check if special handling for Cat and Janitor is required
+            // Those already advance activeCharacter in their action, so we dont need to advance
+            spdlog::info("Checking if activeCharacter({}) is cat ({})", fsm.activeCharacter, root_machine(fsm).catId);
+            spdlog::info("Checking if activeCharacter({}) is janitor ({})", fsm.activeCharacter,
+                         root_machine(fsm).janitorId);
+            if (fsm.activeCharacter == root_machine(fsm).catId) {
+                spdlog::debug("requestNextOperation determined that next character is the white cat"
+                              "-> Not requesting, triggering cat move instead.");
+
+                root_machine(fsm).process_event(events::triggerCatMove{});
+                return;
+            } else if (fsm.activeCharacter == root_machine(fsm).janitorId) {
+                spdlog::debug("requestNextOperation determined that next character is the janitor"
+                              "-> Not requesting, triggering janitor move instead.");
+
+                root_machine(fsm).process_event(events::triggerJanitorMove{});
+                return;
+            }
+
+
+            spy::character::CharacterSet::iterator nextCharacter = state.getCharacters().getByUUID(fsm.activeCharacter);
+            spdlog::info("Requesting operation from {}", nextCharacter->getName());
+
+            // Determine which player the character belongs to
+            std::optional<Player> activePlayer;
+            switch (nextCharacter->getFaction()) {
+                case spy::character::FactionEnum::PLAYER1:
+                    activePlayer = Player::one;
+                    break;
+                case spy::character::FactionEnum::PLAYER2:
+                    activePlayer = Player::two;
+                    break;
+                default:
+                    activePlayer = std::nullopt;
+            }
+
+            if (not activePlayer.has_value()) {
+                spdlog::debug("requestNextOperation determined that next character is not a PC"
+                              "-> Not requesting, triggering NPC move instead.");
+                root_machine(fsm).process_event(events::triggerNPCmove{});
+                return;
+            }
+
+            spy::network::messages::RequestGameOperation request{
+                    root_machine(fsm).playerIds.find(activePlayer.value())->second,
+                    fsm.activeCharacter
+            };
+            MessageRouter &router = root_machine(fsm).router;
+            spdlog::info("Requesting Operation from player {}", activePlayer.value());
+            router.sendMessage(request);
         }
     };
 
@@ -239,6 +264,17 @@ namespace actions {
             auto catAction = ActionGenerator::generateCatAction(state);
 
             ActionExecutor::executeCat(state, *std::dynamic_pointer_cast<const CatAction>(catAction));
+
+           /* spdlog::info("Done executing cat move. advancing activeCharacter.");
+            if (!fsm.remainingCharacters.empty()) {
+                fsm.activeCharacter = fsm.remainingCharacters.front();
+                fsm.remainingCharacters.pop_front();
+            } else {
+                spdlog::info("No more chars, sending roundDone");
+                root_machine(fsm).process_event(events::roundDone{});
+                return;
+            }
+            spdlog::info("activeCharacter is now {}", fsm.activeCharacter);*/
         }
     };
 
@@ -259,6 +295,18 @@ namespace actions {
             auto janitorAction = ActionGenerator::generateJanitorAction(state);
 
             ActionExecutor::executeJanitor(state, *std::dynamic_pointer_cast<const JanitorAction>(janitorAction));
+            spdlog::info("Done executing janitor move. advancing activeCharacter.");
+/*
+            if (!fsm.remainingCharacters.empty()) {
+                fsm.activeCharacter = fsm.remainingCharacters.front();
+                fsm.remainingCharacters.pop_front();
+            } else {
+                spdlog::info("No more chars, sending roundDone");
+
+                root_machine(fsm).process_event(events::roundDone{});
+                return;
+            }
+            spdlog::info("activeCharacter is now {}", fsm.activeCharacter);*/
         }
     };
 }

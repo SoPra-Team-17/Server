@@ -185,7 +185,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
 
                     std::shuffle(fsm.remainingCharacters.begin(), fsm.remainingCharacters.end(), root_machine(fsm).rng);
 
-                    fsm.activeCharacter = fsm.remainingCharacters.front();
+                    fsm.activeCharacter = {};
 
                     spdlog::info("Initialized round order:");
                     for (const auto &uuid: fsm.remainingCharacters) {
