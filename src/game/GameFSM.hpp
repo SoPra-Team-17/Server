@@ -168,6 +168,9 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                     using spy::util::GameLogicUtils;
                     using spy::scenario::FieldStateEnum;
                     using spy::util::RoundUtils;
+                    using spy::gadget::Gadget;
+                    using spy::gadget::GadgetEnum;
+                    using spy::character::FactionEnum;
 
                     const auto &characters = root_machine(fsm).gameState.getCharacters();
                     spy::gameplay::State &state = root_machine(fsm).gameState;
@@ -176,15 +179,9 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
 
                     spdlog::info("Entering state roundInit for round {}", state.getCurrentRound());
 
-                    for (const auto &c: characters) {
-                        if (c.getCoordinates().has_value()) {
-                            fsm.remainingCharacters.push_back(c.getCharacterId());
-                        }
-                    }
-                    fsm.remainingCharacters.push_back(root_machine(fsm).catId);
-
                     // janitor is only active after the round limit was reached
                     if (state.getCurrentRound() >= matchConfig.getRoundLimit()) {
+                        // if the janitor wasn't previously on the map, this is the first round with special mechanics
                         if (!state.getJanitorCoordinates().has_value()) {
                             auto randomField = GameLogicUtils::getRandomMapPoint(state, [&state](const auto &p) {
                                 // Random free/seat without character
@@ -203,10 +200,29 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                             }
                             spdlog::debug("Initial placement of the janitor at {}", fmt::json(randomField.value()));
                             state.setJanitorCoordinates(randomField.value());
+
+                            // remove all NPCs from the map
+                            for (const auto &c : characters) {
+                                if (c.getFaction() == FactionEnum::NEUTRAL) {
+                                    if (c.hasGadget(GadgetEnum::DIAMOND_COLLAR)) {
+                                        state.getMap().getField(c.getCoordinates().value()).addGadget(
+                                                std::make_shared<Gadget>(GadgetEnum::DIAMOND_COLLAR));
+                                        c.removeGadget(GadgetEnum::DIAMOND_COLLAR);
+                                    }
+                                    c.setCoordinates(std::nullopt);
+                                }
+                            }
                         }
 
                         fsm.remainingCharacters.push_back(root_machine(fsm).janitorId);
                     }
+
+                    for (const auto &c: characters) {
+                        if (c.getCoordinates().has_value()) {
+                            fsm.remainingCharacters.push_back(c.getCharacterId());
+                        }
+                    }
+                    fsm.remainingCharacters.push_back(root_machine(fsm).catId);
 
                     std::shuffle(fsm.remainingCharacters.begin(), fsm.remainingCharacters.end(), root_machine(fsm).rng);
 
