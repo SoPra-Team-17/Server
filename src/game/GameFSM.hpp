@@ -172,7 +172,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                     using spy::gadget::GadgetEnum;
                     using spy::character::FactionEnum;
 
-                    const auto &characters = root_machine(fsm).gameState.getCharacters();
+                    auto &characters = root_machine(fsm).gameState.getCharacters();
                     spy::gameplay::State &state = root_machine(fsm).gameState;
                     const spy::MatchConfig &matchConfig = root_machine(fsm).matchConfig;
                     state.incrementRoundCounter();
@@ -202,10 +202,10 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                             state.setJanitorCoordinates(randomField.value());
 
                             // remove all NPCs from the map
-                            for (const auto &c : characters) {
+                            for (auto &c : characters) {
                                 if (c.getFaction() == FactionEnum::NEUTRAL) {
                                     if (c.hasGadget(GadgetEnum::DIAMOND_COLLAR)) {
-                                        state.getMap().getField(c.getCoordinates().value()).addGadget(
+                                        state.getMap().getField(c.getCoordinates().value()).setGadget(
                                                 std::make_shared<Gadget>(GadgetEnum::DIAMOND_COLLAR));
                                         c.removeGadget(GadgetEnum::DIAMOND_COLLAR);
                                     }
