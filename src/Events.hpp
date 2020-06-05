@@ -14,6 +14,9 @@ namespace events {
     struct roundInitDone {
     };
 
+    struct forceUnpause {
+    };
+
     struct triggerCatMove {
     };
 

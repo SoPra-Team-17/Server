@@ -10,10 +10,12 @@
 #include <network/messages/GameStarted.hpp>
 #include <network/messages/HelloReply.hpp>
 #include <network/messages/StatisticsMessage.hpp>
+#include <network/messages/GamePause.hpp>
 #include <util/Player.hpp>
 #include <util/GameLogicUtils.hpp>
 #include <network/messages/MetaInformation.hpp>
 #include <util/Util.hpp>
+#include "Events.hpp"
 
 namespace actions {
 
@@ -149,8 +151,8 @@ namespace actions {
 
             spdlog::debug("Resetting the game state for the next game");
             root_machine(fsm).gameState = spy::gameplay::State{0, spy::scenario::FieldMap{
-                    root_machine(fsm).scenarioConfig}, {}, {}, spy::util::Point{},
-                                                               spy::util::Point{}};
+                    root_machine(fsm).scenarioConfig}, {}, {}, std::nullopt,
+                                                               std::nullopt};
         }
     };
 
@@ -236,6 +238,27 @@ namespace actions {
 
             MetaInformation metaInformationReply{metaInformationRequest.getClientId(), information};
             root_machine(fsm).router.sendMessage(metaInformationReply);
+        }
+    };
+
+    struct pauseGame {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(Event &&, FSM &fsm, SourceState &, TargetState &target) {
+            target.serverEnforced = false;
+            spdlog::info("Pausing game");
+            MessageRouter &router = root_machine(fsm).router;
+            router.broadcastMessage(spy::network::messages::GamePause{{}, true, false});
+        }
+    };
+
+    struct unpauseGame {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
+            bool isForced = std::is_same<Event, events::forceUnpause>::value;
+
+            spdlog::info("Unpausing, forced={}", isForced);
+            MessageRouter &router = root_machine(fsm).router;
+            router.broadcastMessage(spy::network::messages::GamePause{{}, false, isForced});
         }
     };
 }
