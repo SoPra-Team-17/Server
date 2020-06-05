@@ -80,12 +80,28 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
     }
 
     if (characterInformations.size() < 10) {
-        spdlog::critical("No enough character descriptions given, at least 10 are needed for choice phase!");
+        spdlog::critical("Not enough character descriptions given, at least 10 are needed for choice phase!");
         std::exit(1);
     }
 
-    gameState = spy::gameplay::State{0, spy::scenario::FieldMap{scenarioConfig}, {}, {}, spy::util::Point{},
-                                     spy::util::Point{}};
+    gameState = spy::gameplay::State{0, spy::scenario::FieldMap{scenarioConfig}, {}, {}, std::nullopt,
+                                     std::nullopt};
+
+    // check if the scenario contains enough fields needed to place all characters + cat + janitor
+    unsigned int accessibleFields = 0;
+    gameState.getMap().forAllFields([&accessibleFields](const spy::scenario::Field &f) {
+        if (f.getFieldState() == spy::scenario::FieldStateEnum::FREE
+            || f.getFieldState() == spy::scenario::FieldStateEnum::BAR_SEAT) {
+            accessibleFields++;
+        }
+    });
+
+    // Explanation of the number 10: 2x max. 4 characters + cat + janitor
+    if (accessibleFields < maxNumberOfNPCs + 10) {
+        spdlog::critical("Not enough accessible fields to place all characters with cat and janitor, at least"
+                         "{} are needed for the selected amount of NPCs", maxNumberOfNPCs + 10);
+        std::exit(1);
+    }
 
     using serverFSM = afsm::state_machine<Server>;
     auto &fsm = static_cast<serverFSM &>(*this);
