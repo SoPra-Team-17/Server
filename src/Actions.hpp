@@ -175,6 +175,12 @@ namespace actions {
 
             spdlog::error("Process Meta Information request");
             for (const auto &key: metaInformationRequest.getKeys()) {
+                auto clientId = metaInformationRequest.getClientId();
+                auto it = clientRoles.find(clientId);
+                if (it == clientRoles.end()) {
+                    continue;
+                }
+
                 switch (key) {
                     case MetaInformationKey::CONFIGURATION_SCENARIO:
                         information.emplace(key, root_machine(fsm).scenarioConfig);
@@ -188,13 +194,10 @@ namespace actions {
                         information.emplace(key, root_machine(fsm).characterInformations);
                         break;
 
-                    case MetaInformationKey::FACTION_PLAYER1: {
+                    case MetaInformationKey::FACTION_PLAYER1:
                         // if not requested by P1 or spectator, continue
-                        auto clientId = metaInformationRequest.getClientId();
-                        auto it = clientRoles.find(clientId);
-                        if (it == clientRoles.end()
-                            || (it->second != spy::network::RoleEnum::SPECTATOR
-                                && playerIds.at(Player::one) != clientId)) {
+                        if (it->second != spy::network::RoleEnum::SPECTATOR
+                            && playerIds.at(Player::one) != clientId) {
                             continue;
                         }
 
@@ -202,15 +205,11 @@ namespace actions {
                         information.emplace(key, Util::getFactionCharacters(gameState.getCharacters(),
                                                                             FactionEnum::PLAYER1));
                         break;
-                    }
 
-                    case MetaInformationKey::FACTION_PLAYER2: {
-                        //if not requested by P1 or spectator, continue
-                        auto clientId = metaInformationRequest.getClientId();
-                        auto it = clientRoles.find(clientId);
-                        if (it == clientRoles.end()
-                            || (it->second != spy::network::RoleEnum::SPECTATOR
-                                && playerIds.at(Player::two) != clientId)) {
+                    case MetaInformationKey::FACTION_PLAYER2:
+                        // if not requested by P1 or spectator, continue
+                        if (it->second != spy::network::RoleEnum::SPECTATOR
+                            && playerIds.at(Player::two) != clientId) {
                             continue;
                         }
 
@@ -218,12 +217,10 @@ namespace actions {
                         information.emplace(key, Util::getFactionCharacters(gameState.getCharacters(),
                                                                             FactionEnum::PLAYER2));
                         break;
-                    }
 
-                    case MetaInformationKey::FACTION_NEUTRAL: {
-                        auto clientId = metaInformationRequest.getClientId();
-                        auto it = clientRoles.find(clientId);
-                        if (it == clientRoles.end() || (it->second != spy::network::RoleEnum::SPECTATOR)) {
+                    case MetaInformationKey::FACTION_NEUTRAL:
+                        // if not requested be spectator, continue
+                        if (it->second != spy::network::RoleEnum::SPECTATOR) {
                             continue;
                         }
 
@@ -231,35 +228,29 @@ namespace actions {
                         information.emplace(key, Util::getFactionCharacters(gameState.getCharacters(),
                                                                             FactionEnum::NEUTRAL));
                         break;
-                    }
 
-                    case MetaInformationKey::GADGETS_PLAYER1: {
-                        auto clientId = metaInformationRequest.getClientId();
-                        auto it = clientRoles.find(clientId);
-                        if (it == clientRoles.end()
-                            || (it->second != spy::network::RoleEnum::SPECTATOR
-                                && playerIds.at(Player::one) != clientId)) {
+                    case MetaInformationKey::GADGETS_PLAYER1:
+                        // if not requested by P1 or spectator, continue
+                        if (it->second != spy::network::RoleEnum::SPECTATOR
+                            && playerIds.at(Player::one) != clientId) {
                             continue;
                         }
 
                         information.emplace(key, Util::getFactionGadgets(gameState.getCharacters(),
                                                                          FactionEnum::PLAYER1));
                         break;
-                    }
 
-                    case MetaInformationKey::GADGETS_PLAYER2: {
-                        auto clientId = metaInformationRequest.getClientId();
-                        auto it = clientRoles.find(clientId);
-                        if (it == clientRoles.end()
-                            || (it->second != spy::network::RoleEnum::SPECTATOR
-                                && playerIds.at(Player::two) != clientId)) {
+                    case MetaInformationKey::GADGETS_PLAYER2:
+                        //if not requested by P2 or spectator, continue
+                        if (it->second != spy::network::RoleEnum::SPECTATOR
+                            && playerIds.at(Player::two) != clientId) {
                             continue;
                         }
 
                         information.emplace(key, Util::getFactionGadgets(gameState.getCharacters(),
                                                                          FactionEnum::PLAYER2));
                         break;
-                    }
+
                     default:
                         spdlog::warn("Unsupported MetaInformation key requested: {}.", fmt::json(key));
                         break;
