@@ -34,7 +34,7 @@ sudo make install
 
 # CLI11
 cd /tmp
-git --depth 1 -b v1.9.0 clone https://github.com/CLIUtils/CLI11.git
+git clone --depth 1 -b v1.9.0 https://github.com/CLIUtils/CLI11.git
 cd CLI11
 mkdir build && cd build
 cmake -DCLI11_BUILD_TESTS=false -DCLI11_BUILD_DOCS=false -DCLI11_BUILD_EXAMPLES=false ..
@@ -43,7 +43,7 @@ sudo make install
 
 # spdlog
 cd /tmp
-git --depth 1 -b v1.6.1 clone https://github.com/gabime/spdlog.git
+git clone --depth 1 -b v1.6.1 https://github.com/gabime/spdlog.git
 cd spdlog
 mkdir build && cd build
 cmake -DSPDLOG_BUILD_TESTS=false -DSPDLOG_BUILD_EXAMPLE=false ..
