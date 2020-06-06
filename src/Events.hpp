@@ -22,5 +22,8 @@ namespace events {
 
     struct triggerJanitorMove {
     };
+
+    struct roundDone {
+    };
 }
 #endif //SERVER017_EVENTS_HPP
