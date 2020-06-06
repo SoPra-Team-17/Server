@@ -68,7 +68,9 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         for (const auto &characterDescriptionJson: j) {
             // Read CharacterDescription, save CharacterInformation = CharacterDescription + UUID
             auto characterDescription = characterDescriptionJson.get<spy::character::CharacterDescription>();
-            characterInformations.emplace_back(std::move(characterDescription), spy::util::UUID::generate());
+            auto uuid = spy::util::UUID::generate();
+            spdlog::info("Character {} has UUID {}", characterDescription.getName(), uuid);
+            characterInformations.emplace_back(std::move(characterDescription), std::move(uuid));
         }
 
         spdlog::info("Successfully read character descriptions");
@@ -84,6 +86,9 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         std::exit(1);
     }
 
+    spdlog::info("Cat UUID is {}", catId);
+    spdlog::info("Janitor UUID is {}", janitorId);
+    
     gameState = spy::gameplay::State{0, spy::scenario::FieldMap{scenarioConfig}, {}, {}, std::nullopt,
                                      std::nullopt};
 
