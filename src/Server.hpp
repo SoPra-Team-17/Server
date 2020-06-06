@@ -39,13 +39,6 @@ class Server : public afsm::def::state_machine<Server> {
 
                 root_machine(fsm).isIngame = false;
             }
-
-            // @formatter:off
-            using internal_transitions = transition_table <
-            // Event                                  Action                  Guard
-            in<spy::network::messages::Hello,         actions::HelloReply,    guards::isSpectator>
-            >;
-            // @formatter:on
         };
 
         struct waitFor2Player : state<waitFor2Player> {
@@ -53,13 +46,6 @@ class Server : public afsm::def::state_machine<Server> {
             void on_enter(Event &&, FSM &) {
                 spdlog::debug("Entering state waitFor2Player");
             }
-
-            // @formatter:off
-            using internal_transitions = transition_table <
-            // Event                                  Action                  Guard
-            in<spy::network::messages::Hello,         actions::HelloReply,    guards::isSpectator>
-            >;
-            // @formatter:on
         };
 
         GameFSM game;
@@ -76,9 +62,10 @@ class Server : public afsm::def::state_machine<Server> {
         >;
 
         using internal_transitions = transition_table <
-        // Event                                           Action
+        // Event                                           Action                  Guard
         // Reply to MetaInformation request at any time during the game
-        in<spy::network::messages::RequestMetaInformation, actions::sendMetaInformation>>;
+        in<spy::network::messages::RequestMetaInformation, actions::sendMetaInformation>,
+        in<spy::network::messages::Hello,                  actions::HelloReply,    guards::isSpectator>>;
         // @formatter:on
 
         unsigned int verbosity;
