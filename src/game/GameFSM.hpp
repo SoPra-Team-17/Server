@@ -194,7 +194,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
 
                     std::shuffle(fsm.remainingCharacters.begin(), fsm.remainingCharacters.end(), root_machine(fsm).rng);
 
-                    fsm.activeCharacter = fsm.remainingCharacters.front();
+                    fsm.activeCharacter = {};
 
                     spdlog::info("Initialized round order:");
                     for (const auto &uuid: fsm.remainingCharacters) {
@@ -231,11 +231,11 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
 
                 // @formatter:off
                 using internal_transitions = transition_table <
-                // Event                                  Action                                                                                               Guard
-                in<spy::network::messages::GameOperation, actions::multiple<actions::handleOperation, actions::broadcastState, actions::requestNextOperation>, and_<guards::operationValid, guards::charactersRemaining>>,
-                in<events::triggerNPCmove,                actions::multiple<actions::npcMove, actions::broadcastState, actions::requestNextOperation>>,
-                in<events::triggerCatMove,                actions::multiple<actions::catMove, actions::broadcastState, actions::requestNextOperation>>,
-                in<events::triggerJanitorMove,            actions::multiple<actions::janitorMove, actions::broadcastState, actions::requestNextOperation>>
+                // Event                                  Action                                                                                                  Guard
+                in<spy::network::messages::GameOperation, actions::multiple<actions::handleOperation, actions::broadcastState, actions::requestNextOperation>,    guards::operationValid>,
+                in<events::triggerNPCmove,                actions::multiple<actions::generateNPCMove>>,
+                in<events::triggerCatMove,                actions::multiple<actions::executeCatMove, actions::broadcastState, actions::requestNextOperation>>,
+                in<events::triggerJanitorMove,            actions::multiple<actions::executeJanitorMove, actions::broadcastState, actions::requestNextOperation>>
                 >;
                 // @formatter:on
             };
@@ -265,10 +265,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
             using transitions = transition_table <
             //  Start               Event                                     Next                 Action                                                                      Guard
             tr<roundInit,           events::roundInitDone,                    waitingForOperation, actions::multiple<actions::broadcastState, actions::requestNextOperation>>,
-            tr<waitingForOperation, spy::network::messages::GameOperation,    roundInit,           actions::multiple<actions::handleOperation, actions::broadcastState>,        not_<guards::charactersRemaining>>,
-            tr<waitingForOperation, events::triggerNPCmove,                   roundInit,           actions::multiple<actions::npcMove, actions::broadcastState>,                not_<guards::charactersRemaining>>,
-            tr<waitingForOperation, events::triggerCatMove,                   roundInit,           actions::multiple<actions::catMove, actions::broadcastState>,                not_<guards::charactersRemaining>>,
-            tr<waitingForOperation, events::triggerJanitorMove,               roundInit,           actions::multiple<actions::janitorMove, actions::broadcastState>,            not_<guards::charactersRemaining>>,
+            tr<waitingForOperation, events::roundDone,                        roundInit>,
             // Player requested pause
             tr<waitingForOperation, spy::network::messages::RequestGamePause, paused,              actions::pauseGame,                                                          guards::isPauseRequest>,
             // Player requested unpause
