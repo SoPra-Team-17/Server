@@ -112,7 +112,7 @@ namespace actions {
      */
     struct sendReconnectGameStart {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(Event &&event, FSM &fsm, SourceState &, TargetState &) {
+        void operator()(const Event &event, FSM &fsm, SourceState &, TargetState &) {
             spy::network::messages::GameStarted gameStarted{
                     event.getClientId(),
                     root_machine(fsm).playerIds.find(Player::one)->second,

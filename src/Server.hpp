@@ -145,6 +145,10 @@ class Server : public afsm::def::state_machine<Server> {
     private:
         const static std::map<unsigned int, spdlog::level::level_enum> verbosityMap;
 
+        void loadConfigs(const std::string &matchPath,
+                         const std::string &scenarioPath,
+                         const std::string &characterPath);
+
         void configureLogging() const;
 };
 
