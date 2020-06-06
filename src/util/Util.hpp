@@ -50,7 +50,9 @@ class Util {
          * @return Key value pair if request was successful, else std::nullopt.
          */
         template<typename FSM>
-        static auto handleMetaRequestKey(spy::network::messages::MetaInformationKey key, FSM &fsm, bool gameRunning,
+        static auto handleMetaRequestKey(spy::network::messages::MetaInformationKey key,
+                                         FSM &fsm,
+                                         bool gameRunning,
                                          bool isSpectator,
                                          std::optional<Player> player) -> std::optional<MetaInformationPair> {
 
@@ -119,7 +121,6 @@ class Util {
                     return std::nullopt;
             }
         }
-
 };
 
 
