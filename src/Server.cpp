@@ -115,7 +115,7 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         // New clients send Hello, and need to be assigned a UUID immediately.
         // This new UUID gets inserted into the HelloMessage, so the FSM receives properly formatted HelloMessage
         spdlog::info("Server received Hello message, initializing UUID");
-        msg = spy::network::messages::Hello{spy::util::UUID::generate(), msg.getName(), msg.getRole()};
+        msg.setClientId(spy::util::UUID::generate());
         spdlog::info("Registering UUID {} at router", msg.getClientId());
         router.registerUUIDforConnection(msg.getClientId(), con);
         spdlog::info("Posting event to FSM now");
@@ -151,13 +151,51 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         spdlog::warn("Received message of type {}, handling is not implemented.", fmt::json(msg.getType()));
     };
 
-    router.addReconnectListener(discardNotImplemented);
     router.addItemChoiceListener(forwardMessage);
     router.addEquipmentChoiceListener(forwardMessage);
     router.addGameOperationListener(forwardMessage);
     router.addPauseRequestListener(forwardMessage);
     router.addMetaInformationRequestListener(forwardMessage);
     router.addReplayRequestListener(discardNotImplemented);
+
+    router.addReconnectListener(
+            [this, forwardMessage](const spy::network::messages::Reconnect &msg, MessageRouter::connectionPtr con) {
+                if (msg.getSessionId() != sessionId) {
+                    spdlog::warn(
+                            "Reconnect message from client {} specifies sessionId {}, but current sessionId is {}.",
+                            msg.getClientId(),
+                            msg.getSessionId(),
+                            sessionId);
+                    return;
+                }
+
+
+                // Check if reconnect is from disconnected player
+                const spy::util::UUID &clientId = msg.getClientId();
+                if (clientId != playerIds.at(Player::one) and clientId != playerIds.at(Player::two)) {
+                    spdlog::warn("Received reconnect message from {}, who is not a player in this game.", clientId);
+                    return;
+                }
+                if (router.isConnected(clientId)) {
+                    spdlog::warn("Received connect message from {}, who is still connected.", clientId);
+                    return;
+                }
+
+                spdlog::info("Server received Reconnect message, with UUID {}", msg.getClientId());
+                spdlog::info("Registering UUID {} at router", msg.getClientId());
+                router.registerUUIDforConnection(msg.getClientId(), con);
+                forwardMessage(msg);
+            });
+
+    router.addDisconnectListener([&fsm, this](const spy::util::UUID &uuid) {
+        auto clientRole = clientRoles.at(uuid);
+        using spy::network::RoleEnum;
+        if (clientRole == RoleEnum::PLAYER or clientRole == RoleEnum::AI) {
+            fsm.process_event(events::playerDisconnect{uuid});
+        } else {
+            spdlog::info("Client {} (Role: {}) disconnected.", uuid, fmt::json(clientRole));
+        }
+    });
 }
 
 void Server::configureLogging() const {
