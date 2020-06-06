@@ -106,6 +106,26 @@ namespace actions {
         }
     };
 
+    /**
+     * Send GameStarted message to the player sending the event.
+     * This is needed after reconnect of the specified player.
+     */
+    struct sendReconnectGameStart {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(Event &&event, FSM &fsm, SourceState &, TargetState &) {
+            spy::network::messages::GameStarted gameStarted{
+                    event.getClientId(),
+                    root_machine(fsm).playerIds.find(Player::one)->second,
+                    root_machine(fsm).playerIds.find(Player::two)->second,
+                    root_machine(fsm).playerNames.find(Player::one)->second,
+                    root_machine(fsm).playerNames.find(Player::two)->second,
+                    root_machine(fsm).sessionId
+            };
+            spdlog::info("Sending GameStarted message to {}", event.getClientId());
+            root_machine(fsm).router.sendMessage(gameStarted);
+        }
+    };
+
     struct closeGame {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
@@ -241,13 +261,14 @@ namespace actions {
         }
     };
 
+    template<bool forced = false>
     struct pauseGame {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&, FSM &fsm, SourceState &, TargetState &target) {
-            target.serverEnforced = false;
-            spdlog::info("Pausing game");
+            target.serverEnforced = forced;
+            spdlog::info("Pausing game, serverEnforced={}", forced);
             MessageRouter &router = root_machine(fsm).router;
-            router.broadcastMessage(spy::network::messages::GamePause{{}, true, false});
+            router.broadcastMessage(spy::network::messages::GamePause{{}, true, forced});
         }
     };
 
