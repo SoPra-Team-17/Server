@@ -142,12 +142,7 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
 
                 // Check if reconnect is from disconnected player
                 const spy::util::UUID &clientId = msg.getClientId();
-                if (clientId != playerIds.at(Player::one) and clientId != playerIds.at(Player::two)) {
-                    spdlog::warn("Received reconnect message from {}, who is not a player in this game.", clientId);
-                    return;
-                }
-                if (router.isConnected(clientId)) {
-                    spdlog::warn("Received connect message from {}, who is still connected.", clientId);
+                if (!Util::isDisconnectedPlayer(clientId, playerIds, router)) {
                     return;
                 }
 

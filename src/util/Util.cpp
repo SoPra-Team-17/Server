@@ -5,6 +5,8 @@
  * Generic utility functions
  */
 
+#include <spdlog/spdlog.h>
+#include <network/MessageRouter.hpp>
 #include "Util.hpp"
 
 auto Util::getFactionGadgets(const spy::character::CharacterSet &characters,
@@ -32,4 +34,18 @@ auto Util::getFactionCharacters(const spy::character::CharacterSet &characters,
         }
     }
     return characterUUIDs;
+}
+
+bool Util::isDisconnectedPlayer(const spy::util::UUID &clientId,
+                                const std::map<Player, spy::util::UUID> &playerIds,
+                                const MessageRouter &router) {
+    if (clientId != playerIds.at(Player::one) and clientId != playerIds.at(Player::two)) {
+        spdlog::warn("Received reconnect message from {}, who is not a player in this game.", clientId);
+        return false;
+    }
+    if (router.isConnected(clientId)) {
+        spdlog::warn("Received connect message from {}, who is still connected.", clientId);
+        return false;
+    }
+    return true;
 }

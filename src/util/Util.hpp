@@ -10,6 +10,7 @@
 
 #include <datatypes/gadgets/GadgetEnum.hpp>
 #include <datatypes/character/CharacterSet.hpp>
+#include "Player.hpp"
 
 class Util {
     public:
@@ -28,6 +29,10 @@ class Util {
         static bool hasAPMP(const spy::character::Character &character) {
             return character.getActionPoints() > 0 or character.getMovePoints() > 0;
         }
+
+        static bool isDisconnectedPlayer(const spy::util::UUID &clientId,
+                                         const std::map<Player, spy::util::UUID> &playerIds,
+                                         const MessageRouter &router);
 };
 
 
