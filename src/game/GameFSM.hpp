@@ -115,23 +115,10 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                     }
                 });
 
-                auto fieldSelector = [&gameState](const auto &p) {
-                    // Random free/seat without character
-
-                    auto field = gameState.getMap().getField(p);
-                    using spy::scenario::FieldStateEnum;
-                    if (field.getFieldState() != FieldStateEnum::BAR_SEAT
-                        and field.getFieldState() != FieldStateEnum::FREE) {
-                        // Wrong field type
-                        return false;
-                    }
-                    return !spy::util::GameLogicUtils::isPersonOnField(gameState, p);
-                };
-
                 // Randomly distribute characters
                 spdlog::info("Distributing characters");
                 for (auto &character: gameState.getCharacters()) {
-                    auto randomField = spy::util::GameLogicUtils::getRandomMapPoint(gameState, fieldSelector);
+                    auto randomField = spy::util::GameLogicUtils::getRandomCharacterFreeMapPoint(gameState);
                     if (!randomField.has_value()) {
                         spdlog::critical("No field to place character");
                         std::exit(1);
@@ -141,14 +128,13 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                 }
 
                 // place the cat on a random field
-                auto randomField = spy::util::GameLogicUtils::getRandomMapPoint(gameState, fieldSelector);
+                auto randomField = spy::util::GameLogicUtils::getRandomCharacterFreeMapPoint(gameState);
                 if (!randomField.has_value()) {
                     spdlog::critical("No field to place the white cat");
                     std::exit(1);
                 }
                 spdlog::debug("Placing white cat at {}", fmt::json(randomField.value()));
                 gameState.setCatCoordinates(randomField.value());
-
             }
 
             template<typename FSM, typename Event>
@@ -183,16 +169,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                     if (state.getCurrentRound() >= matchConfig.getRoundLimit()) {
                         // if the janitor wasn't previously on the map, this is the first round with special mechanics
                         if (!state.getJanitorCoordinates().has_value()) {
-                            auto randomField = GameLogicUtils::getRandomMapPoint(state, [&state](const auto &p) {
-                                // Random free/seat without character
-                                auto field = state.getMap().getField(p);
-                                if (field.getFieldState() != FieldStateEnum::BAR_SEAT
-                                    and field.getFieldState() != FieldStateEnum::FREE) {
-                                    // Wrong field type
-                                    return false;
-                                }
-                                return !GameLogicUtils::isPersonOnField(state, p);
-                            });
+                            auto randomField = GameLogicUtils::getRandomCharacterFreeMapPoint(state);
 
                             if (!randomField.has_value()) {
                                 spdlog::critical("No field to place the janitor");
@@ -201,17 +178,8 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                             spdlog::debug("Initial placement of the janitor at {}", fmt::json(randomField.value()));
                             state.setJanitorCoordinates(randomField.value());
 
-                            // remove all NPCs from the map
-                            for (auto &c : characters) {
-                                if (c.getFaction() == FactionEnum::NEUTRAL) {
-                                    if (c.hasGadget(GadgetEnum::DIAMOND_COLLAR)) {
-                                        state.getMap().getField(c.getCoordinates().value()).setGadget(
-                                                std::make_shared<Gadget>(GadgetEnum::DIAMOND_COLLAR));
-                                        c.removeGadget(GadgetEnum::DIAMOND_COLLAR);
-                                    }
-                                    c.setCoordinates(std::nullopt);
-                                }
-                            }
+                            // all NPCs leave the casino
+                            state.removeAllNPCs();
                         }
 
                         fsm.remainingCharacters.push_back(root_machine(fsm).janitorId);
