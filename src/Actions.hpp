@@ -171,7 +171,6 @@ namespace actions {
 
             const std::map<Player, spy::util::UUID> &playerIds = root_machine(fsm).playerIds;
             const std::map<spy::util::UUID, spy::network::RoleEnum> &clientRoles = root_machine(fsm).clientRoles;
-            const spy::gameplay::State &gameState = root_machine(fsm).gameState;
 
             spdlog::info("Process Meta Information request");
 
@@ -183,80 +182,17 @@ namespace actions {
                 return;
             }
 
+            bool isSpectator = (clientRole->second == spy::network::RoleEnum::SPECTATOR);
+            std::optional<Player> player;
+            if (!isSpectator) {
+                player = (playerIds.at(Player::one) == clientId) ? Player::one : Player::two;
+            }
+
             for (const auto &key: metaInformationRequest.getKeys()) {
-                switch (key) {
-                    case MetaInformationKey::CONFIGURATION_SCENARIO:
-                        information.emplace(key, root_machine(fsm).scenarioConfig);
-                        break;
+                auto result = Util::handleMetaRequestKey(key, fsm, gameRunning, isSpectator, player);
 
-                    case MetaInformationKey::CONFIGURATION_MATCH_CONFIG:
-                        information.emplace(key, root_machine(fsm).matchConfig);
-                        break;
-
-                    case MetaInformationKey::CONFIGURATION_CHARACTER_INFORMATION:
-                        information.emplace(key, root_machine(fsm).characterInformations);
-                        break;
-
-                    case MetaInformationKey::FACTION_PLAYER1:
-                        // if not requested by P1 or spectator, continue
-                        if (!gameRunning || (clientRole->second != spy::network::RoleEnum::SPECTATOR
-                            && playerIds.at(Player::one) != clientId)) {
-                            continue;
-                        }
-
-                        // Send all characters with faction PLAYER1
-                        information.emplace(key, Util::getFactionCharacters(gameState.getCharacters(),
-                                                                            FactionEnum::PLAYER1));
-                        break;
-
-                    case MetaInformationKey::FACTION_PLAYER2:
-                        // if not requested by P1 or spectator, continue
-                        if (!gameRunning || (clientRole->second != spy::network::RoleEnum::SPECTATOR
-                            && playerIds.at(Player::two) != clientId)) {
-                            continue;
-                        }
-
-                        // Send all characters with faction PLAYER2
-                        information.emplace(key, Util::getFactionCharacters(gameState.getCharacters(),
-                                                                            FactionEnum::PLAYER2));
-                        break;
-
-                    case MetaInformationKey::FACTION_NEUTRAL:
-                        // if not requested be spectator, continue
-                        if (!gameRunning || clientRole->second != spy::network::RoleEnum::SPECTATOR) {
-                            continue;
-                        }
-
-                        // Send all NPCs
-                        information.emplace(key, Util::getFactionCharacters(gameState.getCharacters(),
-                                                                            FactionEnum::NEUTRAL));
-                        break;
-
-                    case MetaInformationKey::GADGETS_PLAYER1:
-                        // if not requested by P1 or spectator, continue
-                        if (!gameRunning || (clientRole->second != spy::network::RoleEnum::SPECTATOR
-                            && playerIds.at(Player::one) != clientId)) {
-                            continue;
-                        }
-
-                        information.emplace(key, Util::getFactionGadgets(gameState.getCharacters(),
-                                                                         FactionEnum::PLAYER1));
-                        break;
-
-                    case MetaInformationKey::GADGETS_PLAYER2:
-                        //if not requested by P2 or spectator, continue
-                        if (!gameRunning || (clientRole->second != spy::network::RoleEnum::SPECTATOR
-                            && playerIds.at(Player::two) != clientId)) {
-                            continue;
-                        }
-
-                        information.emplace(key, Util::getFactionGadgets(gameState.getCharacters(),
-                                                                         FactionEnum::PLAYER2));
-                        break;
-
-                    default:
-                        spdlog::warn("Unsupported MetaInformation key requested: {}.", fmt::json(key));
-                        break;
+                if (result.has_value()) {
+                    information.insert(result.value());
                 }
             }
 
