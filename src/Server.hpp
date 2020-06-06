@@ -68,11 +68,12 @@ class Server : public afsm::def::state_machine<Server> {
 
         // @formatter:off
         using transitions = transition_table <
-        // Start               Event                               Next            Action                                                               Guard
-        tr<emptyLobby,         spy::network::messages::Hello,      waitFor2Player, actions::multiple<actions::InitializeSession, actions::HelloReply>, not_<guards::isSpectator>>,
-        tr<waitFor2Player,     spy::network::messages::GameLeave,  emptyLobby>,
-        tr<waitFor2Player,     spy::network::messages::Hello,      decltype(game), actions::multiple<actions::HelloReply, actions::StartGame>,          not_<guards::isSpectator>>,
-        tr<GameFSM,            none,                               emptyLobby,     actions::closeGame,                                                  guards::gameOver>
+        // Start           Event                              Next            Action                                                              Guard
+        tr<emptyLobby,     spy::network::messages::Hello,     waitFor2Player, actions::multiple<actions::InitializeSession, actions::HelloReply>, not_<guards::isSpectator>>,
+        tr<waitFor2Player, spy::network::messages::GameLeave, emptyLobby>,
+        tr<waitFor2Player, events::playerDisconnect,          emptyLobby>,
+        tr<waitFor2Player, spy::network::messages::Hello,     decltype(game), actions::multiple<actions::HelloReply, actions::StartGame>,          not_<guards::isSpectator>>,
+        tr<GameFSM,        none,                              emptyLobby,     actions::closeGame,                                                  guards::gameOver>
         >;
         // @formatter:on
 
