@@ -142,7 +142,7 @@ namespace actions {
      */
     struct requestNextOperation {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(Event &&event, FSM &fsm, SourceState &, TargetState &) {
+        void operator()(const Event &event, FSM &fsm, SourceState &, TargetState &) {
             spdlog::info("RequestNextOperation: last active character was {}", fsm.activeCharacter);
             spy::gameplay::State &state = root_machine(fsm).gameState;
 
@@ -164,19 +164,18 @@ namespace actions {
 
             // Check if the next character has to be chosen or not
             bool advanceCharacter = true;
-            if (fsm.activeCharacter != spy::util::UUID{}) {
+            if (fsm.activeCharacter != spy::util::UUID{} and
+                state.getCharacters().findByUUID(fsm.activeCharacter) != state.getCharacters().end()) {
                 // Some character was already active this round
-                if (state.getCharacters().findByUUID(fsm.activeCharacter) != state.getCharacters().end()) {
-                    spdlog::debug("Last character was a regular character that might make another action");
+                spdlog::debug("Last character was a regular character that might make another action");
 
-                    const spy::character::Character &activeCharacter = *state.getCharacters().findByUUID(
-                            fsm.activeCharacter);
+                const spy::character::Character &activeCharacter = *state.getCharacters().findByUUID(
+                        fsm.activeCharacter);
 
-                    if (not isRetire and Util::hasAPMP(activeCharacter)) {
-                        spdlog::info("Character {} has not retired and can make another move.",
-                                     activeCharacter.getName());
-                        advanceCharacter = false;
-                    }
+                if (not isRetire and Util::hasAPMP(activeCharacter)) {
+                    spdlog::info("Character {} has not retired and can make another move.",
+                                 activeCharacter.getName());
+                    advanceCharacter = false;
                 }
             }
 
@@ -216,7 +215,7 @@ namespace actions {
             }
 
 
-            spy::character::CharacterSet::iterator nextCharacter = state.getCharacters().getByUUID(fsm.activeCharacter);
+            auto nextCharacter = state.getCharacters().getByUUID(fsm.activeCharacter);
             spdlog::info("Requesting operation from {}", nextCharacter->getName());
 
             // Determine which player the character belongs to
