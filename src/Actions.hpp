@@ -173,14 +173,17 @@ namespace actions {
             const std::map<spy::util::UUID, spy::network::RoleEnum> &clientRoles = root_machine(fsm).clientRoles;
             const spy::gameplay::State &gameState = root_machine(fsm).gameState;
 
-            spdlog::error("Process Meta Information request");
-            for (const auto &key: metaInformationRequest.getKeys()) {
-                auto clientId = metaInformationRequest.getClientId();
-                auto it = clientRoles.find(clientId);
-                if (it == clientRoles.end()) {
-                    continue;
-                }
+            spdlog::info("Process Meta Information request");
 
+            bool gameRunning = root_machine(fsm).isIngame;
+            auto clientId = metaInformationRequest.getClientId();
+            auto clientRole = clientRoles.find(clientId);
+            if (clientRole == clientRoles.end()) {
+                spdlog::warn("Unregistered client requested meta information --> rejected");
+                return;
+            }
+
+            for (const auto &key: metaInformationRequest.getKeys()) {
                 switch (key) {
                     case MetaInformationKey::CONFIGURATION_SCENARIO:
                         information.emplace(key, root_machine(fsm).scenarioConfig);
@@ -196,8 +199,8 @@ namespace actions {
 
                     case MetaInformationKey::FACTION_PLAYER1:
                         // if not requested by P1 or spectator, continue
-                        if (it->second != spy::network::RoleEnum::SPECTATOR
-                            && playerIds.at(Player::one) != clientId) {
+                        if (!gameRunning || (clientRole->second != spy::network::RoleEnum::SPECTATOR
+                            && playerIds.at(Player::one) != clientId)) {
                             continue;
                         }
 
@@ -208,8 +211,8 @@ namespace actions {
 
                     case MetaInformationKey::FACTION_PLAYER2:
                         // if not requested by P1 or spectator, continue
-                        if (it->second != spy::network::RoleEnum::SPECTATOR
-                            && playerIds.at(Player::two) != clientId) {
+                        if (!gameRunning || (clientRole->second != spy::network::RoleEnum::SPECTATOR
+                            && playerIds.at(Player::two) != clientId)) {
                             continue;
                         }
 
@@ -220,7 +223,7 @@ namespace actions {
 
                     case MetaInformationKey::FACTION_NEUTRAL:
                         // if not requested be spectator, continue
-                        if (it->second != spy::network::RoleEnum::SPECTATOR) {
+                        if (!gameRunning || clientRole->second != spy::network::RoleEnum::SPECTATOR) {
                             continue;
                         }
 
@@ -231,8 +234,8 @@ namespace actions {
 
                     case MetaInformationKey::GADGETS_PLAYER1:
                         // if not requested by P1 or spectator, continue
-                        if (it->second != spy::network::RoleEnum::SPECTATOR
-                            && playerIds.at(Player::one) != clientId) {
+                        if (!gameRunning || (clientRole->second != spy::network::RoleEnum::SPECTATOR
+                            && playerIds.at(Player::one) != clientId)) {
                             continue;
                         }
 
@@ -242,8 +245,8 @@ namespace actions {
 
                     case MetaInformationKey::GADGETS_PLAYER2:
                         //if not requested by P2 or spectator, continue
-                        if (it->second != spy::network::RoleEnum::SPECTATOR
-                            && playerIds.at(Player::two) != clientId) {
+                        if (!gameRunning || (clientRole->second != spy::network::RoleEnum::SPECTATOR
+                            && playerIds.at(Player::two) != clientId)) {
                             continue;
                         }
 

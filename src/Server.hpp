@@ -74,6 +74,11 @@ class Server : public afsm::def::state_machine<Server> {
         tr<waitFor2Player,     spy::network::messages::Hello,      decltype(game), actions::multiple<actions::HelloReply, actions::StartGame>,          not_<guards::isSpectator>>,
         tr<GameFSM,            none,                               emptyLobby,     actions::closeGame,                                                  guards::gameOver>
         >;
+
+        using internal_transitions = transition_table <
+        // Event                                           Action
+        // Reply to MetaInformation request at any time during the game
+        in<spy::network::messages::RequestMetaInformation, actions::sendMetaInformation>>;
         // @formatter:on
 
         unsigned int verbosity;
