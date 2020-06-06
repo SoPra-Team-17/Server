@@ -39,7 +39,7 @@ namespace actions {
             auto activeCharacter = state.getCharacters().findByUUID(fsm.activeCharacter);
 
             // Find player owning character
-            Player player;
+            std::optional<Player> player = std::nullopt;
             if (activeCharacter->getFaction() == spy::character::FactionEnum::PLAYER1) {
                 player = Player::one;
                 spdlog::info("Character belongs to player one");
@@ -50,16 +50,19 @@ namespace actions {
                 spdlog::info("Character is NPC");
             }
 
-            state.setKnownSafeCombinations(knownCombinations.at(player));
-
+            if (player.has_value()) {
+                state.setKnownSafeCombinations(knownCombinations.at(player.value()));
+            }
 
             executeOperation(operationMessage.getOperation(),
                              state,
                              root_machine(fsm).matchConfig,
                              fsm.operations);
 
-            // copy the potentially changed known combinations back to the map
-            knownCombinations[player] = state.getMySafeCombinations();
+            if (player.has_value()) {
+                // copy the potentially changed known combinations back to the map
+                knownCombinations[player.value()] = state.getMySafeCombinations();
+            }
         }
     };
 
