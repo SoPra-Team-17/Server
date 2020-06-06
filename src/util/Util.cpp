@@ -6,6 +6,7 @@
  */
 
 #include <spdlog/spdlog.h>
+#include <spdlog/fmt/ostr.h>
 #include <network/MessageRouter.hpp>
 #include "Util.hpp"
 
