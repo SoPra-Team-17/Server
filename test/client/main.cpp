@@ -17,6 +17,8 @@
 #include <network/messages/RequestGamePause.hpp>
 #include <network/messages/GameLeave.hpp>
 #include <network/messages/RequestMetaInformation.hpp>
+#include <network/messages/MetaInformation.hpp>
+#include <util/Format.hpp>
 
 using namespace std::string_literals;
 
@@ -37,11 +39,14 @@ struct TestClient {
 
         spdlog::set_level(spdlog::level::level_enum::trace);
 
-        // decide randomly how many characters are chosen [2 - 4]
-        std::uniform_int_distribution<unsigned int> randNum(2, 4);
-        numberOfCharacters = randNum(rng);
+        if (role == spy::network::RoleEnum::PLAYER || role == spy::network::RoleEnum::AI) {
+            // decide randomly how many characters are chosen [2 - 4]
+            std::uniform_int_distribution<unsigned int> randNum(2, 4);
+            numberOfCharacters = randNum(rng);
 
-        spdlog::trace("{} will choose {} characters and {} gadgets", name, numberOfCharacters, 8 - numberOfCharacters);
+            spdlog::trace("{} will choose {} characters and {} gadgets", name, numberOfCharacters,
+                          8 - numberOfCharacters);
+        }
 
         wsClient.closeListener.subscribe([clientName]() {
             spdlog::critical("{}: Connection Closed", clientName);
@@ -109,6 +114,21 @@ struct TestClient {
                     break;
                 }
 
+                case MessageTypeEnum::META_INFORMATION: {
+                    auto m = j.get<spy::network::messages::MetaInformation>();
+                    auto map = m.getInformation();
+
+                    std::string keys;
+
+                    for (const auto &[key, value] : map) {
+                        keys += fmt::json(key);
+                    }
+
+                    spdlog::info("{} received keys {}", name, keys);
+                    break;
+                }
+
+
                 default:
                     spdlog::warn("{} received unhandled message : {}", name, message);
                     break;
@@ -158,23 +178,31 @@ struct TestClient {
                                                MetaInformationKey::SPECTATOR_COUNT,
                                                // Expected: only own characters get returned
                                                MetaInformationKey::FACTION_PLAYER1,
-                                               MetaInformationKey::FACTION_PLAYER2}};
+                                               MetaInformationKey::FACTION_PLAYER2,
+                                               MetaInformationKey::FACTION_NEUTRAL,
+                                               MetaInformationKey::GADGETS_PLAYER1,
+                                               MetaInformationKey::GADGETS_PLAYER2}};
         nlohmann::json mj = msg;
         wsClient.send(mj.dump());
     }
 };
 
 int main() {
-    auto c1 = TestClient("TestClient1");
-    auto c2 = TestClient("TestClient2", spy::network::RoleEnum::AI);
+    auto c1 = TestClient("Player 1");
+    auto c2 = TestClient("Player 2", spy::network::RoleEnum::AI);
+    auto c3 = TestClient("Spectator", spy::network::RoleEnum::SPECTATOR);
 
     c1.sendHello();
     std::this_thread::sleep_for(std::chrono::seconds{1});
     c2.sendHello();
+    std::this_thread::sleep_for(std::chrono::seconds{1});
+    c3.sendHello();
 
     std::this_thread::sleep_for(std::chrono::seconds{5});
 
     c1.requestMetaInformation();
+    c2.requestMetaInformation();
+    c3.requestMetaInformation();
 
     // Pause, unpause within time limit
     c1.sendRequestPause(true);
