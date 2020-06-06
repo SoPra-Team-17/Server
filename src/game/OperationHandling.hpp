@@ -172,7 +172,7 @@ namespace actions {
                     const spy::character::Character &activeCharacter = *state.getCharacters().findByUUID(
                             fsm.activeCharacter);
 
-                    if (not isRetire and Util::canMoveAgain(activeCharacter)) {
+                    if (not isRetire and Util::hasAPMP(activeCharacter)) {
                         spdlog::info("Character {} has not retired and can make another move.",
                                      activeCharacter.getName());
                         advanceCharacter = false;

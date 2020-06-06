@@ -25,7 +25,7 @@ class Util {
         static auto getFactionCharacters(const spy::character::CharacterSet &characters,
                                          spy::character::FactionEnum faction) -> std::vector<spy::util::UUID>;
 
-        static bool canMoveAgain(const spy::character::Character character) {
+        static bool hasAPMP(const spy::character::Character &character) {
             return character.getActionPoints() > 0 or character.getMovePoints() > 0;
         }
 };
