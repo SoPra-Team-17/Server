@@ -4,8 +4,7 @@ This repository contains the server component of team 17 for the
 the university of Ulm.
 
 ## Installation 
-Currently this server can be only installed manually, later on there will
-be also the option to install it through a docker container. 
+This server can be installed manually and through a docker container. 
 
 ### Manual Installation
 
@@ -71,8 +70,8 @@ docker run -v ~/customConfig:/config -p 7007:7007 soprateam17/server
 With the local configuration files
 ```
 ~/customConfig/characters.json
-~/customConfig/matchconfig.json
-~/customConfig/scenario.json
+~/customConfig/matchconfig.match
+~/customConfig/scenario.scenario
 ```
 The local directory path has to begin with `/` or `~`, so if you have a config directory in the current path use
 ```bash
