@@ -11,6 +11,7 @@
 #include <network/messages/HelloReply.hpp>
 #include <network/messages/StatisticsMessage.hpp>
 #include <network/messages/GamePause.hpp>
+#include <network/messages/GameStatus.hpp>
 #include <util/Player.hpp>
 #include <util/GameLogicUtils.hpp>
 #include <network/messages/MetaInformation.hpp>
@@ -40,14 +41,14 @@ namespace actions {
             // Client ID is already assigned here, gets assigned directly after server receives hello callback from network
             spy::network::messages::HelloReply helloReply{
                     helloMessage.getClientId(),
-                    fsm.sessionId,
-                    fsm.scenarioConfig,
-                    fsm.matchConfig,
-                    fsm.characterInformations
+                    root_machine(fsm).sessionId,
+                    root_machine(fsm).scenarioConfig,
+                    root_machine(fsm).matchConfig,
+                    root_machine(fsm).characterInformations
             };
 
             spdlog::info("Sending HelloReply to {} ({})", helloMessage.getName(), helloReply.getClientId());
-            fsm.router.sendMessage(helloReply);
+            root_machine(fsm).router.sendMessage(helloReply);
         }
     };
 
@@ -219,6 +220,38 @@ namespace actions {
             spdlog::info("Unpausing, forced={}", isForced);
             MessageRouter &router = root_machine(fsm).router;
             router.broadcastMessage(spy::network::messages::GamePause{{}, false, isForced});
+        }
+    };
+
+    /**
+     * Sends the spectator the current game state.
+     * @note The action depends on information of the game FSM, specifically the game phase.
+     */
+    struct sendSpectatorState {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(Event &e, FSM &fsm, SourceState &, TargetState &) {
+            MessageRouter &router = root_machine(fsm).router;
+            spy::network::messages::Hello helloMsg = e;
+
+            spdlog::debug("Checking if sending of spectator state is possible");
+
+            if (!root_machine(fsm).isIngame) {
+                // game hasn't started yet, thus sending an initial state is not possible
+                return;
+            }
+
+            spy::gameplay::State state = root_machine(fsm).gameState;
+            bool gameOver = spy::util::RoundUtils::isGameOver(state);
+            state.setKnownSafeCombinations({});
+            spy::network::messages::GameStatus stateMsg(
+                    helloMsg.getClientId(),
+                    fsm.activeCharacter,
+                    fsm.operations,
+                    state,
+                    gameOver);
+
+            router.sendMessage(stateMsg);
+            spdlog::debug("Send initial state to spectator {}", helloMsg.getClientId());
         }
     };
 }
