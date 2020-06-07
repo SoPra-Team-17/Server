@@ -25,5 +25,9 @@ namespace events {
 
     struct roundDone {
     };
+
+    struct playerDisconnect {
+        spy::util::UUID clientId;
+    };
 }
 #endif //SERVER017_EVENTS_HPP

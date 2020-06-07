@@ -114,13 +114,24 @@ class Util {
                     }
 
                     return MetaInformationPair(key, Util::getFactionGadgets(gameState.getCharacters(),
-                                                                     spy::character::FactionEnum::PLAYER2));
+                                                                            spy::character::FactionEnum::PLAYER2));
 
                 default:
                     spdlog::warn("Unsupported MetaInformation key requested: {}.", fmt::json(key));
                     return std::nullopt;
             }
         }
+
+        /**
+         * Checks if the UUID is a player in the current game and not currently connected
+         * @param clientId UUID to check
+         * @param playerIds IDs of both current players
+         * @param router MessageRouter instance to check if UUID is currently connected
+         * @return True if clientId is Player::one or two and clientId is connected to router
+         */
+        static bool isDisconnectedPlayer(const spy::util::UUID &clientId,
+                                         const std::map<Player, spy::util::UUID> &playerIds,
+                                         const MessageRouter &router);
 };
 
 
