@@ -283,6 +283,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
             // Server forced unpause
             tr<paused,              events::forceUnpause,                     waitingForOperation, actions::unpauseGame>
             >;
+            // @formatter:on
         };
 
         using initial_state = decltype(choicePhase);
