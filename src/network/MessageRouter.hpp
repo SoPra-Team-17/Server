@@ -126,6 +126,8 @@ class MessageRouter {
 
         void clearConnections();
 
+        void closeConnection(const spy::util::UUID &id);
+
     private:
         websocket::network::WebSocketServer server;
 
@@ -162,8 +164,6 @@ class MessageRouter {
         const websocket::util::Listener<spy::network::messages::RequestReplay> replayRequestListener;
 
         const websocket::util::Listener<spy::util::UUID> clientDisconnectListener;
-
-
 };
 
 #endif //SERVER017_MESSAGEROUTER_HPP

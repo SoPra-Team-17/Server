@@ -6,15 +6,16 @@
 #define SERVER017_ACTIONS_HPP
 
 #include <spdlog/spdlog.h>
-#include <util/UUID.hpp>
 #include <network/messages/GameStarted.hpp>
 #include <network/messages/HelloReply.hpp>
 #include <network/messages/StatisticsMessage.hpp>
 #include <network/messages/GamePause.hpp>
+#include <network/messages/MetaInformation.hpp>
+#include <network/messages/GameLeft.hpp>
 #include <util/Player.hpp>
 #include <util/GameLogicUtils.hpp>
-#include <network/messages/MetaInformation.hpp>
 #include <util/Util.hpp>
+#include <util/UUID.hpp>
 #include "Events.hpp"
 
 namespace actions {
@@ -131,6 +132,8 @@ namespace actions {
         void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
             const spy::gameplay::State &state = root_machine(fsm).gameState;
 
+            //TODO: close game for leaving client
+
             spdlog::info("Closing game");
 
             spy::character::FactionEnum winningFaction = spy::util::RoundUtils::determineWinningFaction(state);
@@ -240,6 +243,46 @@ namespace actions {
             spdlog::info("Unpausing, forced={}", isForced);
             MessageRouter &router = root_machine(fsm).router;
             router.broadcastMessage(spy::network::messages::GamePause{{}, false, isForced});
+        }
+    };
+
+    /**
+     * Sends a game left message to the client that wants to leave the game.
+     * @note Only intended to be used for spectators.
+     */
+    struct sendGameLeft {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(Event &&e, FSM &fsm, SourceState &, TargetState &) {
+            auto clientId = e.getClientId();
+
+            MessageRouter &router = root_machine(fsm).router;
+            spy::network::messages::GameLeft gameLeft(clientId, clientId);
+
+            router.sendMessage(gameLeft);
+
+            router.closeConnection(clientId);
+        }
+    };
+
+    /**
+     * Broadcasts a game left message to all registered clients.
+     */
+    struct broadcastGameLeft {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(Event &&e, FSM &fsm, SourceState &, TargetState &) {
+            spy::util::UUID clientId;
+            if constexpr (std::is_same<Event, spy::network::messages::GameLeave>::value) {
+                clientId = e.getClientId();
+            } else if constexpr(std::is_same<Event, events::playerDisconnect>::value) {
+                clientId = e.clientId;
+            }
+
+            MessageRouter &router = root_machine(fsm).router;
+            spy::network::messages::GameLeft gameLeft({}, clientId);
+
+            router.broadcastMessage(gameLeft);
+
+            router.closeConnection(clientId);
         }
     };
 }

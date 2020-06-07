@@ -56,17 +56,20 @@ class Server : public afsm::def::state_machine<Server> {
         using transitions = transition_table <
         // Start           Event                              Next            Action                                                              Guard
         tr<emptyLobby,     spy::network::messages::Hello,     waitFor2Player, actions::multiple<actions::InitializeSession, actions::HelloReply>, not_<guards::isSpectator>>,
-        tr<waitFor2Player, spy::network::messages::GameLeave, emptyLobby>,
-        tr<waitFor2Player, events::playerDisconnect,          emptyLobby>,
-        tr<waitFor2Player, spy::network::messages::Hello,     decltype(game), actions::multiple<actions::HelloReply, actions::StartGame>,          not_<guards::isSpectator>>,
-        tr<GameFSM,        none,                              emptyLobby,     actions::closeGame,                                                  guards::gameOver>
+        tr<waitFor2Player, spy::network::messages::GameLeave, emptyLobby,     actions::broadcastGameLeft,                                         not_<guards::isSpectator>>,
+        tr<waitFor2Player, events::playerDisconnect,          emptyLobby,     actions::broadcastGameLeft>,
+        tr<waitFor2Player, spy::network::messages::Hello,     decltype(game), actions::multiple<actions::HelloReply, actions::StartGame>,         not_<guards::isSpectator>>,
+        tr<GameFSM,        none,                              emptyLobby,     actions::closeGame,                                                 guards::gameOver>,
+        tr<GameFSM,        spy::network::messages::GameLeave, emptyLobby,     actions::closeGame,                                                 not_<guards::isSpectator>>
         >;
 
         using internal_transitions = transition_table <
         // Event                                           Action                  Guard
         // Reply to MetaInformation request at any time during the game
         in<spy::network::messages::RequestMetaInformation, actions::sendMetaInformation>,
-        in<spy::network::messages::Hello,                  actions::HelloReply,    guards::isSpectator>>;
+        in<spy::network::messages::GameLeave,              actions::sendGameLeft,  guards::isSpectator>,
+        in<spy::network::messages::Hello,                  actions::HelloReply,    guards::isSpectator>
+        >;
         // @formatter:on
 
         unsigned int verbosity;

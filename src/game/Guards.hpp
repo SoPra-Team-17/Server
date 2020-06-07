@@ -175,9 +175,8 @@ namespace guards {
             spdlog::debug("Testing spectator condition");
 
             const auto &clientRoles = root_machine(fsm).clientRoles;
-            const spy::network::messages::Hello &message = e;
 
-            return (clientRoles.at(message.getClientId()) == spy::network::RoleEnum::SPECTATOR);
+            return (clientRoles.at(e.getClientId()) == spy::network::RoleEnum::SPECTATOR);
         }
     };
 }

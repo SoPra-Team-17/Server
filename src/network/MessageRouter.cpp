@@ -149,6 +149,14 @@ void MessageRouter::clearConnections() {
     activeConnections.clear();
 }
 
+void MessageRouter::closeConnection(const spy::util::UUID &id) {
+    spdlog::debug("Closing connection to player {}", id);
+    connection con = connectionFromUUID(id);
+    activeConnections.erase(std::remove(activeConnections.begin(), activeConnections.end(), con), activeConnections.end());
+
+    //TODO: close connection
+}
+
 bool MessageRouter::isConnected(const spy::util::UUID &id) const {
     const auto r = std::find_if(activeConnections.begin(), activeConnections.end(),
                                 [id](const auto &ptrIdPair) {
