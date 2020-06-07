@@ -20,4 +20,4 @@ RUN mkdir build
 RUN cd build && cmake -DCMAKE_BUILD_TYPE=Release ..
 RUN cd build && make -j$(nproc)
 
-ENTRYPOINT /server/build/src/server017 --config-charset /config/characters.json --config-match /config/matchconfig.json --config-scenario /config/scenario.json --port 7007
+ENTRYPOINT /server/build/src/server017 --config-charset /config/characters.json --config-match /config/matchconfig.match --config-scenario /config/scenario.scenario --port 7007
