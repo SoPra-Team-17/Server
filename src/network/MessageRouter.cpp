@@ -79,7 +79,7 @@ void MessageRouter::receiveListener(const MessageRouter::connectionPtr &connecti
         and messageContainer.getType() != spy::network::messages::MessageTypeEnum::RECONNECT) {
         // All messages other than HELLO and RECONNECT require that the client is already registered.
         // -> connectionId should have been found and be equal to clientId in message.
-        if (connectionId.has_value() and connectionId.value() == messageContainer.getClientId()) {
+        if (connectionId.has_value() and connectionId.value() != messageContainer.getClientId()) {
             spdlog::warn("Client {} sent a message with false uuid: {}. Correcting UUID and handling message.",
                          connectionId.value(),
                          messageContainer.getClientId());
