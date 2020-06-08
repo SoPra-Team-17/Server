@@ -70,7 +70,8 @@ void MessageRouter::receiveListener(const MessageRouter::connectionPtr &connecti
 
     //check if client sends with his own UUID
     if (messageContainer.getType() != spy::network::messages::MessageTypeEnum::HELLO
-        && messageContainer.getClientId() != connectionId.value()) {
+        and messageContainer.getType() != spy::network::messages::MessageTypeEnum::RECONNECT
+        and messageContainer.getClientId() != connectionId.value()) {
         spdlog::warn("Client {} sent a message with false uuid: {}", connectionId.value(),
                      messageContainer.getClientId());
         messageJson.at("clientId") = connectionId.value(); // correct the uuid
