@@ -5,14 +5,13 @@ RUN apt update && apt install -y sudo git build-essential cmake g++-8
 COPY external /server/external
 COPY installDependencies.sh /server/
 ENV CXX=g++-8
-RUN /server/installDependencies.sh
+WORKDIR /server
+RUN ./installDependencies.sh
 
 COPY src /server/src
 COPY test /server/test
 COPY CMakeLists.txt* /server/
 COPY exampleConfig /config
-
-WORKDIR /server
 
 # Build server
 RUN mkdir build
