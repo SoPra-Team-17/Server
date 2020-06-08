@@ -169,13 +169,19 @@ namespace actions {
                 // Some character was already active this round
                 spdlog::debug("Last character was a regular character that might make another action");
 
-                const spy::character::Character &activeCharacter = *state.getCharacters().findByUUID(
+                spy::character::Character &activeCharacter = state.getCharacters().getByUUID(
                         fsm.activeCharacter);
 
                 if (not isRetire and Util::hasAPMP(activeCharacter)) {
-                    spdlog::info("Character {} has not retired and can make another move.",
-                                 activeCharacter.getName());
-                    advanceCharacter = false;
+                    if (Util::hasMPInFog(activeCharacter, state)) {
+                        spdlog::info("Character {} has not retired and can make another move.",
+                                     activeCharacter.getName());
+                        advanceCharacter = false;
+                    } else {
+                        spdlog::info("Character {} is stuck in fog, thus AP are resetted.",
+                                     activeCharacter.getName());
+                        activeCharacter.setActionPoints(0);
+                    }
                 }
             }
 
