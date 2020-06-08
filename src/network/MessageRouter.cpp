@@ -136,8 +136,12 @@ void MessageRouter::receiveListener(const MessageRouter::connectionPtr &connecti
 
 void
 MessageRouter::registerUUIDforConnection(const spy::util::UUID &id, const MessageRouter::connectionPtr &connection) {
-    auto &con = connectionFromPtr(connection);
-    con.second = id;
+    try {
+        auto &con = connectionFromPtr(connection);
+        con.second = id;
+    } catch (const std::invalid_argument &e) {
+        spdlog::error("Error registering UUID {}. Exception: {}", id, e.what());
+    }
 }
 
 MessageRouter::connection &MessageRouter::connectionFromPtr(const MessageRouter::connectionPtr &con) {
