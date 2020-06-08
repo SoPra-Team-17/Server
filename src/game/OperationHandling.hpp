@@ -57,7 +57,8 @@ namespace actions {
             executeOperation(operationMessage.getOperation(),
                              state,
                              root_machine(fsm).matchConfig,
-                             fsm.operations);
+                             fsm.operations,
+                             fsm.remainingCharacters);
 
             // if the player is hasn't got enough MP to leave the fog, his turn ends although there are AP left
             if (!Util::hasMPInFog(*activeCharacter, state)) {

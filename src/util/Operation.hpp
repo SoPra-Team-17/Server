@@ -8,6 +8,7 @@
 #define SERVER017_OPERATION_HPP
 
 #include <network/messages/GameOperation.hpp>
+#include <deque>
 
 /**
  * Applies the specified operation to the state,
@@ -22,6 +23,7 @@
 void executeOperation(const std::shared_ptr<const spy::gameplay::BaseOperation> &operation,
                       spy::gameplay::State &state,
                       const spy::MatchConfig &matchConfig,
-                      std::vector<std::shared_ptr<const spy::gameplay::BaseOperation>> &operationList);
+                      std::vector<std::shared_ptr<const spy::gameplay::BaseOperation>> &operationList,
+                      std::deque<spy::util::UUID> remainingCharacters);
 
 #endif //SERVER017_OPERATION_HPP
