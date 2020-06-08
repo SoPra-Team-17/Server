@@ -3,6 +3,7 @@
 #include <algorithm>
 #include "MessageRouter.hpp"
 #include "spdlog/fmt/ostr.h"
+#include "util/UUIDNotFoundException.hpp"
 
 MessageRouter::MessageRouter(uint16_t port, std::string protocol) : server{port, std::move(protocol)} {
     server.connectionListener.subscribe(
@@ -27,13 +28,13 @@ void MessageRouter::connectListener(const MessageRouter::connectionPtr &newConne
 }
 
 void MessageRouter::disconnectListener(const MessageRouter::connectionPtr &closedConnection) {
+    spdlog::info("Router: client disconnect");
     std::optional<spy::util::UUID> connectionUUID;
     try {
         const auto &foundConnection = connectionFromPtr(closedConnection);
         connectionUUID = foundConnection.second;
     } catch (const std::invalid_argument &e) {
-        using std::string_literals::operator ""s;
-        spdlog::info("Not registered connection closed. (Exception: "s + e.what() + ")");
+        spdlog::info("Not registered connection closed. (Exception: {})", e.what());
         return;
     }
     spdlog::info("Connection {} closed.", connectionUUID.value_or(spy::util::UUID{}));
@@ -41,6 +42,11 @@ void MessageRouter::disconnectListener(const MessageRouter::connectionPtr &close
     auto con = std::find_if(activeConnections.begin(), activeConnections.end(), [closedConnection](const auto &c) {
         return c.first == closedConnection;
     });
+    if (con == activeConnections.end()) {
+        spdlog::error("Connection {} not found in list using pointer.", connectionUUID.value_or(spy::util::UUID{}));
+        return;
+    }
+
     activeConnections.erase(con);
 
     if (connectionUUID.has_value()) {
@@ -149,7 +155,7 @@ MessageRouter::connection &MessageRouter::connectionFromUUID(const spy::util::UU
             return c;
         }
     }
-    throw std::invalid_argument("UUID not in list of known connections");
+    throw UUIDNotFoundException{};
 }
 
 void MessageRouter::clearConnections() {

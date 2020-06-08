@@ -242,6 +242,22 @@ namespace actions {
             router.broadcastMessage(spy::network::messages::GamePause{{}, false, isForced});
         }
     };
+
+    struct secondPlayerDisconnect {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(Event &&, FSM &, SourceState &, TargetState &target) {
+            spdlog::info("Both players are now disconnected.");
+            target.bothDisconnected = true;
+        }
+    };
+
+    struct secondPlayerReconnect {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(Event &&, FSM &, SourceState &, TargetState &target) {
+            spdlog::info("One of two players reconnected.");
+            target.bothDisconnected = false;
+        }
+    };
 }
 
 #endif //SERVER017_ACTIONS_HPP

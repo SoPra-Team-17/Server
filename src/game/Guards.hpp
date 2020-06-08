@@ -180,6 +180,13 @@ namespace guards {
             return (clientRoles.at(message.getClientId()) == spy::network::RoleEnum::SPECTATOR);
         }
     };
+
+    struct bothDisconnected {
+        template<typename FSM, typename FSMState, typename Event>
+        bool operator()(const FSM &, const FSMState &state, const Event &) {
+            return state.bothDisconnected;
+        }
+    };
 }
 
 
