@@ -83,6 +83,13 @@ class MessageRouter {
             replayRequestListener.subscribe(l);
         }
 
+        template<typename T>
+        void addDisconnectListener(T l) {
+            clientDisconnectListener.subscribe(l);
+        }
+
+        bool isConnected(const spy::util::UUID &id) const;
+
 
         /**
          * Sends a message to a specific client.
@@ -145,7 +152,7 @@ class MessageRouter {
         void receiveListener(const connectionPtr &connection, const std::string &message);
 
         const websocket::util::Listener<spy::network::messages::Hello, connectionPtr> helloListener;
-        const websocket::util::Listener<spy::network::messages::Reconnect> reconnectListener;
+        const websocket::util::Listener<spy::network::messages::Reconnect, connectionPtr> reconnectListener;
         const websocket::util::Listener<spy::network::messages::ItemChoice> itemChoiceListener;
         const websocket::util::Listener<spy::network::messages::EquipmentChoice> equipmentChoiceListener;
         const websocket::util::Listener<spy::network::messages::GameOperation> gameOperationListener;
@@ -153,6 +160,8 @@ class MessageRouter {
         const websocket::util::Listener<spy::network::messages::RequestGamePause> pauseRequestListener;
         const websocket::util::Listener<spy::network::messages::RequestMetaInformation> metaInformationRequestListener;
         const websocket::util::Listener<spy::network::messages::RequestReplay> replayRequestListener;
+
+        const websocket::util::Listener<spy::util::UUID> clientDisconnectListener;
 
 
 };

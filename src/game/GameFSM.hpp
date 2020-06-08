@@ -277,11 +277,14 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
             tr<roundInit,           events::roundInitDone,                    waitingForOperation, actions::multiple<actions::broadcastState, actions::requestNextOperation>>,
             tr<waitingForOperation, events::roundDone,                        roundInit>,
             // Player requested pause
-            tr<waitingForOperation, spy::network::messages::RequestGamePause, paused,              actions::pauseGame,                                                          guards::isPauseRequest>,
+            tr<waitingForOperation, spy::network::messages::RequestGamePause, paused,              actions::pauseGame<false>,                                                          guards::isPauseRequest>,
             // Player requested unpause
             tr<paused,              spy::network::messages::RequestGamePause, waitingForOperation, actions::unpauseGame,                                                        guards::isUnPauseRequest>,
             // Server forced unpause
-            tr<paused,              events::forceUnpause,                     waitingForOperation, actions::unpauseGame>
+            tr<paused,              events::forceUnpause,                     waitingForOperation, actions::unpauseGame>,
+            // Force pause when player disconnects
+            tr<waitingForOperation, events::playerDisconnect,                 paused,              actions::pauseGame<true>>,
+            tr<paused,              spy::network::messages::Reconnect,        waitingForOperation, actions::multiple<actions::sendReconnectGameStart, actions::broadcastState, actions::unpauseGame, actions::requestNextOperation>>
             >;
             // @formatter:on
         };

@@ -42,6 +42,10 @@ void MessageRouter::disconnectListener(const MessageRouter::connectionPtr &close
         return c.first == closedConnection;
     });
     activeConnections.erase(con);
+
+    if (connectionUUID.has_value()) {
+        clientDisconnectListener(connectionUUID.value());
+    }
 }
 
 void MessageRouter::receiveListener(const MessageRouter::connectionPtr &connectionPtr, const std::string &message) {
@@ -82,7 +86,7 @@ void MessageRouter::receiveListener(const MessageRouter::connectionPtr &connecti
             return;
         case spy::network::messages::MessageTypeEnum::RECONNECT:
             spdlog::debug("MessageRouter received Reconnect message.");
-            reconnectListener(messageJson.get<spy::network::messages::Reconnect>());
+            reconnectListener(messageJson.get<spy::network::messages::Reconnect>(), connectionPtr);
             return;
         case spy::network::messages::MessageTypeEnum::ITEM_CHOICE:
             spdlog::debug("MessageRouter received ItemChoice message.");
@@ -143,4 +147,13 @@ MessageRouter::connection &MessageRouter::connectionFromUUID(const spy::util::UU
 
 void MessageRouter::clearConnections() {
     activeConnections.clear();
+}
+
+bool MessageRouter::isConnected(const spy::util::UUID &id) const {
+    const auto r = std::find_if(activeConnections.begin(), activeConnections.end(),
+                                [id](const auto &ptrIdPair) {
+                                    return ptrIdPair.second.has_value() and ptrIdPair.second.value() == id;
+                                });
+
+    return r != activeConnections.end();
 }

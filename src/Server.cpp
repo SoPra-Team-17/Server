@@ -48,38 +48,8 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         }
     }
 
-    std::ifstream ifs{matchPath};
-    nlohmann::json j;
-
     // load configuration files
-    try {
-        j = nlohmann::json::parse(ifs);
-        matchConfig = j.get<spy::MatchConfig>();
-        spdlog::info("Successfully read match configuration");
-
-        ifs = std::ifstream(scenarioPath);
-        j = nlohmann::json::parse(ifs);
-        scenarioConfig = j.get<spy::scenario::Scenario>();
-        spdlog::info("Successfully read scenario configuration");
-
-        ifs = std::ifstream(characterPath);
-        j = nlohmann::json::parse(ifs);
-
-        for (const auto &characterDescriptionJson: j) {
-            // Read CharacterDescription, save CharacterInformation = CharacterDescription + UUID
-            auto characterDescription = characterDescriptionJson.get<spy::character::CharacterDescription>();
-            auto uuid = spy::util::UUID::generate();
-            spdlog::info("Character {} has UUID {}", characterDescription.getName(), uuid);
-            characterInformations.emplace_back(std::move(characterDescription), std::move(uuid));
-        }
-
-        spdlog::info("Successfully read character descriptions");
-        ifs.close();
-    } catch (const nlohmann::json::exception &e) {
-        spdlog::error("JSON file is invalid: " + std::string(e.what()));
-        ifs.close();
-        std::exit(1);
-    }
+    loadConfigs(matchPath, scenarioPath, characterPath);
 
     if (characterInformations.size() < 10) {
         spdlog::critical("Not enough character descriptions given, at least 10 are needed for choice phase!");
@@ -115,7 +85,7 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         // New clients send Hello, and need to be assigned a UUID immediately.
         // This new UUID gets inserted into the HelloMessage, so the FSM receives properly formatted HelloMessage
         spdlog::info("Server received Hello message, initializing UUID");
-        msg = spy::network::messages::Hello{spy::util::UUID::generate(), msg.getName(), msg.getRole()};
+        msg.setClientId(spy::util::UUID::generate());
         spdlog::info("Registering UUID {} at router", msg.getClientId());
         router.registerUUIDforConnection(msg.getClientId(), con);
         spdlog::info("Posting event to FSM now");
@@ -151,13 +121,46 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         spdlog::warn("Received message of type {}, handling is not implemented.", fmt::json(msg.getType()));
     };
 
-    router.addReconnectListener(discardNotImplemented);
     router.addItemChoiceListener(forwardMessage);
     router.addEquipmentChoiceListener(forwardMessage);
     router.addGameOperationListener(forwardMessage);
     router.addPauseRequestListener(forwardMessage);
     router.addMetaInformationRequestListener(forwardMessage);
     router.addReplayRequestListener(discardNotImplemented);
+
+    router.addReconnectListener(
+            [this, forwardMessage](const spy::network::messages::Reconnect &msg,
+                                   const MessageRouter::connectionPtr &con) {
+                if (msg.getSessionId() != sessionId) {
+                    spdlog::warn(
+                            "Reconnect message from client {} specifies sessionId {}, but current sessionId is {}.",
+                            msg.getClientId(),
+                            msg.getSessionId(),
+                            sessionId);
+                    return;
+                }
+
+                // Check if reconnect is from disconnected player
+                const spy::util::UUID &clientId = msg.getClientId();
+                if (!Util::isDisconnectedPlayer(clientId, playerIds, router)) {
+                    return;
+                }
+
+                spdlog::info("Server received Reconnect message, with UUID {}", msg.getClientId());
+                spdlog::info("Registering UUID {} at router", msg.getClientId());
+                router.registerUUIDforConnection(msg.getClientId(), con);
+                forwardMessage(msg);
+            });
+
+    router.addDisconnectListener([&fsm, this](const spy::util::UUID &uuid) {
+        auto clientRole = clientRoles.at(uuid);
+        using spy::network::RoleEnum;
+        if (clientRole == RoleEnum::PLAYER or clientRole == RoleEnum::AI) {
+            fsm.process_event(events::playerDisconnect{uuid});
+        } else {
+            spdlog::info("Client {} (Role: {}) disconnected.", uuid, fmt::json(clientRole));
+        }
+    });
 }
 
 void Server::configureLogging() const {
@@ -196,4 +199,39 @@ void Server::configureLogging() const {
 
     // use this new combined sink as default logger
     spdlog::set_default_logger(combined_logger);
+}
+
+void Server::loadConfigs(const std::string &matchPath,
+                         const std::string &scenarioPath,
+                         const std::string &characterPath) {
+    std::ifstream ifs{matchPath};
+    nlohmann::json j;
+    try {
+        j = nlohmann::json::parse(ifs);
+        matchConfig = j.get<spy::MatchConfig>();
+        spdlog::info("Successfully read match configuration");
+
+        ifs = std::ifstream(scenarioPath);
+        j = nlohmann::json::parse(ifs);
+        scenarioConfig = j.get<spy::scenario::Scenario>();
+        spdlog::info("Successfully read scenario configuration");
+
+        ifs = std::ifstream(characterPath);
+        j = nlohmann::json::parse(ifs);
+
+        for (const auto &characterDescriptionJson: j) {
+            // Read CharacterDescription, save CharacterInformation = CharacterDescription + UUID
+            auto characterDescription = characterDescriptionJson.get<spy::character::CharacterDescription>();
+            auto uuid = spy::util::UUID::generate();
+            spdlog::info("Character {} has UUID {}", characterDescription.getName(), uuid);
+            characterInformations.emplace_back(std::move(characterDescription), uuid);
+        }
+
+        spdlog::info("Successfully read character descriptions");
+        ifs.close();
+    } catch (const nlohmann::json::exception &e) {
+        spdlog::error("JSON file is invalid: " + std::string(e.what()));
+        ifs.close();
+        std::exit(1);
+    }
 }
