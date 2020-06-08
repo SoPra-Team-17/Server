@@ -50,3 +50,12 @@ bool Util::isDisconnectedPlayer(const spy::util::UUID &clientId,
     }
     return true;
 }
+
+bool Util::hasMPInFog(const spy::character::Character &character, const spy::gameplay::State &state) {
+    if (character.getMovePoints() > 0) {
+        return true;
+    } else {
+        // actions are blocked in the fog, thus the character's turn ends with his last move point
+        return !state.getMap().getField(character.getCoordinates().value()).isFoggy();
+    }
+}
