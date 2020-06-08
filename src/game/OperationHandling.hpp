@@ -36,7 +36,7 @@ namespace actions {
             const GameOperation &operationMessage = std::forward<GameOperation>(e);
 
             // update the state with the current players safe combination knowledge
-            auto activeCharacter = state.getCharacters().findByUUID(fsm.activeCharacter);
+            auto activeCharacter = state.getCharacters().getByUUID(fsm.activeCharacter);
 
             // Find player owning character
             std::optional<Player> player = std::nullopt;
@@ -58,6 +58,13 @@ namespace actions {
                              state,
                              root_machine(fsm).matchConfig,
                              fsm.operations);
+
+            // if the player is hasn't got enough MP to leave the fog, his turn ends although there are AP left
+            if (!Util::hasMPInFog(*activeCharacter, state)) {
+                spdlog::info("Character {} is stuck in fog, thus AP are resetted.",
+                             activeCharacter->getName());
+                activeCharacter->setActionPoints(0);
+            }
 
             if (player.has_value()) {
                 // copy the potentially changed known combinations back to the map
