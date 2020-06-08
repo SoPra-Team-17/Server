@@ -198,8 +198,6 @@ namespace actions {
 
             router.broadcastMessage(statisticsMessage);
 
-            // TODO: Keep replay available for 5 minutes, then close connections (optional requirement)
-
             spdlog::debug("Clearing all connections from router");
             router.clearConnections();
 
