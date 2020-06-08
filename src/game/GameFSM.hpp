@@ -220,7 +220,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
 
                 using internal_transitions = transition_table <
                 // Event                          Action                                                               Guard
-                in<spy::network::messages::Hello, actions::multiple<actions::HelloReply, actions::sendSpectatorState>, guards::isSpectator>>;
+                in<spy::network::messages::Hello, actions::multiple<actions::HelloReply, actions::broadcastState>, guards::isSpectator>>;
                 // @formatter:on
             };
 
@@ -241,7 +241,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                 in<events::triggerNPCmove,                actions::multiple<actions::generateNPCMove>>,
                 in<events::triggerCatMove,                actions::multiple<actions::executeCatMove, actions::broadcastState, actions::requestNextOperation>>,
                 in<events::triggerJanitorMove,            actions::multiple<actions::executeJanitorMove, actions::broadcastState, actions::requestNextOperation>>,
-                in<spy::network::messages::Hello, actions::multiple<actions::HelloReply, actions::sendSpectatorState>,                                            guards::isSpectator>>;
+                in<spy::network::messages::Hello, actions::multiple<actions::HelloReply, actions::broadcastState>,                                                guards::isSpectator>>;
                 // @formatter:on
             };
 
@@ -263,8 +263,8 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                 Timer timer;
 
                 using internal_transitions = transition_table <
-                // Event                          Action                                                               Guard
-                in<spy::network::messages::Hello, actions::multiple<actions::HelloReply, actions::sendSpectatorState>, guards::isSpectator>>;
+                // Event                          Action                                                           Guard
+                in<spy::network::messages::Hello, actions::multiple<actions::HelloReply, actions::broadcastState>, guards::isSpectator>>;
                 // @formatter:on
             };
 

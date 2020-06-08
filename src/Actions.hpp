@@ -222,38 +222,6 @@ namespace actions {
             router.broadcastMessage(spy::network::messages::GamePause{{}, false, isForced});
         }
     };
-
-    /**
-     * Sends the spectator the current game state.
-     * @note The action depends on information of the game FSM, specifically the game phase.
-     */
-    struct sendSpectatorState {
-        template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(Event &e, FSM &fsm, SourceState &, TargetState &) {
-            MessageRouter &router = root_machine(fsm).router;
-            spy::network::messages::Hello helloMsg = e;
-
-            spdlog::debug("Checking if sending of spectator state is possible");
-
-            if (!root_machine(fsm).isIngame) {
-                // game hasn't started yet, thus sending an initial state is not possible
-                return;
-            }
-
-            spy::gameplay::State state = root_machine(fsm).gameState;
-            bool gameOver = spy::util::RoundUtils::isGameOver(state);
-            state.setKnownSafeCombinations({});
-            spy::network::messages::GameStatus stateMsg(
-                    helloMsg.getClientId(),
-                    fsm.activeCharacter,
-                    fsm.operations,
-                    state,
-                    gameOver);
-
-            router.sendMessage(stateMsg);
-            spdlog::debug("Send initial state to spectator {}", helloMsg.getClientId());
-        }
-    };
 }
 
 #endif //SERVER017_ACTIONS_HPP
