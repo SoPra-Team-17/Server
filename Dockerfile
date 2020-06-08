@@ -3,15 +3,15 @@ FROM ubuntu:18.04
 # Dependencies
 RUN apt update && apt install -y sudo git build-essential cmake g++-8
 COPY external /server/external
+COPY installDependencies.sh /server/
 ENV CXX=g++-8
+WORKDIR /server
 RUN ./installDependencies.sh
 
 COPY src /server/src
 COPY test /server/test
-COPY CMakeLists.txt* installDependencies.sh /server/
+COPY CMakeLists.txt* /server/
 COPY exampleConfig /config
-
-WORKDIR /server
 
 # Build server
 RUN mkdir build
