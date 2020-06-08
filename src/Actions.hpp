@@ -127,47 +127,78 @@ namespace actions {
         }
     };
 
+    /**
+     * Closes the current game
+     */
     struct closeGame {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
-            const spy::gameplay::State &state = root_machine(fsm).gameState;
+            using spy::character::FactionEnum;
+            using spy::statistics::VictoryEnum;
+            using spy::network::messages::StatisticsMessage;
+            using spy::statistics::Statistics;
+            using spy::statistics::StatisticsEntry;
+            using spy::gameplay::Stats;
 
-            //TODO: close game for leaving client
+            const spy::gameplay::State &state = root_machine(fsm).gameState;
+            MessageRouter &router = root_machine(fsm).router;
+            std::map<Player, spy::util::UUID> &playerIds = root_machine(fsm).playerIds;
+            Stats gameStats = root_machine(fsm).gameState.getFactionStats();
 
             spdlog::info("Closing game");
 
-            spy::character::FactionEnum winningFaction = spy::util::RoundUtils::determineWinningFaction(state);
+            FactionEnum winningFaction;
+            VictoryEnum victoryReason;
             Player winner;
-            switch (winningFaction) {
-                case spy::character::FactionEnum::PLAYER1:
-                    winner = Player::one;
-                    break;
-                case spy::character::FactionEnum::PLAYER2:
-                    winner = Player::two;
-                    break;
-                default:
+
+            // check if the game ended through a player's leave
+            if (!router.isConnected(playerIds.at(Player::one))) {
+                winner = Player::two;
+                victoryReason = VictoryEnum::VICTORY_BY_LEAVE;
+            } else if (!router.isConnected(playerIds.at(Player::two))) {
+                winner = Player::one;
+                victoryReason = VictoryEnum::VICTORY_BY_LEAVE;
+            } else {
+                std::tie(winningFaction, victoryReason) = spy::util::RoundUtils::determineWinningFaction(state);
+                // if there is no clear winner, player one has won the game!
+                if (winningFaction != FactionEnum::INVALID) {
+                    winner = (winningFaction == FactionEnum::PLAYER2) ? Player::two : Player::one;
+                } else {
                     spdlog::error("Winning faction \"{}\" invalid (assuming player one)", fmt::json(winningFaction));
                     winner = Player::one;
-                    break;
+                }
+
             }
 
             spdlog::info("Winning player is {}", fmt::json(winner));
 
-            std::map<Player, spy::util::UUID> &playerIds = root_machine(fsm).playerIds;
+            Statistics stats;
 
-            using spy::network::messages::StatisticsMessage;
+            stats.addEntry(StatisticsEntry{"Damage suffered", "Suffered damage of the factions",
+                                           std::to_string(gameStats.damageSuffered.first),
+                                           std::to_string(gameStats.damageSuffered.second)});
+
+            stats.addEntry(StatisticsEntry{"Drunk cocktails",
+                                           "Number of cocktails the factions drunk",
+                                           std::to_string(gameStats.cocktails.first),
+                                           std::to_string(gameStats.cocktails.second)});
+
+            stats.addEntry(StatisticsEntry{"Poured cocktails",
+                                    "Number of cocktails the factions poured over other characters",
+                                    std::to_string(gameStats.cocktailsPoured.first),
+                                    std::to_string(gameStats.cocktailsPoured.second)});
+
             StatisticsMessage statisticsMessage{
                     {},
-                    {}, // TODO: statistics (optional requirement)
+                    stats,
                     playerIds.at(winner),
-                    spy::statistics::VictoryEnum::VICTORY_BY_DRINKING, // TODO: determine victory reason
+                    victoryReason,
                     false
             };
 
-            MessageRouter &router = root_machine(fsm).router;
             router.broadcastMessage(statisticsMessage);
 
-            // TODO: Keep replay available for 5 minutes, then close connections
+            // TODO: Keep replay available for 5 minutes, then close connections (optional requirement)
 
             spdlog::debug("Clearing all connections from router");
             router.clearConnections();
