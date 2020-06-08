@@ -128,7 +128,7 @@ namespace actions {
     };
 
     /**
-     * Closes the current game
+     * Closes the current game.
      */
     struct closeGame {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
@@ -159,7 +159,7 @@ namespace actions {
                 winner = Player::one;
                 victoryReason = VictoryEnum::VICTORY_BY_LEAVE;
             } else {
-                std::tie(winningFaction, victoryReason) = spy::util::RoundUtils::determineWinningFaction(state);
+                std::tie(winningFaction, victoryReason) = spy::util::RoundUtils::determineVictory(state);
                 // if there is no clear winner, player one has won the game!
                 if (winningFaction != FactionEnum::INVALID) {
                     winner = (winningFaction == FactionEnum::PLAYER2) ? Player::two : Player::one;
