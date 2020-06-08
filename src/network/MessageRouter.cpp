@@ -151,10 +151,12 @@ void MessageRouter::clearConnections() {
 
 void MessageRouter::closeConnection(const spy::util::UUID &id) {
     spdlog::debug("Closing connection to player {}", id);
-    connection con = connectionFromUUID(id);
-    activeConnections.erase(std::remove(activeConnections.begin(), activeConnections.end(), con), activeConnections.end());
-
-    //TODO: close connection
+    try {
+        connection con = connectionFromUUID(id);
+        activeConnections.erase(std::remove(activeConnections.begin(), activeConnections.end(), con), activeConnections.end());
+    } catch (std::invalid_argument &e) {
+        spdlog::warn("Connection to {} was already closed!", id);
+    }
 }
 
 bool MessageRouter::isConnected(const spy::util::UUID &id) const {

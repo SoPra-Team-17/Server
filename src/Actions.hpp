@@ -308,6 +308,8 @@ namespace actions {
                 clientId = e.clientId;
             }
 
+            spdlog::debug("Broadcasting leave of client: {}", clientId);
+
             MessageRouter &router = root_machine(fsm).router;
             spy::network::messages::GameLeft gameLeft({}, clientId);
 
