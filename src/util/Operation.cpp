@@ -39,6 +39,8 @@ void executeOperation(const std::shared_ptr<const spy::gameplay::BaseOperation>&
                 remainingCharacters.erase(it);
                 c.setActionPoints(0);
                 c.setMovePoints(0);
+            } else {
+                spdlog::debug("Exfiltrated character {} has already had his turn", c.getName());
             }
         }
     }
