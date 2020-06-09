@@ -40,6 +40,14 @@ class Util {
         }
 
         /**
+         * Checks if the player has MP left if he is on a foggy field.
+         * @param character Character to check.
+         * @param state     Current game state.
+         * @return False if the player is on a foggy field and has no MP left, otherwise true.
+         */
+        static bool hasMPInFog(const spy::character::Character &character, const spy::gameplay::State &state);
+
+        /**
          *
          * @tparam FSM Type of the used state machine.
          * @param key  Key to query.

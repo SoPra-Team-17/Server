@@ -36,7 +36,7 @@ namespace actions {
             const GameOperation &operationMessage = std::forward<GameOperation>(e);
 
             // update the state with the current players safe combination knowledge
-            auto activeCharacter = state.getCharacters().findByUUID(fsm.activeCharacter);
+            auto activeCharacter = state.getCharacters().getByUUID(fsm.activeCharacter);
 
             // Find player owning character
             std::optional<Player> player = std::nullopt;
@@ -58,6 +58,13 @@ namespace actions {
                              state,
                              root_machine(fsm).matchConfig,
                              fsm.operations);
+
+            // if the player is hasn't got enough MP to leave the fog, his turn ends although there are AP left
+            if (!Util::hasMPInFog(*activeCharacter, state)) {
+                spdlog::info("Character {} is stuck in fog, thus AP are resetted.",
+                             activeCharacter->getName());
+                activeCharacter->setActionPoints(0);
+            }
 
             if (player.has_value()) {
                 // copy the potentially changed known combinations back to the map
@@ -265,7 +272,8 @@ namespace actions {
 
             auto catAction = ActionGenerator::generateCatAction(state);
 
-            ActionExecutor::executeCat(state, *std::dynamic_pointer_cast<const CatAction>(catAction));
+            auto res = ActionExecutor::executeCat(state, *std::dynamic_pointer_cast<const CatAction>(catAction));
+            fsm.operations.push_back(res);
         }
     };
 
@@ -280,12 +288,29 @@ namespace actions {
             using spy::gameplay::ActionExecutor;
             using spy::gameplay::ActionGenerator;
             using spy::gameplay::JanitorAction;
+            using spy::util::GameLogicUtils;
 
             State &state = root_machine(fsm).gameState;
 
             auto janitorAction = ActionGenerator::generateJanitorAction(state);
+            auto janitorTarget = GameLogicUtils::getInCharacterSetByCoordinates(state.getCharacters(),
+                                                                                janitorAction->getTarget());
 
-            ActionExecutor::executeJanitor(state, *std::dynamic_pointer_cast<const JanitorAction>(janitorAction));
+            auto res = ActionExecutor::executeJanitor(state,
+                                                      *std::dynamic_pointer_cast<const JanitorAction>(janitorAction));
+
+            spdlog::debug("Janitor removes {}", janitorTarget->getName());
+
+            fsm.operations.push_back(res);
+
+            // remove character from the list of remaining characters
+            auto it = std::find(fsm.remainingCharacters.begin(), fsm.remainingCharacters.end(),
+                                janitorTarget->getCharacterId());
+            if (it != fsm.remainingCharacters.end()) {
+                fsm.remainingCharacters.erase(it);
+                janitorTarget->setActionPoints(0);
+                janitorTarget->setMovePoints(0);
+            }
         }
     };
 }

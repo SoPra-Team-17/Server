@@ -10,6 +10,7 @@
 #include <network/messages/HelloReply.hpp>
 #include <network/messages/StatisticsMessage.hpp>
 #include <network/messages/GamePause.hpp>
+#include <network/messages/GameStatus.hpp>
 #include <network/messages/MetaInformation.hpp>
 #include <network/messages/GameLeft.hpp>
 #include <util/Player.hpp>
@@ -41,14 +42,14 @@ namespace actions {
             // Client ID is already assigned here, gets assigned directly after server receives hello callback from network
             spy::network::messages::HelloReply helloReply{
                     helloMessage.getClientId(),
-                    fsm.sessionId,
-                    fsm.scenarioConfig,
-                    fsm.matchConfig,
-                    fsm.characterInformations
+                    root_machine(fsm).sessionId,
+                    root_machine(fsm).scenarioConfig,
+                    root_machine(fsm).matchConfig,
+                    root_machine(fsm).characterInformations
             };
 
             spdlog::info("Sending HelloReply to {} ({})", helloMessage.getName(), helloReply.getClientId());
-            fsm.router.sendMessage(helloReply);
+            root_machine(fsm).router.sendMessage(helloReply);
         }
     };
 

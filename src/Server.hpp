@@ -64,11 +64,11 @@ class Server : public afsm::def::state_machine<Server> {
         >;
 
         using internal_transitions = transition_table <
-        // Event                                           Action                  Guard
+        // Event                                           Action                           Guard
         // Reply to MetaInformation request at any time during the game
         in<spy::network::messages::RequestMetaInformation, actions::sendMetaInformation>,
-        in<spy::network::messages::GameLeave,              actions::sendGameLeft,  guards::isSpectator>,
-        in<spy::network::messages::Hello,                  actions::HelloReply,    guards::isSpectator>
+        in<spy::network::messages::GameLeave,              actions::sendGameLeft,           guards::isSpectator>,
+        in<spy::network::messages::Hello,                  actions::HelloReply,             guards::isSpectator>
         >;
         // @formatter:on
 
