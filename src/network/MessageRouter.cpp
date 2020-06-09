@@ -79,15 +79,18 @@ void MessageRouter::receiveListener(const MessageRouter::connectionPtr &connecti
         and messageContainer.getType() != spy::network::messages::MessageTypeEnum::RECONNECT) {
         // All messages other than HELLO and RECONNECT require that the client is already registered.
         // -> connectionId should have been found and be equal to clientId in message.
-        if (connectionId.has_value() and connectionId.value() != messageContainer.getClientId()) {
+
+        if (not connectionId.has_value()) {
+            spdlog::error("Received message from unregistered client that is not HELLO or RECONNECT."
+                          "Not handling message.");
+            return;
+        }
+
+        if (connectionId.value() != messageContainer.getClientId()) {
             spdlog::warn("Client {} sent a message with false uuid: {}. Correcting UUID and handling message.",
                          connectionId.value(),
                          messageContainer.getClientId());
             messageJson.at("clientId") = connectionId.value(); // correct the uuid
-        } else {
-            spdlog::error("Received message from unregistered client that is not HELLO or RECONNECT."
-                          "Not handling message.");
-            return;
         }
     }
 
