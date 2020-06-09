@@ -64,7 +64,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
 
             // @formatter:off
             using internal_transitions = transition_table <
-            //  Event                                   Action                                                     Guard
+            //  Event                                   Action                                                                  Guard
             in<spy::network::messages::EquipmentChoice, actions::handleEquipmentChoice, and_<not_<guards::lastEquipmentChoice>, guards::equipmentChoiceValid>>
             >;
             // @formatter:on
@@ -217,6 +217,11 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
 
                     root_machine(fsm).process_event(events::roundInitDone{});
                 }
+
+                using internal_transitions = transition_table <
+                // Event                          Action                                                               Guard
+                in<spy::network::messages::Hello, actions::multiple<actions::HelloReply, actions::broadcastState>, guards::isSpectator>>;
+                // @formatter:on
             };
 
             /**
@@ -235,8 +240,8 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                 in<spy::network::messages::GameOperation, actions::multiple<actions::handleOperation, actions::broadcastState, actions::requestNextOperation>,    guards::operationValid>,
                 in<events::triggerNPCmove,                actions::multiple<actions::generateNPCMove>>,
                 in<events::triggerCatMove,                actions::multiple<actions::executeCatMove, actions::broadcastState, actions::requestNextOperation>>,
-                in<events::triggerJanitorMove,            actions::multiple<actions::executeJanitorMove, actions::broadcastState, actions::requestNextOperation>>
-                >;
+                in<events::triggerJanitorMove,            actions::multiple<actions::executeJanitorMove, actions::broadcastState, actions::requestNextOperation>>,
+                in<spy::network::messages::Hello, actions::multiple<actions::HelloReply, actions::broadcastState>,                                                guards::isSpectator>>;
                 // @formatter:on
             };
 
@@ -256,6 +261,11 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
 
                 bool serverEnforced = false;
                 Timer timer;
+
+                using internal_transitions = transition_table <
+                // Event                          Action                                                           Guard
+                in<spy::network::messages::Hello, actions::multiple<actions::HelloReply, actions::broadcastState>, guards::isSpectator>>;
+                // @formatter:on
             };
 
             using initial_state = roundInit;
@@ -292,10 +302,6 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
         tr<decltype(choicePhase), spy::network::messages::ItemChoice,      equipPhase, actions::multiple<actions::handleChoice, actions::createCharacterSet>, and_<guards::lastChoice, guards::choiceValid>>,
         tr<equipPhase,            spy::network::messages::EquipmentChoice, gamePhase,  actions::handleEquipmentChoice,                                        and_<guards::lastEquipmentChoice, guards::equipmentChoiceValid>>
         >;
-
-        using internal_transitions = transition_table <
-        // Event                                           Action
-        in<spy::network::messages::RequestMetaInformation, actions::sendMetaInformation>>;
         // @formatter:on
 };
 

@@ -188,31 +188,38 @@ struct TestClient {
 };
 
 int main() {
-    auto c1 = TestClient("Player 1");
-    auto c2 = TestClient("Player 2", spy::network::RoleEnum::AI);
-    auto c3 = TestClient("Spectator", spy::network::RoleEnum::SPECTATOR);
+    auto p1 = TestClient("Player 1");
+    auto p2 = TestClient("Player 2", spy::network::RoleEnum::AI);
+    auto s1 = TestClient("Spectator1", spy::network::RoleEnum::SPECTATOR);
+    auto s2 = TestClient("Spectator2", spy::network::RoleEnum::SPECTATOR);
+    auto s3 = TestClient("Spectator3", spy::network::RoleEnum::SPECTATOR);
 
-    c1.sendHello();
+    p1.sendHello();
+    s1.sendHello();                 // hello before game start --> no game status expected
     std::this_thread::sleep_for(std::chrono::seconds{1});
-    c2.sendHello();
-    std::this_thread::sleep_for(std::chrono::seconds{1});
-    c3.sendHello();
+    p2.sendHello();
+    std::this_thread::sleep_for(std::chrono::milliseconds {100});
+    s2.sendHello();                 // hello during choice phases --> no game status expected
 
     std::this_thread::sleep_for(std::chrono::seconds{5});
 
-    c1.requestMetaInformation();
-    c2.requestMetaInformation();
-    c3.requestMetaInformation();
+    p1.requestMetaInformation();
+    p2.requestMetaInformation();
+    s1.requestMetaInformation();
 
     // Pause, unpause within time limit
-    c1.sendRequestPause(true);
+    p1.sendRequestPause(true);
     std::this_thread::sleep_for(std::chrono::seconds{3});
     // Unpause
-    c1.sendRequestPause(false);
+    p1.sendRequestPause(false);
 
     // Pause, wait for time limit to expire
-    c1.sendRequestPause(true);
+    p1.sendRequestPause(true);
 
     std::cout << "done" << std::endl;
+
+    std::this_thread::sleep_for(std::chrono::seconds{10});
+    s3.sendHello();                 // hello during game phase --> game status expected
+
     std::this_thread::sleep_for(std::chrono::hours{100});
 }
