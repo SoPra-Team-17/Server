@@ -7,7 +7,9 @@
 #include <gameLogic/execution/ActionExecutor.hpp>
 #include <gameLogic/generation/ActionGenerator.hpp>
 #include <spdlog/spdlog.h>
-#include <spdlog/fmt/ostr.h>                            // needed for the use of operator<< of custom classes
+
+// needed for the use of operator<< of custom classes
+#include <spdlog/fmt/ostr.h>
 
 void executeOperation(const std::shared_ptr<const spy::gameplay::BaseOperation>& operation, spy::gameplay::State &state,
                       const spy::MatchConfig &matchConfig,
