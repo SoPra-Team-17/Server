@@ -56,6 +56,10 @@ bool Util::hasMPInFog(const spy::character::Character &character, const spy::gam
         return true;
     } else {
         // actions are blocked in the fog, thus the character's turn ends with his last move point
+        if(not character.getCoordinates().has_value()){
+            return false;
+        }
+
         return !state.getMap().getField(character.getCoordinates().value()).isFoggy();
     }
 }
