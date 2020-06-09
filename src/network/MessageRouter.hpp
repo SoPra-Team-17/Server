@@ -15,6 +15,7 @@
 #include <network/messages/RequestGamePause.hpp>
 #include <network/messages/RequestMetaInformation.hpp>
 #include <network/messages/RequestReplay.hpp>
+#include <util/UUIDNotFoundException.hpp>
 
 /**
  * The MessageRouter holds a websocket::network::WebSocketServer and manages and enumerates connections.
@@ -99,10 +100,7 @@ class MessageRouter {
         template<typename MessageType>
         void sendMessage(spy::util::UUID client, MessageType message) {
             message.setClientId(client);
-            nlohmann::json serializedMessage = message;
-            spdlog::trace("Sending message: {}", serializedMessage.dump());
-            auto &con = connectionFromUUID(client);
-            con.first->send(serializedMessage.dump());
+            sendMessage(message);
         }
 
         /**
@@ -112,9 +110,18 @@ class MessageRouter {
         void sendMessage(MessageType message) {
             nlohmann::json serializedMessage = message;
             spdlog::trace("Sending message: {}", serializedMessage.dump());
-
-            auto &con = connectionFromUUID(message.getClientId());
-            con.first->send(serializedMessage.dump());
+            try {
+                auto &con = connectionFromUUID(message.getClientId());
+                con.first->send(serializedMessage.dump());
+            } catch (const UUIDNotFoundException &e) {
+                spdlog::warn("UUIDNotFoundException: {}", e.what());
+                spdlog::warn("Tried sending message to UUID {}, but it's not found in connection list.",
+                             message.getClientId());
+                spdlog::debug("Active connections: ");
+                for (const auto &[_, optID]: activeConnections) {
+                    spdlog::debug(optID.value_or(spy::util::UUID{}));
+                }
+            }
         }
 
         /**
