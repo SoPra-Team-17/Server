@@ -24,6 +24,6 @@ void executeOperation(const std::shared_ptr<const spy::gameplay::BaseOperation> 
                       spy::gameplay::State &state,
                       const spy::MatchConfig &matchConfig,
                       std::vector<std::shared_ptr<const spy::gameplay::BaseOperation>> &operationList,
-                      std::deque<spy::util::UUID> remainingCharacters);
+                      std::deque<spy::util::UUID> &remainingCharacters);
 
 #endif //SERVER017_OPERATION_HPP
