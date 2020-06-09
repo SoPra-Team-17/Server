@@ -258,14 +258,6 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                         });
                     }
                 }
-                // @formatter:off
-                using internal_transitions = transition_table <
-                // Event                              Action
-                // Another player disconnects, stay in pause
-                in<events::playerDisconnect,          actions::secondPlayerDisconnect>,
-                // A player reconnects, but one is still disconnected
-                in<spy::network::messages::Reconnect, actions::secondPlayerReconnect, guards::bothDisconnected>>;
-                // @formatter:on
 
                 bool serverEnforced = false;
 
@@ -276,9 +268,14 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
 
                 Timer timer;
 
+                // @formatter:off
                 using internal_transitions = transition_table <
-                // Event                          Action                                                           Guard
-                in<spy::network::messages::Hello, actions::multiple<actions::HelloReply, actions::broadcastState>, guards::isSpectator>>;
+                // Event                              Action                                                           Guard
+                in<spy::network::messages::Hello,     actions::multiple<actions::HelloReply, actions::broadcastState>, guards::isSpectator>,
+                // Another player disconnects, stay in pause
+                in<events::playerDisconnect,          actions::secondPlayerDisconnect>,
+                // A player reconnects, but one is still disconnected
+                in<spy::network::messages::Reconnect, actions::secondPlayerReconnect, guards::bothDisconnected>>;
                 // @formatter:on
             };
 
