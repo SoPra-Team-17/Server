@@ -273,11 +273,11 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                 // Event                              Action                                                           Guard
                 in<spy::network::messages::Hello,     actions::multiple<actions::HelloReply, actions::broadcastState>, guards::isSpectator>,
                 // Another player disconnects, stay in pause
-                in<events::playerDisconnect,          actions::inPauseDisconnect>,
+                in<events::playerDisconnect,          actions::startReconnectTimer>,
                 // A player reconnects, but one is still disconnected
-                in<spy::network::messages::Reconnect, actions::inPauseReconnect,                                       guards::bothDisconnected>,
+                in<spy::network::messages::Reconnect, actions::stopReconnectTimer,                                       guards::bothDisconnected>,
                 // A player reconnects, and before the disconnect(s) there was a normal pause which we have to continue
-                in<spy::network::messages::Reconnect, actions::revertToNormalPause,                                    and_<guards::pauseTimeRemaining, not_<guards::bothDisconnected>>>>;
+                in<spy::network::messages::Reconnect, actions::multiple<actions::stopReconnectTimer, actions::revertToNormalPause>, and_<guards::pauseTimeRemaining, not_<guards::bothDisconnected>>>>;
                 // @formatter:on
             };
 
