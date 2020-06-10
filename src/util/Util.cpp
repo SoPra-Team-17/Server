@@ -57,6 +57,7 @@ bool Util::hasMPInFog(const spy::character::Character &character, const spy::gam
     } else {
         // actions are blocked in the fog, thus the character's turn ends with his last move point
         if(not character.getCoordinates().has_value()){
+            spdlog::warn("hasMPInFog: target does not have coordinates");
             return false;
         }
 

@@ -5,11 +5,16 @@
 #include "util/Operation.hpp"
 #include "Format.hpp"
 #include <gameLogic/execution/ActionExecutor.hpp>
+#include <gameLogic/generation/ActionGenerator.hpp>
 #include <spdlog/spdlog.h>
+
+// needed for the use of operator<< of custom classes
+#include <spdlog/fmt/ostr.h>
 
 void executeOperation(const std::shared_ptr<const spy::gameplay::BaseOperation>& operation, spy::gameplay::State &state,
                       const spy::MatchConfig &matchConfig,
-                      std::vector <std::shared_ptr<const spy::gameplay::BaseOperation>> &operationList) {
+                      std::vector <std::shared_ptr<const spy::gameplay::BaseOperation>> &operationList,
+                      std::deque<spy::util::UUID> &remainingCharacters) {
 
     using spy::gameplay::ActionExecutor;
 
@@ -18,5 +23,25 @@ void executeOperation(const std::shared_ptr<const spy::gameplay::BaseOperation>&
 
     operationList.push_back(operationWithResult);
 
-    // TODO: execute potentially resulting exfiltration, add those to fsm.operations
+    for (auto &c : state.getCharacters()) {
+        if (c.getHealthPoints() <= 0) {
+            spdlog::info("Exfiltrating {} ({})", c.getName(), c.getCharacterId());
+
+            auto exfiltration = spy::gameplay::ActionGenerator::generateExfiltration(state, c.getCharacterId());
+            auto exfiltrationResult = ActionExecutor::execute(state, exfiltration, matchConfig);
+
+            operationList.push_back(exfiltrationResult);
+
+            // erase character from remaining characters list
+            auto it = std::find(remainingCharacters.begin(), remainingCharacters.end(), c.getCharacterId());
+            if (it != remainingCharacters.end()) {
+                spdlog::debug("Removed character {} from list of remaining characters", c.getName());
+                remainingCharacters.erase(it);
+                c.setActionPoints(0);
+                c.setMovePoints(0);
+            } else {
+                spdlog::debug("Exfiltrated character {} has already had his turn", c.getName());
+            }
+        }
+    }
 }
