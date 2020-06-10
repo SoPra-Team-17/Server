@@ -134,9 +134,10 @@ namespace actions {
 
             spdlog::info("Closing game");
 
-            spy::character::FactionEnum winningFaction = spy::util::RoundUtils::determineWinningFaction(state);
+            spy::util::VictoryInfo victoryInfo = spy::util::RoundUtils::determineVictory(state);
+
             Player winner;
-            switch (winningFaction) {
+            switch (victoryInfo.first) {
                 case spy::character::FactionEnum::PLAYER1:
                     winner = Player::one;
                     break;
@@ -144,7 +145,7 @@ namespace actions {
                     winner = Player::two;
                     break;
                 default:
-                    spdlog::error("Winning faction \"{}\" invalid (assuming player one)", fmt::json(winningFaction));
+                    spdlog::error("Winning faction \"{}\" invalid (assuming player one)", fmt::json(victoryInfo));
                     winner = Player::one;
                     break;
             }
@@ -155,10 +156,8 @@ namespace actions {
 
             spdlog::info("Winning player is {}", winner);
 
-            // TODO: determine victory reason
-            auto victoryReason = spy::statistics::VictoryEnum::VICTORY_BY_DRINKING;
             if constexpr (std::is_same<Event, events::forceGameClose>::value) {
-                victoryReason = event.reason;
+                victoryInfo.second = event.reason;
             }
 
             std::map<Player, spy::util::UUID> &playerIds = root_machine(fsm).playerIds;
@@ -168,7 +167,7 @@ namespace actions {
                     {},
                     {}, // TODO: statistics (optional requirement)
                     playerIds.at(winner),
-                    victoryReason,
+                    victoryInfo.second,
                     false
             };
 
