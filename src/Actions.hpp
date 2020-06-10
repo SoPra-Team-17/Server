@@ -273,9 +273,9 @@ namespace actions {
             auto reconnectLimit = std::chrono::seconds{
                     matchConfig.getReconnectLimit().value_or(std::chrono::seconds::max().count())};
 
-            auto reconnectTimerEnd = []() {
-                spdlog::info("Reconnect timeout reached. Game is now over.");
-                // TODO: end game
+            auto reconnectTimerEnd = [&fsm]() {
+                spdlog::info("Reconnect timeout reached. Game is now over, sending forceGameClose.");
+                root_machine(fsm).process_event(events::forceGameClose{});
             };
 
             if (disconnectEvent.clientId == playerOneId) {

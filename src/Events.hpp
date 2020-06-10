@@ -29,5 +29,8 @@ namespace events {
     struct playerDisconnect {
         spy::util::UUID clientId;
     };
+
+    struct forceGameClose {
+    };
 }
 #endif //SERVER017_EVENTS_HPP
