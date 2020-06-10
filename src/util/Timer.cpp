@@ -29,3 +29,7 @@ Timer::Timer(Timer &&t) noexcept: stopped{std::move(t.stopped)} {}
 Timer::~Timer() {
     stop();
 }
+
+Timer::optionalTimePoint Timer::getStartTime() const {
+    return startTime;
+}

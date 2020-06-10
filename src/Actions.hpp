@@ -225,8 +225,41 @@ namespace actions {
     template<bool forced = false>
     struct pauseGame {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(Event &&, FSM &fsm, SourceState &, TargetState &target) {
+        void operator()(Event &&event, FSM &fsm, SourceState &, TargetState &target) {
             target.serverEnforced = forced;
+
+            if constexpr(std::is_same<Event, events::playerDisconnect>::value) {
+                events::playerDisconnect disconnectEvent = event;
+                spy::util::UUID playerOneId = root_machine(fsm).playerIds.find(Player::one);
+                if (playerOneId == root_machine(fsm).playerIds.end()) {
+                    spdlog::error("ID of player one not found. Can not determine which player disconnected.");
+                }
+
+                const spy::MatchConfig &matchConfig = root_machine(fsm).matchConfig;
+
+                auto reconnectLimit = std::chrono::seconds{
+                        matchConfig.getReconnectLimit().value_or(std::chrono::seconds::max().count())};
+
+                // TODO lamba timer end:
+                auto reconnectTimerEnd = []() {
+                    spdlog::info("Reconnect timeout reached. Game is now over.");
+                    // TODO: end game
+                };
+
+
+                if (disconnectEvent.clientId == playerOneId) {
+                    spdlog::info("Starting reconnect timer for player one for {} seconds",
+                                 std::chrono::duration_cast<std::chrono::seconds>(reconnectLimit));
+                    target.playerOneReconnectTimer.restart(reconnectLimit, reconnectTimerEnd);
+                } else {
+                    spdlog::info("Starting reconnect timer for player two for {} seconds",
+                                 std::chrono::duration_cast<std::chrono::seconds>(reconnectLimit));
+                    target.playerTwoReconnectTimer.restart(reconnectLimit, reconnectTimerEnd);
+                }
+
+                // TODO Start reconnect timer
+            }
+
             spdlog::info("Pausing game, serverEnforced={}", forced);
             MessageRouter &router = root_machine(fsm).router;
             router.broadcastMessage(spy::network::messages::GamePause{{}, true, forced});
@@ -244,19 +277,44 @@ namespace actions {
         }
     };
 
-    struct secondPlayerDisconnect {
+    struct inPauseDisconnect {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&, FSM &, SourceState &, TargetState &target) {
-            spdlog::info("Both players are now disconnected.");
-            target.bothDisconnected = true;
+            if (target.pauseLimitTimer.isRunning()) {
+                // A normal pause is in progress. We transition to forced pause and halt the pauseLimitTimer.
+                // The pause will be continued with the remaining time once everyone reconnected.
+                target.pauseLimitTimer.stop();
+                auto now = std::chrono::system_clock::now();
+                // startTime has value because timer was just running.
+                auto pauseStart = target.pauseLimitTimer.getStartTime().value();
+                target.pauseTimeRemaining = now - pauseStart;
+                // TODO send forced pause message
+            }
+
+            // TODO reconnect timer
+
         }
     };
 
-    struct secondPlayerReconnect {
+    struct inPauseReconnect {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&, FSM &, SourceState &, TargetState &target) {
-            spdlog::info("One of two players reconnected.");
-            target.bothDisconnected = false;
+            // Todo stop reconnect timer for proper player
+        }
+    };
+
+    struct revertToNormalPause {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(Event &&, FSM &fsm, SourceState &, TargetState &target) {
+            std::chrono::system_clock::duration pauseTimeRemaining = target.pauseTimeRemaining;
+
+            spdlog::info("Reverting to normal pause. Restarting pause timer with {} seconds remaining.",
+                         std::chrono::duration_cast<std::chrono::seconds>(pauseTimeRemaining).count());
+
+            target.pauseLimitTimer.restart(pauseTimeRemaining, [&fsm]() {
+                spdlog::info("Pause time limit reached, unpausing.");
+                root_machine(fsm).process_event(events::forceUnpause{});
+            });
         }
     };
 }
