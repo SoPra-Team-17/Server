@@ -250,7 +250,10 @@ namespace actions {
         void operator()(const Event &event, FSM &fsm, SourceState &, TargetState &target) {
             const events::playerDisconnect &disconnectEvent = event;
 
+            spdlog::info("startReconnectTimer for disconnect event with client {}", disconnectEvent.clientId);
+
             if (target.pauseLimitTimer.isRunning()) {
+                spdlog::info("Normal pause already in progress. Stopping timer.");
                 // A normal pause is already in progress. We transition to forced pause and halt the pauseLimitTimer.
                 // The pause will be continued with the remaining time once everyone reconnected.
                 target.pauseLimitTimer.stop();
@@ -258,7 +261,11 @@ namespace actions {
                 // startTime has value because timer was just running.
                 auto pauseStart = target.pauseLimitTimer.getStartTime().value();
                 target.pauseTimeRemaining = now - pauseStart;
-                // TODO send forced pause message
+                spdlog::info("Saved remaining pause time of {} seconds",
+                             std::chrono::duration_cast<std::chrono::seconds>(target.pauseTimeRemaining).count());
+                spdlog::info("Broadcasting pauseMessage because pause is now serverEnforced.");
+                spy::network::messages::GamePause pauseMessage{{}, true, true};
+                root_machine(fsm).router.broadcastMessage(pauseMessage);
             }
 
             auto playerOne = root_machine(fsm).playerIds.find(Player::one);
