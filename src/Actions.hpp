@@ -287,7 +287,7 @@ namespace actions {
     */
     struct sendGameLeft {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(Event &&e, FSM &fsm, SourceState &, TargetState &) {
+        void operator()(const Event &e, FSM &fsm, SourceState &, TargetState &) {
             auto clientId = e.getClientId();
 
             MessageRouter &router = root_machine(fsm).router;
@@ -303,7 +303,7 @@ namespace actions {
      */
     struct broadcastGameLeft {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(Event &&e, FSM &fsm, SourceState &, TargetState &) {
+        void operator()(const Event &e, FSM &fsm, SourceState &, TargetState &) {
             spy::util::UUID clientId;
             if constexpr (std::is_same<Event, spy::network::messages::GameLeave>::value) {
                 clientId = e.getClientId();

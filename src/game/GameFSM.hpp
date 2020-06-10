@@ -298,7 +298,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
             // Force pause when player disconnects
             tr<waitingForOperation, events::playerDisconnect,                 paused,              actions::multiple<actions::pauseGame<true>, actions::startReconnectTimer>>,
             // Unpause if a player reconnects and not both players are disconnected and no pause time remaining
-            tr<paused,              spy::network::messages::Reconnect,        waitingForOperation, actions::multiple<ndReconnectGameStart, actions::broadcastState, actions::unpauseGame, actions::requestNextOperation>, and_<not_<guards::pauseTimeRemaining>, not_<guards::bothDisconnected>>>
+            tr<paused,              spy::network::messages::Reconnect,        waitingForOperation, actions::multiple<actions::sendReconnectGameStart, actions::broadcastState, actions::unpauseGame, actions::requestNextOperation>, and_<not_<guards::pauseTimeRemaining>, not_<guards::bothDisconnected>>>
             >;
             // @formatter:on
         };
