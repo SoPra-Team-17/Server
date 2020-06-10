@@ -318,6 +318,8 @@ namespace actions {
             std::chrono::system_clock::duration remainingPauseTime = target.pauseTimeRemaining;
             spdlog::info("Reverting to normal pause.");
 
+            target.serverEnforced = false;
+
             if (remainingPauseTime > std::chrono::seconds{0}) {
                 spdlog::info("Restarting pause timer with {} seconds remaining.",
                              std::chrono::duration_cast<std::chrono::seconds>(remainingPauseTime).count());
