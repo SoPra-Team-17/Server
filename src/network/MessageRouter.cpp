@@ -181,8 +181,8 @@ void MessageRouter::closeConnection(const spy::util::UUID &id) {
     try {
         connection con = connectionFromUUID(id);
         activeConnections.erase(std::remove(activeConnections.begin(), activeConnections.end(), con), activeConnections.end());
-    } catch (const std::invalid_argument &) {
-        spdlog::warn("Connection to {} was already closed!", id);
+    } catch (const UUIDNotFoundException &e) {
+        spdlog::warn("Connection to {} was already closed! Error: {}", id, e.what());
     }
 }
 

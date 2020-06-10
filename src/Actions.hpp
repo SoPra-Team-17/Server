@@ -175,7 +175,7 @@ namespace actions {
                 }
             }
 
-            spdlog::info("Winning player is {}", fmt::json(winner));
+            spdlog::info("Winning player is {}", winner);
 
             Statistics stats;
 
@@ -283,7 +283,7 @@ namespace actions {
 
     /**
     * Sends a game left message to the client that wants to leave the game.
-    * @note Only intended to be used for spectators.
+    * @note Only intended to be used for spectators, standard requires a confirmation of game leave messages.
     */
     struct sendGameLeft {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
@@ -294,13 +294,12 @@ namespace actions {
             spy::network::messages::GameLeft gameLeft(clientId, clientId);
 
             router.sendMessage(gameLeft);
-
-            router.closeConnection(clientId);
         }
     };
 
     /**
      * Broadcasts a game left message to all registered clients.
+     * @note Standard requires this broadcasting if a player leaves the game.
      */
     struct broadcastGameLeft {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
@@ -318,8 +317,6 @@ namespace actions {
             spy::network::messages::GameLeft gameLeft({}, clientId);
 
             router.broadcastMessage(gameLeft);
-
-            router.closeConnection(clientId);
         }
     };
 
@@ -431,6 +428,18 @@ namespace actions {
                 spdlog::warn("revertToNormalPause has been called, but a normal pause was not in progress."
                              "Doing nothing.");
             }
+        }
+    };
+
+    /**
+    * Close the connection to the client.
+    */
+    struct closeConnectionToClient {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(const Event &e, FSM &fsm, SourceState &, TargetState &) {
+            auto clientId = e.getClientId();
+
+            root_machine(fsm).router.closeConnection(clientId);
         }
     };
 }
