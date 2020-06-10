@@ -38,6 +38,10 @@ class Server : public afsm::def::state_machine<Server> {
                 spdlog::debug("Entering state emptyLobby");
 
                 root_machine(fsm).isIngame = false;
+                root_machine(fsm).playerIds = {};
+                root_machine(fsm).clientRoles = {};
+                root_machine(fsm).knownCombinations = {};
+                root_machine(fsm).sessionId = {};
             }
         };
 
@@ -56,11 +60,12 @@ class Server : public afsm::def::state_machine<Server> {
         using transitions = transition_table <
         // Start           Event                              Next            Action                                                              Guard
         tr<emptyLobby,     spy::network::messages::Hello,     waitFor2Player, actions::multiple<actions::InitializeSession, actions::HelloReply>, not_<guards::isSpectator>>,
-        tr<waitFor2Player, spy::network::messages::GameLeave, emptyLobby,     actions::broadcastGameLeft,                                         not_<guards::isSpectator>>,
-        tr<waitFor2Player, events::playerDisconnect,          emptyLobby,     actions::broadcastGameLeft>,
-        tr<waitFor2Player, spy::network::messages::Hello,     decltype(game), actions::multiple<actions::HelloReply, actions::StartGame>,         not_<guards::isSpectator>>,
-        tr<GameFSM,        none,                              emptyLobby,     actions::closeGame,                                                 guards::gameOver>,
-        tr<GameFSM,        spy::network::messages::GameLeave, emptyLobby,     actions::multiple<actions::broadcastGameLeft, actions::closeGame>,  not_<guards::isSpectator>>
+        tr<waitFor2Player, spy::network::messages::GameLeave, emptyLobby>,
+        tr<waitFor2Player, events::playerDisconnect,          emptyLobby>,
+        tr<waitFor2Player, spy::network::messages::Hello,     decltype(game), actions::multiple<actions::HelloReply, actions::StartGame>,          not_<guards::isSpectator>>,
+        tr<GameFSM,        none,                              emptyLobby,     actions::closeGame,                                                  guards::gameOver>,
+        tr<GameFSM,        events::forceGameClose,            emptyLobby,     actions::closeGame>,
+        tr<GameFSM,        spy::network::messages::GameLeave, emptyLobby,     actions::multiple<actions::broadcastGameLeft, actions::closeGame>,   not_<guards::isSpectator>>
         >;
 
         using internal_transitions = transition_table <

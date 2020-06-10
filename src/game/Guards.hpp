@@ -14,6 +14,8 @@
 #include <util/Format.hpp>
 #include <gameLogic/validation/ActionValidator.hpp>
 #include <util/RoundUtils.hpp>
+#include <util/Timer.hpp>
+#include <chrono>
 
 namespace guards {
     struct operationValid {
@@ -178,6 +180,22 @@ namespace guards {
 
             auto it = clientRoles.find(e.getClientId());
             return (it != clientRoles.end() && it->second == spy::network::RoleEnum::SPECTATOR);
+        }
+    };
+
+    struct bothDisconnected {
+        template<typename FSM, typename FSMState, typename Event>
+        bool operator()(const FSM &, const FSMState &state, const Event &) {
+            return state.playerOneReconnectTimer.isRunning()
+                   and state.playerTwoReconnectTimer.isRunning();
+        }
+    };
+
+
+    struct pauseTimeRemaining {
+        template<typename FSM, typename FSMState, typename Event>
+        bool operator()(const FSM &, const FSMState &state, const Event &) {
+            return state.pauseTimeRemaining > std::chrono::seconds{0};
         }
     };
 }

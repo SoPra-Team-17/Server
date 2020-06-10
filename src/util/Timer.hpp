@@ -11,12 +11,16 @@
 
 #include <thread>
 #include <iostream>
+#include <optional>
 
 /**
  * Implements a timer that defers a function call for a specified time. Timer will stop on object destruction.
  */
 class Timer {
     public:
+
+        using optionalTimePoint = std::optional<std::chrono::time_point<std::chrono::system_clock>>;
+
         /**
          * Creates a stopped timer
          */
@@ -45,6 +49,7 @@ class Timer {
             stop();
             // Create new status variable for new thread
             stopped = std::make_shared<bool>(false);
+            startTime = std::chrono::system_clock::now();
             std::thread timerThread{[stopped = this->stopped, timeout, function, args...]() {
                 std::this_thread::sleep_for(timeout);
                 if (*stopped) {
@@ -65,8 +70,11 @@ class Timer {
 
         [[nodiscard]] bool isRunning() const;
 
+        [[nodiscard]] optionalTimePoint getStartTime() const;
+
     private:
         std::shared_ptr<bool> stopped = std::make_shared<bool>(true);
+        optionalTimePoint startTime;
 };
 
 
