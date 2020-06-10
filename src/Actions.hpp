@@ -247,8 +247,8 @@ namespace actions {
 
     struct startReconnectTimer {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(Event &&event, FSM &fsm, SourceState &, TargetState &target) {
-            events::playerDisconnect disconnectEvent = event;
+        void operator()(const Event &event, FSM &fsm, SourceState &, TargetState &target) {
+            const events::playerDisconnect &disconnectEvent = event;
 
             if (target.pauseLimitTimer.isRunning()) {
                 // A normal pause is already in progress. We transition to forced pause and halt the pauseLimitTimer.
@@ -292,7 +292,7 @@ namespace actions {
 
     struct stopReconnectTimer {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(Event &&event, FSM &fsm, SourceState &, TargetState &target) {
+        void operator()(const Event &event, FSM &fsm, SourceState &, TargetState &target) {
             const spy::network::messages::Reconnect &reconnectEvent = event;
 
             auto playerOne = root_machine(fsm).playerIds.find(Player::one);
