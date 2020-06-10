@@ -129,7 +129,7 @@ namespace actions {
 
     struct closeGame {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(Event &&event, FSM &fsm, SourceState &, TargetState &) {
+        void operator()(const Event &event, FSM &fsm, SourceState &, TargetState &) {
             const spy::gameplay::State &state = root_machine(fsm).gameState;
 
             spdlog::info("Closing game");
