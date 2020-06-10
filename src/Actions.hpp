@@ -129,7 +129,7 @@ namespace actions {
 
     struct closeGame {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(Event &&, FSM &fsm, SourceState &, TargetState &) {
+        void operator()(Event &&event, FSM &fsm, SourceState &, TargetState &) {
             const spy::gameplay::State &state = root_machine(fsm).gameState;
 
             spdlog::info("Closing game");
@@ -149,7 +149,17 @@ namespace actions {
                     break;
             }
 
-            spdlog::info("Winning player is {}", fmt::json(winner));
+            if constexpr (std::is_same<Event, events::forceGameClose>::value) {
+                winner = event.winner;
+            }
+
+            spdlog::info("Winning player is {}", winner);
+
+            // TODO: determine victory reason
+            auto victoryReason = spy::statistics::VictoryEnum::VICTORY_BY_DRINKING;
+            if constexpr (std::is_same<Event, events::forceGameClose>::value) {
+                victoryReason = event.reason;
+            }
 
             std::map<Player, spy::util::UUID> &playerIds = root_machine(fsm).playerIds;
 
@@ -158,7 +168,7 @@ namespace actions {
                     {},
                     {}, // TODO: statistics (optional requirement)
                     playerIds.at(winner),
-                    spy::statistics::VictoryEnum::VICTORY_BY_DRINKING, // TODO: determine victory reason
+                    victoryReason,
                     false
             };
 
@@ -280,19 +290,30 @@ namespace actions {
             auto reconnectLimit = std::chrono::seconds{
                     matchConfig.getReconnectLimit().value_or(std::chrono::seconds::max().count())};
 
-            auto reconnectTimerEnd = [&fsm]() {
-                spdlog::info("Reconnect timeout reached. Game is now over, sending forceGameClose.");
-                root_machine(fsm).process_event(events::forceGameClose{});
+            auto reconnectTimerEndP1 = [&fsm]() {
+                spdlog::info("Reconnect timeout for player one reached. Game is now over, sending forceGameClose.");
+                root_machine(fsm).process_event(events::forceGameClose{
+                        Player::two,
+                        spy::statistics::VictoryEnum::VICTORY_BY_KICK
+                });
+            };
+
+            auto reconnectTimerEndP2 = [&fsm]() {
+                spdlog::info("Reconnect timeout for player two reached. Game is now over, sending forceGameClose.");
+                root_machine(fsm).process_event(events::forceGameClose{
+                        Player::one,
+                        spy::statistics::VictoryEnum::VICTORY_BY_KICK
+                });
             };
 
             if (disconnectEvent.clientId == playerOneId) {
                 spdlog::info("Starting reconnect timer for player one for {} seconds",
                              std::chrono::duration_cast<std::chrono::seconds>(reconnectLimit).count());
-                target.playerOneReconnectTimer.restart(reconnectLimit, reconnectTimerEnd);
+                target.playerOneReconnectTimer.restart(reconnectLimit, reconnectTimerEndP1);
             } else {
                 spdlog::info("Starting reconnect timer for player two for {} seconds",
                              std::chrono::duration_cast<std::chrono::seconds>(reconnectLimit).count());
-                target.playerTwoReconnectTimer.restart(reconnectLimit, reconnectTimerEnd);
+                target.playerTwoReconnectTimer.restart(reconnectLimit, reconnectTimerEndP2);
             }
         }
     };

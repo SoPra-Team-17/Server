@@ -40,7 +40,13 @@ auto Util::getFactionCharacters(const spy::character::CharacterSet &characters,
 bool Util::isDisconnectedPlayer(const spy::util::UUID &clientId,
                                 const std::map<Player, spy::util::UUID> &playerIds,
                                 const MessageRouter &router) {
-    if (clientId != playerIds.at(Player::one) and clientId != playerIds.at(Player::two)) {
+
+    auto playerOneId = playerIds.find(Player::one);
+    auto playerTwoId = playerIds.find(Player::two);
+    bool isPlayerOne = (playerOneId != playerIds.end()) and (playerOneId->second == clientId);
+    bool isPlayerTwo = (playerTwoId != playerIds.end()) and (playerTwoId->second == clientId);
+
+    if (!isPlayerOne and !isPlayerTwo) {
         spdlog::warn("Received reconnect message from {}, who is not a player in this game.", clientId);
         return false;
     }
