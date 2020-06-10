@@ -176,7 +176,8 @@ namespace guards {
 
             const auto &clientRoles = root_machine(fsm).clientRoles;
 
-            return (clientRoles.at(e.getClientId()) == spy::network::RoleEnum::SPECTATOR);
+            auto it = clientRoles.find(e.getClientId());
+            return (it != clientRoles.end() && it->second == spy::network::RoleEnum::SPECTATOR);
         }
     };
 }
