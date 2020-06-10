@@ -38,6 +38,10 @@ class Server : public afsm::def::state_machine<Server> {
                 spdlog::debug("Entering state emptyLobby");
 
                 root_machine(fsm).isIngame = false;
+                root_machine(fsm).playerIds = {};
+                root_machine(fsm).clientRoles = {};
+                root_machine(fsm).knownCombinations = {};
+                root_machine(fsm).sessionId = {};
             }
         };
 
@@ -59,7 +63,8 @@ class Server : public afsm::def::state_machine<Server> {
         tr<waitFor2Player, spy::network::messages::GameLeave, emptyLobby>,
         tr<waitFor2Player, events::playerDisconnect,          emptyLobby>,
         tr<waitFor2Player, spy::network::messages::Hello,     decltype(game), actions::multiple<actions::HelloReply, actions::StartGame>,          not_<guards::isSpectator>>,
-        tr<GameFSM,        none,                              emptyLobby,     actions::closeGame,                                                  guards::gameOver>
+        tr<GameFSM,        none,                              emptyLobby,     actions::closeGame,                                                  guards::gameOver>,
+        tr<GameFSM,        events::forceGameClose,            emptyLobby,     actions::closeGame>
         >;
 
         using internal_transitions = transition_table <

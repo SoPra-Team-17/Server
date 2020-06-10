@@ -18,15 +18,17 @@
 #include <network/messages/GameLeave.hpp>
 #include <network/messages/RequestMetaInformation.hpp>
 #include <network/messages/MetaInformation.hpp>
+#include <network/messages/Reconnect.hpp>
 #include <util/Format.hpp>
 
 using namespace std::string_literals;
 
 struct TestClient {
     spy::util::UUID id;
-    websocket::network::WebSocketClient wsClient{"localhost", "/", 7007, "no-time-to-spy"};
+    std::optional<websocket::network::WebSocketClient> wsClient;
     std::string name;
     spy::network::RoleEnum role;
+    spy::util::UUID sessionId;
     unsigned int choiceCounter = 0;
     unsigned int numberOfCharacters = 0;
     std::random_device rd{};
@@ -35,9 +37,9 @@ struct TestClient {
     explicit TestClient(std::string clientName, spy::network::RoleEnum clientRole = spy::network::RoleEnum::PLAYER) :
             name(std::move(clientName)),
             role(clientRole) {
-        using spy::network::messages::MessageTypeEnum;
-
         spdlog::set_level(spdlog::level::level_enum::trace);
+
+        connect();
 
         if (role == spy::network::RoleEnum::PLAYER || role == spy::network::RoleEnum::AI) {
             // decide randomly how many characters are chosen [2 - 4]
@@ -47,12 +49,68 @@ struct TestClient {
             spdlog::trace("{} will choose {} characters and {} gadgets", name, numberOfCharacters,
                           8 - numberOfCharacters);
         }
+    }
 
-        wsClient.closeListener.subscribe([clientName]() {
+    void sendChoice(std::variant<spy::util::UUID, spy::gadget::GadgetEnum> choice) {
+        spy::network::messages::ItemChoice message(id, choice);
+        nlohmann::json mj = message;
+        wsClient.value().send(mj.dump());
+
+        spdlog::info("{} sent item choice\n", name);
+    }
+
+    void sendEquipmentChoice(std::map<spy::util::UUID, std::set<spy::gadget::GadgetEnum>> choice) {
+        spy::network::messages::EquipmentChoice message(id, choice);
+        nlohmann::json mj = message;
+        wsClient.value().send(mj.dump());
+
+        spdlog::info("{} sent equipment choice\n", name);
+    }
+
+    void sendHello() {
+        auto hello = spy::network::messages::Hello{id, name, role};
+        nlohmann::json hj = hello;
+        wsClient.value().send(hj.dump());
+    }
+
+    void sendRequestPause(bool pause) {
+        auto msg = spy::network::messages::RequestGamePause{id, pause};
+        nlohmann::json mj = msg;
+        wsClient.value().send(mj.dump());
+    }
+
+    void sendGameLeave() {
+        auto msg = spy::network::messages::GameLeave{id};
+        nlohmann::json mj = msg;
+        wsClient.value().send(mj.dump());
+    }
+
+    void requestMetaInformation() {
+        spdlog::info("{}: requesting meta information", name);
+
+        using namespace spy::network::messages;
+        auto msg = RequestMetaInformation{id, {MetaInformationKey::CONFIGURATION_SCENARIO,
+                                               MetaInformationKey::SPECTATOR_COUNT,
+                // Expected: only own characters get returned
+                                               MetaInformationKey::FACTION_PLAYER1,
+                                               MetaInformationKey::FACTION_PLAYER2,
+                                               MetaInformationKey::FACTION_NEUTRAL,
+                                               MetaInformationKey::GADGETS_PLAYER1,
+                                               MetaInformationKey::GADGETS_PLAYER2}};
+        nlohmann::json mj = msg;
+        wsClient.value().send(mj.dump());
+    }
+
+    void connect() {
+        using spy::network::messages::MessageTypeEnum;
+
+        wsClient.emplace("localhost", "/", 7007, "no-time-to-spy");
+
+        wsClient.value().closeListener.subscribe([clientName = name]() {
             spdlog::critical("{}: Connection Closed", clientName);
         });
 
-        wsClient.receiveListener.subscribe([this](const std::string &message) {
+        wsClient.value().receiveListener.subscribe([this](const std::string &message) {
             spdlog::trace("{}: {}", name, message);
 
             auto j = nlohmann::json::parse(message);
@@ -109,8 +167,12 @@ struct TestClient {
                 case MessageTypeEnum::HELLO_REPLY: {
                     auto m = j.get<spy::network::messages::HelloReply>();
                     id = m.getClientId();
+                    sessionId = m.getSessionId();
 
-                    spdlog::info("{} was assigned id: {}", name, id.to_string());
+                    spdlog::info("{} was assigned id: {}, sessionId is {}",
+                                 name,
+                                 id.to_string(),
+                                 sessionId.to_string());
                     break;
                 }
 
@@ -136,54 +198,15 @@ struct TestClient {
         });
     }
 
-    void sendChoice(std::variant<spy::util::UUID, spy::gadget::GadgetEnum> choice) {
-        spy::network::messages::ItemChoice message(id, choice);
-        nlohmann::json mj = message;
-        wsClient.send(mj.dump());
-
-        spdlog::info("{} sent item choice\n", name);
+    void disconnect() {
+        wsClient.reset();
     }
 
-    void sendEquipmentChoice(std::map<spy::util::UUID, std::set<spy::gadget::GadgetEnum>> choice) {
-        spy::network::messages::EquipmentChoice message(id, choice);
-        nlohmann::json mj = message;
-        wsClient.send(mj.dump());
-
-        spdlog::info("{} sent equipment choice\n", name);
-    }
-
-    void sendHello() {
-        auto hello = spy::network::messages::Hello{id, name, role};
-        nlohmann::json hj = hello;
-        wsClient.send(hj.dump());
-    }
-
-    void sendRequestPause(bool pause) {
-        auto msg = spy::network::messages::RequestGamePause{id, pause};
-        nlohmann::json mj = msg;
-        wsClient.send(mj.dump());
-    }
-
-    void sendGameLeave() {
-        auto msg = spy::network::messages::GameLeave{id};
-        nlohmann::json mj = msg;
-        wsClient.send(mj.dump());
-    }
-
-    void requestMetaInformation() {
-        spdlog::info("{}: requesting meta information", name);
-
-        using namespace spy::network::messages;
-        auto msg = RequestMetaInformation{id, {MetaInformationKey::CONFIGURATION_SCENARIO,
-                                               MetaInformationKey::SPECTATOR_COUNT,
-                                               // Expected: only own characters get returned
-                                               MetaInformationKey::FACTION_PLAYER1,
-                                               MetaInformationKey::FACTION_PLAYER2,
-                                               MetaInformationKey::FACTION_NEUTRAL,
-                                               MetaInformationKey::GADGETS_PLAYER1,
-                                               MetaInformationKey::GADGETS_PLAYER2}};
-        nlohmann::json mj = msg;
-        wsClient.send(mj.dump());
+    void reconnect() {
+        connect();
+        spy::network::messages::Reconnect message{id, sessionId};
+        nlohmann::json m = message;
+        wsClient.value().send(m.dump());
     }
 };
 
@@ -212,14 +235,31 @@ int main() {
     std::this_thread::sleep_for(std::chrono::seconds{3});
     // Unpause
     p1.sendRequestPause(false);
+    std::this_thread::sleep_for(std::chrono::seconds{3});
 
-    // Pause, wait for time limit to expire
+    // Pause with disconnect
     p1.sendRequestPause(true);
+    std::this_thread::sleep_for(std::chrono::seconds{2});
+    p1.disconnect();
+    std::this_thread::sleep_for(std::chrono::seconds{3});
+    p2.disconnect();
+    std::this_thread::sleep_for(std::chrono::seconds{3});
+    p1.reconnect();
+    std::this_thread::sleep_for(std::chrono::seconds{3});
+    p2.reconnect();
+
+    // Both player disconnect + reconnect within time limit
+    p2.disconnect();
+    std::this_thread::sleep_for(std::chrono::seconds{3});
+    p1.disconnect();
+    std::this_thread::sleep_for(std::chrono::seconds{10});
+    p1.reconnect();
+    p2.reconnect();
+    std::this_thread::sleep_for(std::chrono::seconds{3});
+
+    // Disconnect without reconnect (timeout and game end expected)
+    p1.disconnect();
+    std::this_thread::sleep_for(std::chrono::seconds{21});
 
     std::cout << "done" << std::endl;
-
-    std::this_thread::sleep_for(std::chrono::seconds{10});
-    s3.sendHello();                 // hello during game phase --> game status expected
-
-    std::this_thread::sleep_for(std::chrono::hours{100});
 }

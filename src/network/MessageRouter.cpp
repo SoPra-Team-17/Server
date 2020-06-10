@@ -37,7 +37,12 @@ void MessageRouter::disconnectListener(const MessageRouter::connectionPtr &close
         spdlog::info("Not registered connection closed. (Exception: {})", e.what());
         return;
     }
-    spdlog::info("Connection {} closed.", connectionUUID.value_or(spy::util::UUID{}));
+
+    if (connectionUUID.has_value()) {
+        spdlog::info("Connection {} closed.", connectionUUID.value());
+    } else {
+        spdlog::info("Connection without UUID closed.");
+    }
 
     auto con = std::find_if(activeConnections.begin(), activeConnections.end(), [closedConnection](const auto &c) {
         return c.first == closedConnection;

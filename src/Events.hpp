@@ -7,6 +7,9 @@
 #ifndef SERVER017_EVENTS_HPP
 #define SERVER017_EVENTS_HPP
 
+#include <util/Player.hpp>
+#include <datatypes/statistics/VictoryEnum.hpp>
+
 namespace events {
     struct triggerNPCmove {
     };
@@ -28,6 +31,11 @@ namespace events {
 
     struct playerDisconnect {
         spy::util::UUID clientId;
+    };
+
+    struct forceGameClose {
+        Player winner;
+        spy::statistics::VictoryEnum reason;
     };
 }
 #endif //SERVER017_EVENTS_HPP

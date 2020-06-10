@@ -252,7 +252,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                     spy::MatchConfig matchConfig = root_machine(fsm).matchConfig;
                     if (not serverEnforced and matchConfig.getPauseLimit().has_value()) {
                         spdlog::info("Starting pause timer for {} seconds", matchConfig.getPauseLimit().value());
-                        timer.restart(std::chrono::seconds{matchConfig.getPauseLimit().value()}, [&fsm]() {
+                        pauseLimitTimer.restart(std::chrono::seconds{matchConfig.getPauseLimit().value()}, [&fsm]() {
                             spdlog::info("Pause time limit reached, unpausing.");
                             root_machine(fsm).process_event(events::forceUnpause{});
                         });
@@ -260,11 +260,24 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                 }
 
                 bool serverEnforced = false;
-                Timer timer;
 
+                Timer pauseLimitTimer;
+
+                Timer playerOneReconnectTimer;
+                Timer playerTwoReconnectTimer;
+
+                std::chrono::system_clock::duration pauseTimeRemaining{0};
+
+                // @formatter:off
                 using internal_transitions = transition_table <
-                // Event                          Action                                                           Guard
-                in<spy::network::messages::Hello, actions::multiple<actions::HelloReply, actions::broadcastState>, guards::isSpectator>>;
+                // Event                              Action                                                           Guard
+                in<spy::network::messages::Hello,     actions::multiple<actions::HelloReply, actions::broadcastState>, guards::isSpectator>,
+                // Another player disconnects, stay in pause
+                in<events::playerDisconnect,          actions::startReconnectTimer>,
+                // A player reconnects, but one is still disconnected
+                in<spy::network::messages::Reconnect, actions::stopReconnectTimer,                                       guards::bothDisconnected>,
+                // A player reconnects, and before the disconnect(s) there was a normal pause which we have to continue
+                in<spy::network::messages::Reconnect, actions::multiple<actions::stopReconnectTimer, actions::revertToNormalPause>, and_<guards::pauseTimeRemaining, not_<guards::bothDisconnected>>>>;
                 // @formatter:on
             };
 
@@ -283,8 +296,9 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
             // Server forced unpause
             tr<paused,              events::forceUnpause,                     waitingForOperation, actions::unpauseGame>,
             // Force pause when player disconnects
-            tr<waitingForOperation, events::playerDisconnect,                 paused,              actions::pauseGame<true>>,
-            tr<paused,              spy::network::messages::Reconnect,        waitingForOperation, actions::multiple<actions::sendReconnectGameStart, actions::broadcastState, actions::unpauseGame, actions::requestNextOperation>>
+            tr<waitingForOperation, events::playerDisconnect,                 paused,              actions::multiple<actions::pauseGame<true>, actions::startReconnectTimer>>,
+            // Unpause if a player reconnects and not both players are disconnected and no pause time remaining
+            tr<paused,              spy::network::messages::Reconnect,        waitingForOperation, actions::multiple<actions::sendReconnectGameStart, actions::broadcastState, actions::unpauseGame, actions::requestNextOperation>, and_<not_<guards::pauseTimeRemaining>, not_<guards::bothDisconnected>>>
             >;
             // @formatter:on
         };
