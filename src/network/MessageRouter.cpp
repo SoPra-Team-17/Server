@@ -176,6 +176,16 @@ void MessageRouter::clearConnections() {
     activeConnections.clear();
 }
 
+void MessageRouter::closeConnection(const spy::util::UUID &id) {
+    spdlog::info("MessageRouter: Closing connection to player {}", id);
+    try {
+        connection con = connectionFromUUID(id);
+        activeConnections.erase(std::remove(activeConnections.begin(), activeConnections.end(), con), activeConnections.end());
+    } catch (const UUIDNotFoundException &e) {
+        spdlog::warn("Connection to {} was already closed! Error: {}", id, e.what());
+    }
+}
+
 bool MessageRouter::isConnected(const spy::util::UUID &id) const {
     const auto r = std::find_if(activeConnections.begin(), activeConnections.end(),
                                 [id](const auto &ptrIdPair) {

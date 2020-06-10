@@ -6,16 +6,17 @@
 #define SERVER017_ACTIONS_HPP
 
 #include <spdlog/spdlog.h>
-#include <util/UUID.hpp>
 #include <network/messages/GameStarted.hpp>
 #include <network/messages/HelloReply.hpp>
 #include <network/messages/StatisticsMessage.hpp>
 #include <network/messages/GamePause.hpp>
 #include <network/messages/GameStatus.hpp>
+#include <network/messages/MetaInformation.hpp>
+#include <network/messages/GameLeft.hpp>
 #include <util/Player.hpp>
 #include <util/GameLogicUtils.hpp>
-#include <network/messages/MetaInformation.hpp>
 #include <util/Util.hpp>
+#include <util/UUID.hpp>
 #include "Events.hpp"
 
 namespace actions {
@@ -127,54 +128,80 @@ namespace actions {
         }
     };
 
+    /**
+     * Closes the current game.
+     */
     struct closeGame {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(const Event &event, FSM &fsm, SourceState &, TargetState &) {
+            using spy::character::FactionEnum;
+            using spy::statistics::VictoryEnum;
+            using spy::network::messages::StatisticsMessage;
+            using spy::statistics::Statistics;
+            using spy::statistics::StatisticsEntry;
+            using spy::gameplay::Stats;
+
             const spy::gameplay::State &state = root_machine(fsm).gameState;
+            MessageRouter &router = root_machine(fsm).router;
+            std::map<Player, spy::util::UUID> &playerIds = root_machine(fsm).playerIds;
+            Stats gameStats = root_machine(fsm).gameState.getFactionStats();
 
             spdlog::info("Closing game");
 
-            spy::util::VictoryInfo victoryInfo = spy::util::RoundUtils::determineVictory(state);
-
+            FactionEnum winningFaction;
+            VictoryEnum victoryReason;
             Player winner;
-            switch (victoryInfo.first) {
-                case spy::character::FactionEnum::PLAYER1:
-                    winner = Player::one;
-                    break;
-                case spy::character::FactionEnum::PLAYER2:
-                    winner = Player::two;
-                    break;
-                default:
-                    spdlog::error("Winning faction \"{}\" invalid (assuming player one)", fmt::json(victoryInfo));
-                    winner = Player::one;
-                    break;
-            }
 
             if constexpr (std::is_same<Event, events::forceGameClose>::value) {
                 winner = event.winner;
+                victoryReason = event.reason;
+            } else {
+                // check if the game ended through a player's leave
+                if (!router.isConnected(playerIds.at(Player::one))) {
+                    winner = Player::two;
+                    victoryReason = VictoryEnum::VICTORY_BY_LEAVE;
+                } else if (!router.isConnected(playerIds.at(Player::two))) {
+                    winner = Player::one;
+                    victoryReason = VictoryEnum::VICTORY_BY_LEAVE;
+                } else {
+                    std::tie(winningFaction, victoryReason) = spy::util::RoundUtils::determineVictory(state);
+                    // if there is no clear winner, player one has won the game!
+                    if (winningFaction != FactionEnum::INVALID) {
+                        winner = (winningFaction == FactionEnum::PLAYER2) ? Player::two : Player::one;
+                    } else {
+                        spdlog::error("Winning faction \"{}\" invalid (assuming player one)", fmt::json(winningFaction));
+                        winner = Player::one;
+                    }
+                }
             }
 
             spdlog::info("Winning player is {}", winner);
 
-            if constexpr (std::is_same<Event, events::forceGameClose>::value) {
-                victoryInfo.second = event.reason;
-            }
+            Statistics stats;
 
-            std::map<Player, spy::util::UUID> &playerIds = root_machine(fsm).playerIds;
+            stats.addEntry(StatisticsEntry{"Damage suffered", "Suffered damage of the factions",
+                                           std::to_string(gameStats.damageSuffered.first),
+                                           std::to_string(gameStats.damageSuffered.second)});
 
-            using spy::network::messages::StatisticsMessage;
+            stats.addEntry(StatisticsEntry{"Drunk cocktails",
+                                           "Number of cocktails the factions drunk",
+                                           std::to_string(gameStats.cocktails.first),
+                                           std::to_string(gameStats.cocktails.second)});
+
+            stats.addEntry(StatisticsEntry{"Poured cocktails",
+                                    "Number of cocktails the factions poured over other characters",
+                                    std::to_string(gameStats.cocktailsPoured.first),
+                                    std::to_string(gameStats.cocktailsPoured.second)});
+
             StatisticsMessage statisticsMessage{
                     {},
-                    {}, // TODO: statistics (optional requirement)
+                    stats,
                     playerIds.at(winner),
-                    victoryInfo.second,
+                    victoryReason,
                     false
             };
 
-            MessageRouter &router = root_machine(fsm).router;
             router.broadcastMessage(statisticsMessage);
-
-            // TODO: Keep replay available for 5 minutes, then close connections
 
             spdlog::debug("Clearing all connections from router");
             router.clearConnections();
@@ -251,6 +278,45 @@ namespace actions {
             spdlog::info("Unpausing, forced={}", isForced);
             MessageRouter &router = root_machine(fsm).router;
             router.broadcastMessage(spy::network::messages::GamePause{{}, false, isForced});
+        }
+    };
+
+    /**
+    * Sends a game left message to the client that wants to leave the game.
+    * @note Only intended to be used for spectators, standard requires a confirmation of game leave messages.
+    */
+    struct sendGameLeft {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(const Event &e, FSM &fsm, SourceState &, TargetState &) {
+            auto clientId = e.getClientId();
+
+            MessageRouter &router = root_machine(fsm).router;
+            spy::network::messages::GameLeft gameLeft(clientId, clientId);
+
+            router.sendMessage(gameLeft);
+        }
+    };
+
+    /**
+     * Broadcasts a game left message to all registered clients.
+     * @note Standard requires this broadcasting if a player leaves the game.
+     */
+    struct broadcastGameLeft {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(const Event &e, FSM &fsm, SourceState &, TargetState &) {
+            spy::util::UUID clientId;
+            if constexpr (std::is_same<Event, spy::network::messages::GameLeave>::value) {
+                clientId = e.getClientId();
+            } else if constexpr(std::is_same<Event, events::playerDisconnect>::value) {
+                clientId = e.clientId;
+            }
+
+            spdlog::debug("Broadcasting leave of client: {}", clientId);
+
+            MessageRouter &router = root_machine(fsm).router;
+            spy::network::messages::GameLeft gameLeft({}, clientId);
+
+            router.broadcastMessage(gameLeft);
         }
     };
 
@@ -362,6 +428,18 @@ namespace actions {
                 spdlog::warn("revertToNormalPause has been called, but a normal pause was not in progress."
                              "Doing nothing.");
             }
+        }
+    };
+
+    /**
+    * Close the connection to the client.
+    */
+    struct closeConnectionToClient {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(const Event &e, FSM &fsm, SourceState &, TargetState &) {
+            auto clientId = e.getClientId();
+
+            root_machine(fsm).router.closeConnection(clientId);
         }
     };
 }
