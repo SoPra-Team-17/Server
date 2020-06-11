@@ -307,7 +307,9 @@ namespace actions {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(const Event &e, FSM &fsm, SourceState &, TargetState &) {
             spy::util::UUID clientId;
-            if constexpr (std::is_same<Event, spy::network::messages::GameLeave>::value) {
+            if constexpr (std::is_same<Event, spy::network::messages::GameLeave>::value
+                          || std::is_same<Event, spy::network::messages::ItemChoice>::value
+                          || std::is_same<Event, spy::network::messages::EquipmentChoice>::value) {
                 clientId = e.getClientId();
             } else if constexpr(std::is_same<Event, events::playerDisconnect>::value) {
                 clientId = e.clientId;
@@ -452,6 +454,21 @@ namespace actions {
             spdlog::warn("Replying to client {} with error {}", e.getClientId(), fmt::json(error));
             spy::network::messages::Error errorMessage{e.getClientId(), error};
             root_machine(fsm).router.sendMessage(errorMessage);
+        }
+    };
+
+    /**
+    * Emits a forceGameClose event with the other player (not the one that caused the event) as winner.
+    */
+    struct emitForceGameClose {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(const Event &e, FSM &fsm, SourceState &, TargetState &) {
+            const auto clientId = e.getClientId();
+
+            const auto &playerIds = root_machine(fsm).playerIds;
+
+            Player winner = (playerIds.at(Player::one) == clientId) ? Player::two : Player::one;
+            root_machine(fsm).process_event(events::forceGameClose{winner,spy::statistics::VictoryEnum::VICTORY_BY_KICK});
         }
     };
 }
