@@ -37,5 +37,9 @@ namespace events {
         Player winner;
         spy::statistics::VictoryEnum reason;
     };
+
+    struct kickAI {
+        spy::util::UUID clientId;
+    };
 }
 #endif //SERVER017_EVENTS_HPP

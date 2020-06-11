@@ -112,8 +112,14 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
             fsm.process_event(msg);
         } else {
             // message dropped
-            spdlog::warn("Client {} sent an {} message that was dropped due to role filtering",
-                         msg.getClientId(), fmt::json(msg.getType()));
+            if (clientRole == spy::network::RoleEnum::AI) {
+                spdlog::critical("Client {} with role AI was kicked due to role filtering for {} message",
+                        msg.getClientId(), fmt::json(msg.getType()));
+                fsm.process_event(events::kickAI{msg.getClientId()});
+            } else {
+                spdlog::warn("Client {} sent an {} message that was dropped due to role filtering",
+                             msg.getClientId(), fmt::json(msg.getType()));
+            }
         }
     };
 
