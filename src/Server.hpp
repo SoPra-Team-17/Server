@@ -64,6 +64,7 @@ class Server : public afsm::def::state_machine<Server> {
         tr<waitFor2Player, events::playerDisconnect,          emptyLobby>,
         tr<waitFor2Player, spy::network::messages::Hello,     decltype(game), actions::multiple<actions::HelloReply, actions::StartGame>,                                           not_<guards::isSpectator>>,
         tr<GameFSM,        none,                              emptyLobby,     actions::closeGame,                                                                                   guards::gameOver>,
+        tr<GameFSM,        events::triggerGameEnd,            emptyLobby,     actions::closeGame,                                                                                   guards::gameOver>,
         tr<GameFSM,        events::forceGameClose,            emptyLobby,     actions::closeGame>,
         tr<GameFSM,        spy::network::messages::GameLeave, emptyLobby,     actions::multiple<actions::broadcastGameLeft, actions::closeConnectionToClient, actions::closeGame>,   not_<guards::isSpectator>>
         >;
