@@ -158,6 +158,7 @@ namespace actions {
                 // There may still be characters remaining, but the game has been won with the last action.
                 // We do not have to request a new operation, and abort early.
                 spdlog::info("Skipping requestNextOperation because game is already over.");
+                root_machine(fsm).process_event(events::triggerGameEnd{});
                 return;
             }
 
