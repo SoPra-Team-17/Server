@@ -38,6 +38,9 @@ namespace events {
         spy::statistics::VictoryEnum reason;
     };
 
+    struct triggerGameEnd {
+    };
+
     struct kickAI {
         spy::util::UUID clientId;
     };
