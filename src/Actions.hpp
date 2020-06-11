@@ -452,7 +452,7 @@ namespace actions {
             spdlog::warn("Replying to client {} with error {}", e.getClientId(), fmt::json(error));
             spy::network::messages::Error errorMessage{e.getClientId(), error};
             root_machine(fsm).router.sendMessage(errorMessage);
-        };
+        }
     };
 }
 
