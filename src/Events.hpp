@@ -37,5 +37,8 @@ namespace events {
         Player winner;
         spy::statistics::VictoryEnum reason;
     };
+
+    struct triggerGameEnd {
+    };
 }
 #endif //SERVER017_EVENTS_HPP
