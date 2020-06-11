@@ -117,6 +117,11 @@ class Server : public afsm::def::state_machine<Server> {
         std::map<spy::util::UUID, spy::network::RoleEnum> clientRoles;
 
         /**
+         * Number of strikes for every client.
+         */
+        std::map<spy::util::UUID, int> strikeCounts;
+
+        /**
          * Names for both players
          */
         std::map<Player, std::string> playerNames;

@@ -269,12 +269,13 @@ namespace actions {
                         character = fsm.activeCharacter,
                         strikeMax = matchConfig.getStrikeMaximum()]() {
                     spdlog::warn("Turn phase time limit reached.");
+                    // TODO: change strikeCounts key to Player to prevent insertion of UUIDs that are not players
+                    fsm.strikeCounts[player]++;
                     spy::network::messages::Strike strikeMessage{
                             player,
-                            0, // TODO count strikes
+                            fsm.strikeCounts[player],
                             static_cast<int>(strikeMax),
                             "Turn phase time limit reached."};
-                    // TODO: increment strike counter
                     spdlog::info("Sending strike.");
                     fsm.router.sendMessage(std::move(strikeMessage));
                     spdlog::info("Executing retire.");
