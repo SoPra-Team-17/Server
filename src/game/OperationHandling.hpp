@@ -10,6 +10,7 @@
 
 #include <spdlog/spdlog.h>
 #include <network/messages/GameStatus.hpp>
+#include <network/messages/Strike.hpp>
 #include <util/RoundUtils.hpp>
 #include <gameLogic/generation/ActionGenerator.hpp>
 #include <gameLogic/execution/ActionExecutor.hpp>
@@ -24,11 +25,14 @@ namespace actions {
      */
     struct handleOperation {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(Event &&e, FSM &fsm, SourceState &, TargetState &) {
+        void operator()(Event &&e, FSM &fsm, SourceState &source, TargetState &) {
             using spy::network::messages::GameOperation;
             using spy::gameplay::State;
 
             spdlog::info("Handling some operation");
+
+            spdlog::info("Stopping turnPhase timer");
+            source.turnPhaseTimer.stop();
 
             State &state = root_machine(fsm).gameState;
             auto &knownCombinations = root_machine(fsm).knownCombinations;
@@ -150,7 +154,7 @@ namespace actions {
      */
     struct requestNextOperation {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(const Event &event, FSM &fsm, SourceState &, TargetState &) {
+        void operator()(const Event &event, FSM &fsm, SourceState &, TargetState &target) {
             spdlog::info("RequestNextOperation: last active character was {}", fsm.activeCharacter);
             spy::gameplay::State &state = root_machine(fsm).gameState;
 
@@ -254,6 +258,31 @@ namespace actions {
             MessageRouter &router = root_machine(fsm).router;
             spdlog::info("Requesting Operation from player {}", activePlayer.value());
             router.sendMessage(request);
+
+            const spy::MatchConfig &matchConfig = root_machine(fsm).matchConfig;
+            if (matchConfig.getTurnPhaseLimit().has_value()) {
+                int turnPhaseLimitSeconds = matchConfig.getTurnPhaseLimit().value();
+                spdlog::info("Starting turn phase timer for {} seconds", turnPhaseLimitSeconds);
+                target.turnPhaseTimer.restart(std::chrono::seconds{turnPhaseLimitSeconds}, [
+                        &fsm = root_machine(fsm),
+                        player = root_machine(fsm).playerIds.find(activePlayer.value())->second,
+                        character = fsm.activeCharacter,
+                        strikeMax = matchConfig.getStrikeMaximum()]() {
+                    spdlog::warn("Turn phase time limit reached.");
+                    spy::network::messages::Strike strikeMessage{
+                            player,
+                            0, // TODO count strikes
+                            static_cast<int>(strikeMax),
+                            "Turn phase time limit reached."};
+                    // TODO: increment strike counter
+                    spdlog::info("Sending strike.");
+                    fsm.router.sendMessage(std::move(strikeMessage));
+                    spdlog::info("Executing retire.");
+                    auto retireAction = std::make_shared<spy::gameplay::RetireAction>(character);
+                    spy::network::messages::GameOperation retireOp{player, retireAction};
+                    fsm.process_event(std::move(retireOp));
+                });
+            }
         }
     };
 

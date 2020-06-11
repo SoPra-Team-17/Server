@@ -229,6 +229,8 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
              */
             struct waitingForOperation : state<waitingForOperation> {
 
+                Timer turnPhaseTimer;
+
                 template<typename FSM, typename Event>
                 void on_enter(Event &&, FSM &) {
                     spdlog::info("Entering state waitingForOperation");
