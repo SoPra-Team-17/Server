@@ -26,7 +26,11 @@ namespace guards {
             using spy::gameplay::ActionValidator;
             const spy::gameplay::State &state = root_machine(fsm).gameState;
 
-            return ActionValidator::validate(state, event.getOperation(), root_machine(fsm).matchConfig);
+            auto result = ActionValidator::validate(state, event.getOperation(), root_machine(fsm).matchConfig);
+            if (not result) {
+                spdlog::warn("Operation not valid: {}", fmt::json(event));
+            }
+            return result;
         }
     };
 

@@ -17,6 +17,8 @@
 #include <util/GameLogicUtils.hpp>
 #include <util/Util.hpp>
 #include <util/UUID.hpp>
+#include <network/ErrorTypeEnum.hpp>
+#include <network/messages/Error.hpp>
 #include "Events.hpp"
 
 namespace actions {
@@ -440,6 +442,16 @@ namespace actions {
             auto clientId = e.getClientId();
 
             root_machine(fsm).router.closeConnection(clientId);
+        }
+    };
+
+    template<spy::network::ErrorTypeEnum error>
+    struct replyWithError {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(const Event &e, FSM &fsm, SourceState &, TargetState &) {
+            spdlog::warn("Replying to client {} with error {}", e.getClientId(), fmt::json(error));
+            spy::network::messages::Error errorMessage{e.getClientId(), error};
+            root_machine(fsm).router.sendMessage(errorMessage);
         }
     };
 }
