@@ -270,7 +270,7 @@ namespace actions {
                 target.turnPhaseTimer.restart(std::chrono::seconds{turnPhaseLimitSeconds}, [
                         &fsm = root_machine(fsm),
                         player = *root_machine(fsm).playerIds.find(activePlayer.value()),
-                        character = fsm.activeCharacter,
+                        characterId = fsm.activeCharacter,
                         strikeMax = matchConfig.getStrikeMaximum()]() {
                     spdlog::warn("Turn phase time limit reached for player {}.", player.first);
                     fsm.strikeCounts[player.first]++;
@@ -279,13 +279,23 @@ namespace actions {
                             fsm.strikeCounts[player.first],
                             static_cast<int>(strikeMax),
                             "Turn phase time limit reached."};
-                    spdlog::info("Sending strike to player {}.", player.first);
+                    spdlog::info("Sending strike nr. {} to player {}.", fsm.strikeCounts[player.first], player.first);
                     fsm.router.sendMessage(std::move(strikeMessage));
-                    // TODO skip turn without retire
-                    spdlog::info("Executing retire.");
-                    auto retireAction = std::make_shared<spy::gameplay::RetireAction>(character);
-                    spy::network::messages::GameOperation retireOp{player.second, retireAction};
-                    fsm.process_event(std::move(retireOp));
+                    spy::gameplay::State &state = fsm.gameState;
+
+                    auto character = state.getCharacters().getByUUID(characterId);
+                    if (character == state.getCharacters().end()) {
+                        spdlog::error("Character {} not found in characterset. Sending retire instead.", characterId);
+                        auto retireAction = std::make_shared<spy::gameplay::RetireAction>(characterId);
+                        spy::network::messages::GameOperation retireOp{player.second, retireAction};
+                        fsm.process_event(std::move(retireOp));
+                        return;
+                    }
+
+                    spdlog::info("Skipping operation.");
+                    character->setActionPoints(0);
+                    character->setMovePoints(0);
+                    fsm.process_event(events::skipOperation{});
                 });
             }
         }
