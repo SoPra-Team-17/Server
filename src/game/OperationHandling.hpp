@@ -10,6 +10,7 @@
 
 #include <spdlog/spdlog.h>
 #include <network/messages/GameStatus.hpp>
+#include <network/messages/Strike.hpp>
 #include <util/RoundUtils.hpp>
 #include <gameLogic/generation/ActionGenerator.hpp>
 #include <gameLogic/execution/ActionExecutor.hpp>
@@ -24,11 +25,14 @@ namespace actions {
      */
     struct handleOperation {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(Event &&e, FSM &fsm, SourceState &, TargetState &) {
+        void operator()(Event &&e, FSM &fsm, SourceState &source, TargetState &) {
             using spy::network::messages::GameOperation;
             using spy::gameplay::State;
 
             spdlog::info("Handling some operation");
+
+            spdlog::info("Stopping turnPhase timer");
+            source.turnPhaseTimer.stop();
 
             State &state = root_machine(fsm).gameState;
             auto &knownCombinations = root_machine(fsm).knownCombinations;
@@ -51,6 +55,10 @@ namespace actions {
             }
 
             if (player.has_value()) {
+                spdlog::info("Resetting strike count for player {} who had {} strikes.",
+                             player.value(),
+                             root_machine(fsm).strikeCounts[player.value()]);
+                root_machine(fsm).strikeCounts[player.value()] = 0;
                 state.setKnownSafeCombinations(knownCombinations.at(player.value()));
             }
 
@@ -150,7 +158,7 @@ namespace actions {
      */
     struct requestNextOperation {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(const Event &event, FSM &fsm, SourceState &, TargetState &) {
+        void operator()(const Event &event, FSM &fsm, SourceState &, TargetState &target) {
             spdlog::info("RequestNextOperation: last active character was {}", fsm.activeCharacter);
             spy::gameplay::State &state = root_machine(fsm).gameState;
 
@@ -254,6 +262,42 @@ namespace actions {
             MessageRouter &router = root_machine(fsm).router;
             spdlog::info("Requesting Operation from player {}", activePlayer.value());
             router.sendMessage(request);
+
+            const spy::MatchConfig &matchConfig = root_machine(fsm).matchConfig;
+            if (matchConfig.getTurnPhaseLimit().has_value()) {
+                int turnPhaseLimitSeconds = matchConfig.getTurnPhaseLimit().value();
+                spdlog::info("Starting turn phase timer for {} seconds", turnPhaseLimitSeconds);
+                target.turnPhaseTimer.restart(std::chrono::seconds{turnPhaseLimitSeconds}, [
+                        &fsm = root_machine(fsm),
+                        player = *root_machine(fsm).playerIds.find(activePlayer.value()),
+                        characterId = fsm.activeCharacter,
+                        strikeMax = matchConfig.getStrikeMaximum()]() {
+                    spdlog::warn("Turn phase time limit reached for player {}.", player.first);
+                    fsm.strikeCounts[player.first]++;
+                    spy::network::messages::Strike strikeMessage{
+                            player.second,
+                            fsm.strikeCounts[player.first],
+                            static_cast<int>(strikeMax),
+                            "Turn phase time limit reached."};
+                    spdlog::info("Sending strike nr. {} to player {}.", fsm.strikeCounts[player.first], player.first);
+                    fsm.router.sendMessage(std::move(strikeMessage));
+                    spy::gameplay::State &state = fsm.gameState;
+
+                    auto character = state.getCharacters().getByUUID(characterId);
+                    if (character == state.getCharacters().end()) {
+                        spdlog::error("Character {} not found in characterset. Sending retire instead.", characterId);
+                        auto retireAction = std::make_shared<spy::gameplay::RetireAction>(characterId);
+                        spy::network::messages::GameOperation retireOp{player.second, retireAction};
+                        fsm.process_event(std::move(retireOp));
+                        return;
+                    }
+
+                    spdlog::info("Skipping operation.");
+                    character->setActionPoints(0);
+                    character->setMovePoints(0);
+                    fsm.process_event(events::skipOperation{});
+                });
+            }
         }
     };
 

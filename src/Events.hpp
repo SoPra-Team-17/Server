@@ -44,5 +44,8 @@ namespace events {
     struct kickAI {
         spy::util::UUID clientId;
     };
+
+    struct skipOperation {
+    };
 }
 #endif //SERVER017_EVENTS_HPP
