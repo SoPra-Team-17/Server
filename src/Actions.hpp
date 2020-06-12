@@ -482,9 +482,13 @@ namespace actions {
             }
 
             const auto &playerIds = root_machine(fsm).playerIds;
-
-            Player winner = (playerIds.at(Player::one) == clientId) ? Player::two : Player::one;
-            root_machine(fsm).process_event(events::forceGameClose{winner,spy::statistics::VictoryEnum::VICTORY_BY_KICK});
+            auto it = playerIds.find(Player::one);
+            if (it != playerIds.end()) {
+                Player winner = (it->second == clientId) ? Player::two : Player::one;
+                root_machine(fsm).process_event(events::forceGameClose{winner,spy::statistics::VictoryEnum::VICTORY_BY_KICK});
+            } else {
+                throw std::invalid_argument("Player::one is missing in PlayerIds map!");
+            }
         }
     };
 }
