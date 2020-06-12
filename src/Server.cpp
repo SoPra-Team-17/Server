@@ -15,7 +15,6 @@
 #include <utility>
 #include <datatypes/character/CharacterInformation.hpp>
 #include <network/messages/HelloReply.hpp>
-#include <network/MessageTypeTraits.hpp>
 
 const std::map<unsigned int, spdlog::level::level_enum> Server::verbosityMap = {
         {0, spdlog::level::level_enum::trace},
@@ -93,27 +92,21 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         fsm.process_event(msg);
     });
 
-    router.addGameLeaveListener([&fsm, this](spy::network::messages::GameLeave msg) {
-        clientRoles.erase(msg.getClientId());
-        fsm.process_event(msg);
-    });
-
     auto forwardMessage = [&fsm, this](auto msg) {
         auto clientRole = clientRoles.at(msg.getClientId());
 
-        if (clientRole == spy::network::RoleEnum::PLAYER
-            && receivableFromPlayer<decltype(msg)>::value) {
-            fsm.process_event(msg);
-        } else if (clientRole == spy::network::RoleEnum::AI
-                   && receivableFromAI<decltype(msg)>::value) {
-            fsm.process_event(msg);
-        } else if (clientRole == spy::network::RoleEnum::SPECTATOR
-                   && receivableFromSpectator<decltype(msg)>::value) {
+        if (Util::isAllowedMessage(clientRole, msg)) {
             fsm.process_event(msg);
         } else {
             // message dropped
-            spdlog::warn("Client {} sent an {} message that was dropped due to role filtering",
-                         msg.getClientId(), fmt::json(msg.getType()));
+            if (clientRole == spy::network::RoleEnum::AI) {
+                spdlog::critical("Client {} with role AI was kicked due to role filtering for {} message",
+                        msg.getClientId(), fmt::json(msg.getType()));
+                fsm.process_event(events::kickAI{msg.getClientId()});
+            } else {
+                spdlog::warn("Client {} sent an {} message that was dropped due to role filtering",
+                             msg.getClientId(), fmt::json(msg.getType()));
+            }
         }
     };
 
@@ -127,6 +120,7 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
     router.addPauseRequestListener(forwardMessage);
     router.addMetaInformationRequestListener(forwardMessage);
     router.addReplayRequestListener(discardNotImplemented);
+    router.addGameLeaveListener(forwardMessage);
 
     router.addReconnectListener(
             [this, forwardMessage](const spy::network::messages::Reconnect &msg,

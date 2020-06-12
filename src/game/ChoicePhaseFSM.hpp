@@ -92,8 +92,9 @@ struct ChoicePhase : afsm::def::state_def<ChoicePhase> {
 
     // @formatter:off
     using internal_transitions = transition_table <
-    //  Event                              Action                                                                Guard
-    in<spy::network::messages::ItemChoice, actions::multiple<actions::handleChoice, actions::requestNextChoice>, and_<not_<guards::lastChoice>, guards::choiceValid>>
+    //  Event                              Action                                                                                                                                                                               Guard
+    in<spy::network::messages::ItemChoice, actions::multiple<actions::handleChoice, actions::requestNextChoice>, and_<not_<guards::lastChoice>,                                                                                 guards::choiceValid>>,
+    in<spy::network::messages::ItemChoice, actions::multiple<actions::replyWithError<spy::network::ErrorTypeEnum::ILLEGAL_MESSAGE>, actions::closeConnectionToClient, actions::broadcastGameLeft, actions::emitForceGameClose>, not_<guards::choiceValid>>
     >;
     // @formatter:on
 };

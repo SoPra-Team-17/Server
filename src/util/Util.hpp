@@ -16,6 +16,7 @@
 #include <spdlog/spdlog.h>
 #include "Player.hpp"
 #include "Format.hpp"
+#include "network/MessageTypeTraits.hpp"
 
 class Util {
         using MetaInformationKey = spy::network::messages::MetaInformationKey;
@@ -140,6 +141,28 @@ class Util {
         static bool isDisconnectedPlayer(const spy::util::UUID &clientId,
                                          const std::map<Player, spy::util::UUID> &playerIds,
                                          const MessageRouter &router);
+
+
+        /**
+         * Checks if a client with the given role is allowed to send the given message type.
+         * @tparam MessageType Type of the message.
+         * @param clientRole   Current role of the client.
+         * @param msg          Message.
+         * @return True if the client is allowed to send the message, else false.
+         */
+        template<typename MessageType>
+        static bool isAllowedMessage(spy::network::RoleEnum clientRole, MessageType msg) {
+            switch (clientRole) {
+                case spy::network::RoleEnum::PLAYER:
+                    return receivableFromPlayer<decltype(msg)>::value;
+                case spy::network::RoleEnum::SPECTATOR:
+                    return receivableFromSpectator<decltype(msg)>::value;
+                case spy::network::RoleEnum::AI:
+                    return receivableFromAI<decltype(msg)>::value;
+                default:
+                    return false;
+            }
+        }
 };
 
 

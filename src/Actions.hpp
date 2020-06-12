@@ -307,10 +307,11 @@ namespace actions {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(const Event &e, FSM &fsm, SourceState &, TargetState &) {
             spy::util::UUID clientId;
-            if constexpr (std::is_same<Event, spy::network::messages::GameLeave>::value) {
-                clientId = e.getClientId();
-            } else if constexpr(std::is_same<Event, events::playerDisconnect>::value) {
+            if constexpr (std::is_same<Event, events::kickAI>::value
+                          || std::is_same<Event, events::playerDisconnect>::value) {
                 clientId = e.clientId;
+            } else {
+                clientId = e.getClientId();
             }
 
             spdlog::debug("Broadcasting leave of client: {}", clientId);
@@ -439,7 +440,12 @@ namespace actions {
     struct closeConnectionToClient {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(const Event &e, FSM &fsm, SourceState &, TargetState &) {
-            auto clientId = e.getClientId();
+            spy::util::UUID clientId;
+            if constexpr (std::is_same<Event, events::kickAI>::value) {
+                clientId = e.clientId;
+            } else {
+                clientId = e.getClientId();
+            }
 
             root_machine(fsm).router.closeConnection(clientId);
         }
@@ -449,9 +455,47 @@ namespace actions {
     struct replyWithError {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(const Event &e, FSM &fsm, SourceState &, TargetState &) {
-            spdlog::warn("Replying to client {} with error {}", e.getClientId(), fmt::json(error));
-            spy::network::messages::Error errorMessage{e.getClientId(), error};
+            spy::util::UUID clientId;
+            if constexpr (std::is_same<Event, events::kickAI>::value) {
+                clientId = e.clientId;
+            } else {
+                clientId = e.getClientId();
+            }
+
+            spdlog::warn("Replying to client {} with error {}", clientId, fmt::json(error));
+            spy::network::messages::Error errorMessage{clientId, error};
             root_machine(fsm).router.sendMessage(errorMessage);
+        }
+    };
+
+    /**
+    * Emits a forceGameClose event with the other player (not the one that caused the event) as winner.
+    */
+    struct emitForceGameClose {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(const Event &e, FSM &fsm, SourceState &, TargetState &) {
+            using spy::statistics::VictoryEnum;
+
+            spy::util::UUID clientId;
+            if constexpr (std::is_same<Event, events::kickAI>::value) {
+                clientId = e.clientId;
+            } else {
+                clientId = e.getClientId();
+            }
+
+            const auto &playerIds = root_machine(fsm).playerIds;
+            auto it = playerIds.find(Player::one);
+            if (it != playerIds.end()) {
+                Player winner = (it->second == clientId) ? Player::two : Player::one;
+                root_machine(fsm).process_event(
+                        events::forceGameClose{winner, VictoryEnum::VICTORY_BY_KICK});
+            } else {
+                spy::network::messages::Error errMsg({}, spy::network::ErrorTypeEnum::GENERAL);
+                errMsg.setDebugMessage("ERROR 500: Internal server error.");
+                root_machine(fsm).router.broadcastMessage(errMsg);
+                root_machine(fsm).process_event(
+                        events::forceGameClose{Player::one, VictoryEnum::VICTORY_BY_RANDOMNESS});
+            }
         }
     };
 }

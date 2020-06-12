@@ -66,15 +66,16 @@ class Server : public afsm::def::state_machine<Server> {
         tr<GameFSM,        none,                              emptyLobby,     actions::closeGame,                                                                                   guards::gameOver>,
         tr<GameFSM,        events::triggerGameEnd,            emptyLobby,     actions::closeGame,                                                                                   guards::gameOver>,
         tr<GameFSM,        events::forceGameClose,            emptyLobby,     actions::closeGame>,
-        tr<GameFSM,        spy::network::messages::GameLeave, emptyLobby,     actions::multiple<actions::broadcastGameLeft, actions::closeConnectionToClient, actions::closeGame>,   not_<guards::isSpectator>>
+        tr<GameFSM,        spy::network::messages::GameLeave, emptyLobby,     actions::multiple<actions::broadcastGameLeft, actions::closeConnectionToClient, actions::closeGame>,  not_<guards::isSpectator>>
         >;
 
         using internal_transitions = transition_table <
-        // Event                                           Action                                                                      Guard
+        // Event                                           Action                                                                                                                                                                               Guard
         // Reply to MetaInformation request at any time during the game
         in<spy::network::messages::RequestMetaInformation, actions::sendMetaInformation>,
-        in<spy::network::messages::GameLeave,              actions::multiple<actions::sendGameLeft, actions::closeConnectionToClient>, guards::isSpectator>,
-        in<spy::network::messages::Hello,                  actions::HelloReply,                                                        guards::isSpectator>
+        in<spy::network::messages::GameLeave,              actions::multiple<actions::sendGameLeft, actions::closeConnectionToClient>,                                                                                                          guards::isSpectator>,
+        in<spy::network::messages::Hello,                  actions::HelloReply,                                                                                                                                                                 guards::isSpectator>,
+        in<events::kickAI,                                 actions::multiple<actions::replyWithError<spy::network::ErrorTypeEnum::ILLEGAL_MESSAGE>, actions::closeConnectionToClient, actions::broadcastGameLeft, actions::emitForceGameClose>>
         >;
         // @formatter:on
 

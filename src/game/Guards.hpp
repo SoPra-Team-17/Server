@@ -70,15 +70,21 @@ namespace guards {
      */
     struct choiceValid {
         template<typename FSM, typename FSMState, typename Event>
-        bool operator()(FSM const &, FSMState const &state, Event const &e) {
+        bool operator()(FSM const &fsm, FSMState const &state, Event const &e) {
             spdlog::debug("Checking guard choiceValid");
 
             auto clientId = e.getClientId();
 
             const auto &offered = state.offers.at(clientId);
+            const auto &clientRoles = root_machine(fsm).clientRoles;
 
-            //TODO: adapt to Role Enum, needs rework of router
-            bool validMessage = e.validate(spy::network::RoleEnum::PLAYER, offered.characters, offered.gadgets);
+            auto role = clientRoles.find(clientId);
+            if (role == clientRoles.end()) {
+                spdlog::error("Player who send the choice is no longer listed in the clientRoles map!");
+                return false;
+            }
+
+            bool validMessage = e.validate(role->second, offered.characters, offered.gadgets);
             auto choice = e.getChoice();
 
             bool choiceInvalid = ((std::holds_alternative<spy::util::UUID>(choice)
@@ -89,7 +95,6 @@ namespace guards {
             if (validMessage && !choiceInvalid) {
                 return true;
             } else {
-                //TODO: kick player
                 spdlog::critical("Player {} has send an invalid choice and should be kicked", clientId);
                 return false;
             }
@@ -115,7 +120,6 @@ namespace guards {
             if (!alreadyChosen && messageValid) {
                 return true;
             } else {
-                //TODO: kick player
                 spdlog::critical("Player {} has send an invalid equipment choice and should be kicked", clientId);
                 return false;
             }
