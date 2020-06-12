@@ -16,6 +16,7 @@
 #include <spdlog/spdlog.h>
 #include "Player.hpp"
 #include "Format.hpp"
+#include "network/MessageTypeTraits.hpp"
 
 class Util {
         using MetaInformationKey = spy::network::messages::MetaInformationKey;
@@ -140,6 +141,21 @@ class Util {
         static bool isDisconnectedPlayer(const spy::util::UUID &clientId,
                                          const std::map<Player, spy::util::UUID> &playerIds,
                                          const MessageRouter &router);
+
+
+        template<typename MessageType>
+        static bool isAllowedMessage(spy::network::RoleEnum clientRole, MessageType msg) {
+            switch (clientRole) {
+                case spy::network::RoleEnum::PLAYER:
+                    return receivableFromPlayer<decltype(msg)>::value;
+                case spy::network::RoleEnum::SPECTATOR:
+                    return receivableFromSpectator<decltype(msg)>::value;
+                case spy::network::RoleEnum::AI:
+                    return receivableFromAI<decltype(msg)>::value;
+                default:
+                    return false;
+            }
+        }
 };
 
 

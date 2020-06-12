@@ -66,7 +66,7 @@ class Server : public afsm::def::state_machine<Server> {
         tr<GameFSM,        none,                              emptyLobby,     actions::closeGame,                                                                                   guards::gameOver>,
         tr<GameFSM,        events::triggerGameEnd,            emptyLobby,     actions::closeGame,                                                                                   guards::gameOver>,
         tr<GameFSM,        events::forceGameClose,            emptyLobby,     actions::closeGame>,
-        tr<GameFSM,        spy::network::messages::GameLeave, emptyLobby,     actions::multiple<actions::broadcastGameLeft, actions::closeConnectionToClient, actions::closeGame>,   not_<guards::isSpectator>>
+        tr<GameFSM,        spy::network::messages::GameLeave, emptyLobby,     actions::multiple<actions::broadcastGameLeft, actions::closeConnectionToClient, actions::closeGame>,  not_<guards::isSpectator>>
         >;
 
         using internal_transitions = transition_table <
