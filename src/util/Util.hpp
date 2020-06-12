@@ -143,6 +143,13 @@ class Util {
                                          const MessageRouter &router);
 
 
+        /**
+         * Checks if a client with the given role is allowed to send the given message type.
+         * @tparam MessageType Type of the message.
+         * @param clientRole   Current role of the client.
+         * @param msg          Message.
+         * @return True if the client is allowed to send the message, else false.
+         */
         template<typename MessageType>
         static bool isAllowedMessage(spy::network::RoleEnum clientRole, MessageType msg) {
             switch (clientRole) {
