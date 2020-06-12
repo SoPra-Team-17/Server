@@ -204,6 +204,7 @@ namespace actions {
                     false
             };
 
+            spdlog::info("Sending Statistics: {}", fmt::json(stats, 4));
             router.broadcastMessage(statisticsMessage);
 
             spdlog::debug("Clearing all connections from router");
@@ -460,7 +461,7 @@ namespace actions {
             spy::network::ErrorTypeEnum error = templateError;
             if constexpr (std::is_same<Event, events::kickClient>::value) {
                 clientId = e.clientId;
-                if(e.error.has_value()){
+                if (e.error.has_value()) {
                     error = e.error.value();
                 }
             } else {

@@ -10,9 +10,9 @@
 
 namespace fmt {
     template<typename T>
-    std::string json(T t){
+    std::string json(T t, int indent = -1) {
         nlohmann::json j = t;
-        return j.dump();
+        return j.dump(indent);
     }
 }
 
