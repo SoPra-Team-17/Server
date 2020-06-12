@@ -55,6 +55,10 @@ namespace actions {
             }
 
             if (player.has_value()) {
+                spdlog::info("Resetting strike count for player {} who had {} strikes.",
+                             player.value(),
+                             root_machine(fsm).strikeCounts[player.value()]);
+                root_machine(fsm).strikeCounts[player.value()] = 0;
                 state.setKnownSafeCombinations(knownCombinations.at(player.value()));
             }
 
