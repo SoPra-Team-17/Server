@@ -64,8 +64,9 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
 
             // @formatter:off
             using internal_transitions = transition_table <
-            //  Event                                   Action                                                                  Guard
-            in<spy::network::messages::EquipmentChoice, actions::handleEquipmentChoice, and_<not_<guards::lastEquipmentChoice>, guards::equipmentChoiceValid>>
+            //  Event                                   Action                                                                                                                                                                               Guard
+            in<spy::network::messages::EquipmentChoice, actions::handleEquipmentChoice,                                                                                                                                                      and_<not_<guards::lastEquipmentChoice>, guards::equipmentChoiceValid>>,
+            in<spy::network::messages::EquipmentChoice, actions::multiple<actions::replyWithError<spy::network::ErrorTypeEnum::ILLEGAL_MESSAGE>, actions::closeConnectionToClient, actions::broadcastGameLeft, actions::emitForceGameClose>, not_<guards::equipmentChoiceValid>>
             >;
             // @formatter:on
         };

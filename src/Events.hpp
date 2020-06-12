@@ -40,5 +40,9 @@ namespace events {
 
     struct triggerGameEnd {
     };
+
+    struct kickAI {
+        spy::util::UUID clientId;
+    };
 }
 #endif //SERVER017_EVENTS_HPP
