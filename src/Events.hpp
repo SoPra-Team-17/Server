@@ -9,6 +9,7 @@
 
 #include <util/Player.hpp>
 #include <datatypes/statistics/VictoryEnum.hpp>
+#include <network/ErrorTypeEnum.hpp>
 
 namespace events {
     struct triggerNPCmove {
@@ -41,8 +42,9 @@ namespace events {
     struct triggerGameEnd {
     };
 
-    struct kickAI {
+    struct kickClient {
         spy::util::UUID clientId;
+        std::optional<spy::network::ErrorTypeEnum> error = std::nullopt;
     };
 
     struct skipOperation {

@@ -271,18 +271,25 @@ namespace actions {
                         &fsm = root_machine(fsm),
                         player = *root_machine(fsm).playerIds.find(activePlayer.value()),
                         characterId = fsm.activeCharacter,
-                        strikeMax = matchConfig.getStrikeMaximum()]() {
+                        strikeMax = static_cast<int>(matchConfig.getStrikeMaximum())]() {
                     spdlog::warn("Turn phase time limit reached for player {}.", player.first);
                     fsm.strikeCounts[player.first]++;
                     spy::network::messages::Strike strikeMessage{
                             player.second,
                             fsm.strikeCounts[player.first],
-                            static_cast<int>(strikeMax),
+                            strikeMax,
                             "Turn phase time limit reached."};
                     spdlog::info("Sending strike nr. {} to player {}.", fsm.strikeCounts[player.first], player.first);
                     fsm.router.sendMessage(std::move(strikeMessage));
-                    spy::gameplay::State &state = fsm.gameState;
 
+                    if (fsm.strikeCounts[player.first] == strikeMax) {
+                        spdlog::warn("Player {} has reached strike limit. Kicking player.", player.first);
+                        fsm.process_event(events::kickClient{player.second,
+                                                             spy::network::ErrorTypeEnum::TOO_MANY_STRIKES});
+                        return;
+                    }
+
+                    spy::gameplay::State &state = fsm.gameState;
                     auto character = state.getCharacters().getByUUID(characterId);
                     if (character == state.getCharacters().end()) {
                         spdlog::error("Character {} not found in characterset. Sending retire instead.", characterId);
