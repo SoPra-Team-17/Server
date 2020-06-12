@@ -119,7 +119,7 @@ class Server : public afsm::def::state_machine<Server> {
         /**
          * Number of strikes for every client.
          */
-        std::map<spy::util::UUID, int> strikeCounts;
+        std::map<Player, int> strikeCounts;
 
         /**
          * Names for both players

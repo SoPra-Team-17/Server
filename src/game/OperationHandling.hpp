@@ -265,22 +265,22 @@ namespace actions {
                 spdlog::info("Starting turn phase timer for {} seconds", turnPhaseLimitSeconds);
                 target.turnPhaseTimer.restart(std::chrono::seconds{turnPhaseLimitSeconds}, [
                         &fsm = root_machine(fsm),
-                        player = root_machine(fsm).playerIds.find(activePlayer.value())->second,
+                        player = *root_machine(fsm).playerIds.find(activePlayer.value()),
                         character = fsm.activeCharacter,
                         strikeMax = matchConfig.getStrikeMaximum()]() {
-                    spdlog::warn("Turn phase time limit reached.");
-                    // TODO: change strikeCounts key to Player to prevent insertion of UUIDs that are not players
-                    fsm.strikeCounts[player]++;
+                    spdlog::warn("Turn phase time limit reached for player {}.", player.first);
+                    fsm.strikeCounts[player.first]++;
                     spy::network::messages::Strike strikeMessage{
-                            player,
-                            fsm.strikeCounts[player],
+                            player.second,
+                            fsm.strikeCounts[player.first],
                             static_cast<int>(strikeMax),
                             "Turn phase time limit reached."};
-                    spdlog::info("Sending strike.");
+                    spdlog::info("Sending strike to player {}.", player.first);
                     fsm.router.sendMessage(std::move(strikeMessage));
+                    // TODO skip turn without retire
                     spdlog::info("Executing retire.");
                     auto retireAction = std::make_shared<spy::gameplay::RetireAction>(character);
-                    spy::network::messages::GameOperation retireOp{player, retireAction};
+                    spy::network::messages::GameOperation retireOp{player.second, retireAction};
                     fsm.process_event(std::move(retireOp));
                 });
             }
