@@ -92,10 +92,6 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         fsm.process_event(msg);
     });
 
-    router.addGameLeaveListener([&fsm, this](spy::network::messages::GameLeave msg) {
-        fsm.process_event(msg);
-    });
-
     auto forwardMessage = [&fsm, this](auto msg) {
         auto clientRole = clientRoles.at(msg.getClientId());
 
@@ -124,6 +120,7 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
     router.addPauseRequestListener(forwardMessage);
     router.addMetaInformationRequestListener(forwardMessage);
     router.addReplayRequestListener(discardNotImplemented);
+    router.addGameLeaveListener(forwardMessage);
 
     router.addReconnectListener(
             [this, forwardMessage](const spy::network::messages::Reconnect &msg,
