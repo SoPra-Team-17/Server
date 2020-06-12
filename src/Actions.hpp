@@ -474,6 +474,8 @@ namespace actions {
     struct emitForceGameClose {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(const Event &e, FSM &fsm, SourceState &, TargetState &) {
+            using spy::statistics::VictoryEnum;
+
             spy::util::UUID clientId;
             if constexpr (std::is_same<Event, events::kickAI>::value) {
                 clientId = e.clientId;
@@ -485,9 +487,14 @@ namespace actions {
             auto it = playerIds.find(Player::one);
             if (it != playerIds.end()) {
                 Player winner = (it->second == clientId) ? Player::two : Player::one;
-                root_machine(fsm).process_event(events::forceGameClose{winner,spy::statistics::VictoryEnum::VICTORY_BY_KICK});
+                root_machine(fsm).process_event(
+                        events::forceGameClose{winner, VictoryEnum::VICTORY_BY_KICK});
             } else {
-                throw std::invalid_argument("Player::one is missing in PlayerIds map!");
+                spy::network::messages::Error errMsg({}, spy::network::ErrorTypeEnum::GENERAL);
+                errMsg.setDebugMessage("ERROR 500: Internal server error.");
+                root_machine(fsm).router.broadcastMessage(errMsg);
+                root_machine(fsm).process_event(
+                        events::forceGameClose{Player::one, VictoryEnum::VICTORY_BY_RANDOMNESS});
             }
         }
     };
