@@ -307,7 +307,7 @@ namespace actions {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(const Event &e, FSM &fsm, SourceState &, TargetState &) {
             spy::util::UUID clientId;
-            if constexpr (std::is_same<Event, events::kickAI>::value
+            if constexpr (std::is_same<Event, events::kickClient>::value
                           || std::is_same<Event, events::playerDisconnect>::value) {
                 clientId = e.clientId;
             } else {
@@ -441,7 +441,7 @@ namespace actions {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(const Event &e, FSM &fsm, SourceState &, TargetState &) {
             spy::util::UUID clientId;
-            if constexpr (std::is_same<Event, events::kickAI>::value) {
+            if constexpr (std::is_same<Event, events::kickClient>::value) {
                 clientId = e.clientId;
             } else {
                 clientId = e.getClientId();
@@ -456,7 +456,7 @@ namespace actions {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(const Event &e, FSM &fsm, SourceState &, TargetState &) {
             spy::util::UUID clientId;
-            if constexpr (std::is_same<Event, events::kickAI>::value) {
+            if constexpr (std::is_same<Event, events::kickClient>::value) {
                 clientId = e.clientId;
             } else {
                 clientId = e.getClientId();
@@ -477,7 +477,7 @@ namespace actions {
             using spy::statistics::VictoryEnum;
 
             spy::util::UUID clientId;
-            if constexpr (std::is_same<Event, events::kickAI>::value) {
+            if constexpr (std::is_same<Event, events::kickClient>::value) {
                 clientId = e.clientId;
             } else {
                 clientId = e.getClientId();

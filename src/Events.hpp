@@ -41,7 +41,7 @@ namespace events {
     struct triggerGameEnd {
     };
 
-    struct kickAI {
+    struct kickClient {
         spy::util::UUID clientId;
     };
 }
