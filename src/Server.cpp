@@ -134,9 +134,10 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
                     spy::network::messages::Error errorMessage{msg.getClientId(),
                                                                spy::network::ErrorTypeEnum::SESSION_DOES_NOT_EXIST};
                     spdlog::warn("Sending SESSION_DOES_NOT_EXIST error message");
-                    router.registerUUIDforConnection(msg.getClientId(), con);
+                    spy::util::UUID tempUUID = spy::util::UUID::generate();
+                    router.registerUUIDforConnection(tempUUID, con);
                     router.sendMessage(errorMessage);
-                    router.closeConnection(msg.getClientId());
+                    router.closeConnection(tempUUID);
                     return;
                 }
 
