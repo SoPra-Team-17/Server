@@ -213,7 +213,7 @@ namespace guards {
      */
     struct isNameUnused {
         template<typename FSM, typename FSMState>
-        bool operator()(FSM const &fsm, FSMState const &, spy::network::messages::Hello const &e) {
+        bool operator()(const FSM &fsm, const FSMState &, const spy::network::messages::Hello &e) {
             const auto &playerNames = root_machine(fsm).playerNames;
 
             for (const auto& [_, name] : playerNames) {

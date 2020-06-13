@@ -202,11 +202,11 @@ struct TestClient {
         wsClient.reset();
     }
 
-    void reconnect(bool wrongId = false) {
+    void reconnect(bool wrongSessionId = false) {
         connect();
         nlohmann::json m;
 
-        if (wrongId) {
+        if (wrongSessionId) {
             spy::network::messages::Reconnect message{id, spy::util::UUID::generate()};
             m = message;
         } else {
