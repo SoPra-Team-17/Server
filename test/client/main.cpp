@@ -202,10 +202,18 @@ struct TestClient {
         wsClient.reset();
     }
 
-    void reconnect() {
+    void reconnect(bool wrongId = false) {
         connect();
-        spy::network::messages::Reconnect message{id, sessionId};
-        nlohmann::json m = message;
+        nlohmann::json m;
+
+        if (wrongId) {
+            spy::network::messages::Reconnect message{id, spy::util::UUID::generate()};
+            m = message;
+        } else {
+            spy::network::messages::Reconnect message{id, sessionId};
+            m = message;
+        }
+
         wsClient.value().send(m.dump());
     }
 };
@@ -257,9 +265,16 @@ int main() {
     p2.reconnect();
     std::this_thread::sleep_for(std::chrono::seconds{3});
 
+    // Disconnect and reconnect with false session Id (error message expected)
+    p1.disconnect();
+    std::this_thread::sleep_for(std::chrono::seconds{1});
+    p1.reconnect(true);
+
     // Disconnect without reconnect (timeout and game end expected)
     p1.disconnect();
     std::this_thread::sleep_for(std::chrono::seconds{21});
+
+
 
     std::cout << "done" << std::endl;
 }
