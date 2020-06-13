@@ -230,6 +230,8 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
              */
             struct waitingForOperation : state<waitingForOperation> {
 
+                Timer turnPhaseTimer;
+
                 template<typename FSM, typename Event>
                 void on_enter(Event &&, FSM &) {
                     spdlog::info("Entering state waitingForOperation");
@@ -239,6 +241,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                 using internal_transitions = transition_table <
                 // Event                                  Action                                                                                                                   Guard
                 in<spy::network::messages::GameOperation, actions::multiple<actions::handleOperation, actions::broadcastState, actions::requestNextOperation>,                     guards::operationValid>,
+                in<events::skipOperation,                 actions::multiple<actions::broadcastState, actions::requestNextOperation>>,
                 in<spy::network::messages::GameOperation, actions::multiple<actions::replyWithError<spy::network::ErrorTypeEnum::ILLEGAL_MESSAGE>, actions::requestNextOperation>, not_<guards::operationValid>>,
                 in<events::triggerNPCmove,                actions::multiple<actions::generateNPCMove>>,
                 in<events::triggerCatMove,                actions::multiple<actions::executeCatMove, actions::broadcastState, actions::requestNextOperation>>,

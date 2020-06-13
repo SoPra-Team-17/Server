@@ -76,7 +76,7 @@ class Server : public afsm::def::state_machine<Server> {
         in<spy::network::messages::GameLeave,              actions::multiple<actions::sendGameLeft, actions::closeConnectionToClient>,                                                                                                          guards::isSpectator>,
         in<spy::network::messages::Hello,                  actions::HelloReply,                                                                                                                                                                 guards::isSpectator>,
         in<spy::network::messages::Hello,                  actions::replyWithError<spy::network::ErrorTypeEnum::NAME_NOT_AVAILABLE>,                                                                                                            and_<not_<guards::isSpectator>, not_<guards::isNameUnused>>>,
-        in<events::kickClient,                             actions::multiple<actions::replyWithError<spy::network::ErrorTypeEnum::ILLEGAL_MESSAGE>, actions::closeConnectionToClient, actions::broadcastGameLeft, actions::emitForceGameClose>>
+        in<events::kickClient,                             actions::multiple<actions::replyWithError<>, actions::closeConnectionToClient, actions::broadcastGameLeft, actions::emitForceGameClose>>
         >;
         // @formatter:on
 
@@ -117,6 +117,11 @@ class Server : public afsm::def::state_machine<Server> {
          * Roles of the connected clients.
          */
         std::map<spy::util::UUID, spy::network::RoleEnum> clientRoles;
+
+        /**
+         * Number of strikes for every client.
+         */
+        std::map<Player, int> strikeCounts;
 
         /**
          * Names for both players

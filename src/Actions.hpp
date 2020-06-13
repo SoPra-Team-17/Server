@@ -171,7 +171,8 @@ namespace actions {
                     if (winningFaction != FactionEnum::INVALID) {
                         winner = (winningFaction == FactionEnum::PLAYER2) ? Player::two : Player::one;
                     } else {
-                        spdlog::error("Winning faction \"{}\" invalid (assuming player one)", fmt::json(winningFaction));
+                        spdlog::error("Winning faction \"{}\" invalid (assuming player one)",
+                                      fmt::json(winningFaction));
                         winner = Player::one;
                     }
                 }
@@ -191,9 +192,9 @@ namespace actions {
                                            std::to_string(gameStats.cocktails.second)});
 
             stats.addEntry(StatisticsEntry{"Poured cocktails",
-                                    "Number of cocktails the factions poured over other characters",
-                                    std::to_string(gameStats.cocktailsPoured.first),
-                                    std::to_string(gameStats.cocktailsPoured.second)});
+                                           "Number of cocktails the factions poured over other characters",
+                                           std::to_string(gameStats.cocktailsPoured.first),
+                                           std::to_string(gameStats.cocktailsPoured.second)});
 
             StatisticsMessage statisticsMessage{
                     {},
@@ -203,6 +204,7 @@ namespace actions {
                     false
             };
 
+            spdlog::info("Sending Statistics: {}", fmt::json(stats, 4));
             router.broadcastMessage(statisticsMessage);
 
             spdlog::debug("Clearing all connections from router");
@@ -451,13 +453,17 @@ namespace actions {
         }
     };
 
-    template<spy::network::ErrorTypeEnum error>
+    template<spy::network::ErrorTypeEnum templateError = spy::network::ErrorTypeEnum::GENERAL>
     struct replyWithError {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(const Event &e, FSM &fsm, SourceState &, TargetState &) {
             spy::util::UUID clientId;
+            spy::network::ErrorTypeEnum error = templateError;
             if constexpr (std::is_same<Event, events::kickClient>::value) {
                 clientId = e.clientId;
+                if (e.error.has_value()) {
+                    error = e.error.value();
+                }
             } else {
                 clientId = e.getClientId();
             }
