@@ -214,11 +214,7 @@ namespace guards {
     struct isNameUnused {
         template<typename FSM, typename FSMState>
         bool operator()(FSM const &fsm, FSMState const &, spy::network::messages::Hello const &e) {
-            spdlog::debug("");
-
             const auto &playerNames = root_machine(fsm).playerNames;
-
-
 
             for (const auto& [_, name] : playerNames) {
                 if (name == e.getName()) {
