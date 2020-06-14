@@ -1,6 +1,7 @@
 
 #include <utility>
 #include <algorithm>
+#include <network/messages/Error.hpp>
 #include "MessageRouter.hpp"
 #include "spdlog/fmt/ostr.h"
 #include "util/UUIDNotFoundException.hpp"
@@ -73,74 +74,81 @@ void MessageRouter::receiveListener(const MessageRouter::connectionPtr &connecti
     nlohmann::json messageJson;
     try {
         messageJson = nlohmann::json::parse(message);
+        auto messageContainer = messageJson.get<spy::network::MessageContainer>();
+
+        //check if client sends with his own UUID
+        if (messageContainer.getType() != spy::network::messages::MessageTypeEnum::HELLO
+            and messageContainer.getType() != spy::network::messages::MessageTypeEnum::RECONNECT) {
+            // All messages other than HELLO and RECONNECT require that the client is already registered.
+            // -> connectionId should have been found and be equal to clientId in message.
+
+            if (not connectionId.has_value()) {
+                spdlog::error("Received message from unregistered client that is not HELLO or RECONNECT."
+                              "Not handling message.");
+                return;
+            }
+
+            if (connectionId.value() != messageContainer.getClientId()) {
+                spdlog::warn("Client {} sent a message with false uuid: {}. Correcting UUID and handling message.",
+                             connectionId.value(),
+                             messageContainer.getClientId());
+                messageJson.at("clientId") = connectionId.value(); // correct the uuid
+            }
+        }
+
+        switch (messageContainer.getType()) {
+            case spy::network::messages::MessageTypeEnum::INVALID:
+                spdlog::error("Received message with invalid type: " + message);
+                return;
+            case spy::network::messages::MessageTypeEnum::HELLO:
+                spdlog::debug("MessageRouter received Hello message.");
+                helloListener(messageJson.get<spy::network::messages::Hello>(), connectionPtr);
+                return;
+            case spy::network::messages::MessageTypeEnum::RECONNECT:
+                spdlog::debug("MessageRouter received Reconnect message.");
+                reconnectListener(messageJson.get<spy::network::messages::Reconnect>(), connectionPtr);
+                return;
+            case spy::network::messages::MessageTypeEnum::ITEM_CHOICE:
+                spdlog::debug("MessageRouter received ItemChoice message.");
+                itemChoiceListener(messageJson.get<spy::network::messages::ItemChoice>());
+                return;
+            case spy::network::messages::MessageTypeEnum::EQUIPMENT_CHOICE:
+                spdlog::debug("MessageRouter received EquipmentChoice message.");
+                equipmentChoiceListener(messageJson.get<spy::network::messages::EquipmentChoice>());
+                return;
+            case spy::network::messages::MessageTypeEnum::GAME_OPERATION:
+                spdlog::debug("MessageRouter received GameOperation message.");
+                gameOperationListener(messageJson.get<spy::network::messages::GameOperation>());
+                return;
+            case spy::network::messages::MessageTypeEnum::GAME_LEAVE:
+                spdlog::info("MessageRouter received GameLeave message.");
+                gameLeaveListener(messageJson.get<spy::network::messages::GameLeave>());
+                return;
+            case spy::network::messages::MessageTypeEnum::REQUEST_GAME_PAUSE:
+                spdlog::debug("MessageRouter received RequestGamePause message.");
+                pauseRequestListener(messageJson.get<spy::network::messages::RequestGamePause>());
+                return;
+            case spy::network::messages::MessageTypeEnum::REQUEST_META_INFORMATION:
+                spdlog::debug("MessageRouter received RequestMetaInformation message.");
+                metaInformationRequestListener(messageJson.get<spy::network::messages::RequestMetaInformation>());
+                return;
+            case spy::network::messages::MessageTypeEnum::REQUEST_REPLAY:
+                spdlog::debug("MessageRouter received RequestReplay message.");
+                replayRequestListener(messageJson.get<spy::network::messages::RequestReplay>());
+                return;
+            default:
+                spdlog::error("Handling this message type has not been implemented.");
+        }
     } catch (nlohmann::json::exception &e) {
+        // message doesn't fit to the standard definition --> illegal message error + kick
         spdlog::error("Error parsing JSON from message: {}", e.what());
+        spdlog::error("Sending ILLEGAL_MESSAGE and kicking client");
+        spy::network::messages::Error errorMessage{connectionId.value(),
+                                                   spy::network::ErrorTypeEnum::ILLEGAL_MESSAGE};
+        errorMessage.setDebugMessage("Message doesn't fit to the standardized ones");
+        sendMessage(errorMessage);
+        closeConnection(connectionId.value());
         return;
-    }
-    auto messageContainer = messageJson.get<spy::network::MessageContainer>();
-
-    //check if client sends with his own UUID
-    if (messageContainer.getType() != spy::network::messages::MessageTypeEnum::HELLO
-        and messageContainer.getType() != spy::network::messages::MessageTypeEnum::RECONNECT) {
-        // All messages other than HELLO and RECONNECT require that the client is already registered.
-        // -> connectionId should have been found and be equal to clientId in message.
-
-        if (not connectionId.has_value()) {
-            spdlog::error("Received message from unregistered client that is not HELLO or RECONNECT."
-                          "Not handling message.");
-            return;
-        }
-
-        if (connectionId.value() != messageContainer.getClientId()) {
-            spdlog::warn("Client {} sent a message with false uuid: {}. Correcting UUID and handling message.",
-                         connectionId.value(),
-                         messageContainer.getClientId());
-            messageJson.at("clientId") = connectionId.value(); // correct the uuid
-        }
-    }
-
-    switch (messageContainer.getType()) {
-        case spy::network::messages::MessageTypeEnum::INVALID:
-            spdlog::error("Received message with invalid type: " + message);
-            return;
-        case spy::network::messages::MessageTypeEnum::HELLO:
-            spdlog::debug("MessageRouter received Hello message.");
-            helloListener(messageJson.get<spy::network::messages::Hello>(), connectionPtr);
-            return;
-        case spy::network::messages::MessageTypeEnum::RECONNECT:
-            spdlog::debug("MessageRouter received Reconnect message.");
-            reconnectListener(messageJson.get<spy::network::messages::Reconnect>(), connectionPtr);
-            return;
-        case spy::network::messages::MessageTypeEnum::ITEM_CHOICE:
-            spdlog::debug("MessageRouter received ItemChoice message.");
-            itemChoiceListener(messageJson.get<spy::network::messages::ItemChoice>());
-            return;
-        case spy::network::messages::MessageTypeEnum::EQUIPMENT_CHOICE:
-            spdlog::debug("MessageRouter received EquipmentChoice message.");
-            equipmentChoiceListener(messageJson.get<spy::network::messages::EquipmentChoice>());
-            return;
-        case spy::network::messages::MessageTypeEnum::GAME_OPERATION:
-            spdlog::debug("MessageRouter received GameOperation message.");
-            gameOperationListener(messageJson.get<spy::network::messages::GameOperation>());
-            return;
-        case spy::network::messages::MessageTypeEnum::GAME_LEAVE:
-            spdlog::info("MessageRouter received GameLeave message.");
-            gameLeaveListener(messageJson.get<spy::network::messages::GameLeave>());
-            return;
-        case spy::network::messages::MessageTypeEnum::REQUEST_GAME_PAUSE:
-            spdlog::debug("MessageRouter received RequestGamePause message.");
-            pauseRequestListener(messageJson.get<spy::network::messages::RequestGamePause>());
-            return;
-        case spy::network::messages::MessageTypeEnum::REQUEST_META_INFORMATION:
-            spdlog::debug("MessageRouter received RequestMetaInformation message.");
-            metaInformationRequestListener(messageJson.get<spy::network::messages::RequestMetaInformation>());
-            return;
-        case spy::network::messages::MessageTypeEnum::REQUEST_REPLAY:
-            spdlog::debug("MessageRouter received RequestReplay message.");
-            replayRequestListener(messageJson.get<spy::network::messages::RequestReplay>());
-            return;
-        default:
-            spdlog::error("Handling this message type has not been implemented.");
     }
 }
 
