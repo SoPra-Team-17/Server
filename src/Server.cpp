@@ -98,15 +98,15 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         if (Util::isAllowedMessage(clientRole, msg)) {
             fsm.process_event(msg);
         } else {
-            // message dropped
-            if (clientRole == spy::network::RoleEnum::AI) {
-                spdlog::critical("Client {} with role AI was kicked due to role filtering for {} message",
-                                 msg.getClientId(), fmt::json(msg.getType()));
-                fsm.process_event(events::kickClient{msg.getClientId(), spy::network::ErrorTypeEnum::ILLEGAL_MESSAGE});
-            } else {
-                spdlog::warn("Client {} sent an {} message that was dropped due to role filtering",
-                             msg.getClientId(), fmt::json(msg.getType()));
-            }
+            // message dropped --> send illegal message error
+            spdlog::warn("Client {} sent an {} message that was dropped due to role filtering",
+                         msg.getClientId(), fmt::json(msg.getType()));
+            spdlog::warn("Sending ILLEGAL_MESSAGE error and kicking client");
+
+            spy::network::messages::Error errorMessage{msg.getClientId(),
+                                                       spy::network::ErrorTypeEnum::ILLEGAL_MESSAGE};
+            router.sendMessage(errorMessage);
+            fsm.process_event(events::kickClient{msg.getClientId()});
         }
     };
 
@@ -131,6 +131,13 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
                             msg.getClientId(),
                             msg.getSessionId(),
                             sessionId);
+                    spy::network::messages::Error errorMessage{msg.getClientId(),
+                                                               spy::network::ErrorTypeEnum::SESSION_DOES_NOT_EXIST};
+                    spdlog::warn("Sending SESSION_DOES_NOT_EXIST error message");
+                    spy::util::UUID tempUUID = spy::util::UUID::generate();
+                    router.registerUUIDforConnection(tempUUID, con);
+                    router.sendMessage(errorMessage);
+                    router.closeConnection(tempUUID);
                     return;
                 }
 

@@ -206,6 +206,27 @@ namespace guards {
             return state.pauseTimeRemaining > std::chrono::seconds{0};
         }
     };
+
+    /**
+     * @brief Guard passes if the chosen role of the client is spectator.
+     * @note This guard is only intended to be applied to Hello Messages
+     */
+    struct isNameUnused {
+        template<typename FSM, typename FSMState>
+        bool operator()(const FSM &fsm, const FSMState &, const spy::network::messages::Hello &e) {
+            const auto &playerNames = root_machine(fsm).playerNames;
+
+            for (const auto& [_, name] : playerNames) {
+                if (name == e.getName()) {
+                    spdlog::debug("Name \"{}\" is already used", e.getName());
+                    return false;
+                }
+            }
+
+            spdlog::debug("Name \"{}\" is currently unused", e.getName());
+            return true;
+        }
+    };
 }
 
 
