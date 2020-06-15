@@ -39,6 +39,7 @@ class Server : public afsm::def::state_machine<Server> {
 
                 root_machine(fsm).isIngame = false;
                 root_machine(fsm).playerIds = {};
+                root_machine(fsm).playerNames = {};
                 root_machine(fsm).clientRoles = {};
                 root_machine(fsm).knownCombinations = {};
                 root_machine(fsm).sessionId = {};
