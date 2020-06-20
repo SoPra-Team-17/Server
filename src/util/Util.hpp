@@ -166,12 +166,13 @@ class Util {
 
         static Player opponentOf(Player p) {
             switch (p) {
+                default:
+                    [[fallthrough]];
                 case Player::one:
                     return Player::two;
                 case Player::two:
                     return Player::one;
             }
-            return Player::one;
         }
 };
 
