@@ -38,6 +38,18 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
             GadgetMap chosenGadgets;                    ///< Stores the gadget choice of the players
             std::map<spy::util::UUID, bool> hasChosen;  ///< Stores whether the client has already sent his equip choice
 
+            Timer playerOneReconnectTimer;
+            Timer playerTwoReconnectTimer;
+
+            template<typename FSM>
+            static void limitReached(FSM &fsm, Player p) {
+                spdlog::warn("Player {} reconnect limit in equip phase reached, closing game", p);
+                root_machine(fsm).process_event(
+                        events::forceGameClose{
+                                Util::opponentOf(p),
+                                spy::statistics::VictoryEnum::VICTORY_BY_LEAVE});
+            }
+
             template<typename FSM, typename Event>
             void on_enter(Event &&, FSM &fsm) {
                 spdlog::info("Entering equip phase");
@@ -45,28 +57,26 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
                 const std::map<Player, spy::util::UUID> &playerIds = root_machine(fsm).playerIds;
                 MessageRouter &router = root_machine(fsm).router;
 
-                auto idP1 = playerIds.at(Player::one);
-                auto idP2 = playerIds.at(Player::two);
+                for (const auto &player: {Player::one, Player::two}) {
+                    hasChosen[root_machine(fsm).playerIds.at(player)] = false;
+                    auto playerId = playerIds.at(player);
+                    spy::network::messages::RequestEquipmentChoice requestMessage{
+                            playerId,
+                            chosenCharacters.at(playerId),
+                            chosenGadgets.at(playerId)};
 
-                hasChosen[idP1] = false;
-                hasChosen[idP2] = false;
-
-                spy::network::messages::RequestEquipmentChoice messageP1(idP1, chosenCharacters.at(idP1),
-                                                                         chosenGadgets.at(idP1));
-                spy::network::messages::RequestEquipmentChoice messageP2(idP2, chosenCharacters.at(idP2),
-                                                                         chosenGadgets.at(idP2));
-
-                router.sendMessage(messageP1);
-                spdlog::info("Sending request for equipment choice to player1 ({})", idP1);
-                router.sendMessage(messageP2);
-                spdlog::info("Sending request for equipment choice to player2 ({})", idP2);
+                    router.sendMessage(requestMessage);
+                    spdlog::info("Sending request for equipment choice to player {} ({})", player, playerId);
+                }
             }
 
             // @formatter:off
             using internal_transitions = transition_table <
             //  Event                                   Action                                                                                                                                                                               Guard
             in<spy::network::messages::EquipmentChoice, actions::handleEquipmentChoice,                                                                                                                                                      and_<not_<guards::lastEquipmentChoice>, guards::equipmentChoiceValid>>,
-            in<spy::network::messages::EquipmentChoice, actions::multiple<actions::replyWithError<spy::network::ErrorTypeEnum::ILLEGAL_MESSAGE>, actions::closeConnectionToClient, actions::broadcastGameLeft, actions::emitForceGameClose>, not_<guards::equipmentChoiceValid>>
+            in<spy::network::messages::EquipmentChoice, actions::multiple<actions::replyWithError<spy::network::ErrorTypeEnum::ILLEGAL_MESSAGE>, actions::closeConnectionToClient, actions::broadcastGameLeft, actions::emitForceGameClose>, not_<guards::equipmentChoiceValid>>,
+            in<spy::network::messages::Reconnect,       actions::multiple<actions::stopReconnectTimer, actions::repeatEquipmentRequest>>,
+            in<events::playerDisconnect,                actions::startChoicePhaseTimer>
             >;
             // @formatter:on
         };

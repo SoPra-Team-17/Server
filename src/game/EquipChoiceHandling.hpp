@@ -49,7 +49,7 @@ namespace actions {
                 // remove the character id from the copy of the list of chosen characters to determine which ones
                 // have no gadgets equipped
                 chosenCharacters.erase(std::remove(chosenCharacters.begin(), chosenCharacters.end(),
-                                                                            characterId), chosenCharacters.end());
+                                                   characterId), chosenCharacters.end());
             }
 
             // Print message to log for characters not explicitly mentioned in equipment choice
@@ -59,6 +59,32 @@ namespace actions {
             }
 
             s.hasChosen.at(clientId) = true;
+        }
+    };
+
+    struct repeatEquipmentRequest {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(const Event &event, FSM &fsm, SourceState &, TargetState &targetState) {
+            spy::util::UUID playerId;
+            playerId = event.getClientId();
+
+            Player player;
+            auto playerOneId = root_machine(fsm).playerIds.find(Player::one);
+            if (playerOneId != root_machine(fsm).playerIds.end()
+                and playerOneId->second == playerId) {
+                player = Player::one;
+            } else {
+                player = Player::two;
+            }
+
+            spdlog::info("Repeating equipment choice request for player {}", player);
+            MessageRouter &router = root_machine(fsm).router;
+            spy::network::messages::RequestEquipmentChoice requestMessage{
+                    playerId,
+                    targetState.chosenCharacters.at(playerId),
+                    targetState.chosenGadgets.at(playerId)};
+
+            router.sendMessage(requestMessage);
         }
     };
 }
