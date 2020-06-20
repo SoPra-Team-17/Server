@@ -100,18 +100,6 @@ struct ChoicePhase : afsm::def::state_def<ChoicePhase> {
         spdlog::info("Sending choice offer to player1 ({})", idP1);
         router.sendMessage(messageP2);
         spdlog::info("Sending choice offer to player2 ({})", idP2);
-
-        std::optional<unsigned int> reconnectLimit = root_machine(fsm).matchConfig.getReconnectLimit();
-        if (reconnectLimit.has_value()) {
-            playerOneReconnectTimer.restart(std::chrono::seconds{reconnectLimit.value()},
-                                            [&fsm]() {
-                                                limitReached(fsm, Player::one);
-                                            });
-            playerTwoReconnectTimer.restart(std::chrono::seconds{reconnectLimit.value()},
-                                            [&fsm]() {
-                                                limitReached(fsm, Player::two);
-                                            });
-        }
     }
 
     // @formatter:off
