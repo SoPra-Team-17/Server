@@ -11,6 +11,10 @@
 #include <datatypes/gadgets/WiretapWithEarplugs.hpp>
 
 namespace actions {
+    constexpr int maxNumberOfCharacters = 4;
+    constexpr int maxNumberOfGadgets = 6;
+    constexpr int requiredNumberOfChoices = 8;
+
     /**
      * @brief Action to apply if a choice is received.
      */
@@ -57,16 +61,16 @@ namespace actions {
 
             for (auto &[playerId, offer]: s.offers) {
                 bool hasNoOffer = (offer.characters.empty() && offer.gadgets.empty());
-                bool choicesMissing =
-                        ((s.characterChoices.at(playerId).size() + s.gadgetChoices.at(playerId).size()) < 8);
+                bool choicesMissing = ((s.characterChoices.at(playerId).size() + s.gadgetChoices.at(playerId).size())
+                                       < requiredNumberOfChoices);
 
                 if (hasNoOffer && choicesMissing) {
                     // client still needs selections and selection is currently possible
-                    if (s.characterChoices.at(playerId).size() >= 4 &&
+                    if (s.characterChoices.at(playerId).size() >= maxNumberOfCharacters &&
                         root_machine(fsm).choiceSet.isGadgetOfferPossible()) {
                         // client has chosen maximum number of characters, thus offer only gadgets
                         offer = root_machine(fsm).choiceSet.requestGadgetSelection();
-                    } else if (s.gadgetChoices.at(playerId).size() >= 6 &&
+                    } else if (s.gadgetChoices.at(playerId).size() >= maxNumberOfGadgets &&
                                root_machine(fsm).choiceSet.isCharacterOfferPossible()) {
                         // client has chosen maximum number of gadgets, thus offer only characters
                         offer = root_machine(fsm).choiceSet.requestCharacterSelection();
