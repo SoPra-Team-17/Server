@@ -16,6 +16,7 @@
 #include <spdlog/spdlog.h>
 #include "Player.hpp"
 #include "Format.hpp"
+#include "network/MessageRouter.hpp"
 #include "network/MessageTypeTraits.hpp"
 
 class Util {
