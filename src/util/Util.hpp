@@ -171,6 +171,7 @@ class Util {
                 case Player::two:
                     return Player::one;
             }
+            return Player::one;
         }
 };
 
