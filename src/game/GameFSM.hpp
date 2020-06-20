@@ -239,14 +239,14 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
 
                 // @formatter:off
                 using internal_transitions = transition_table <
-                // Event                                  Action                                                                                                                   Guard
-                in<spy::network::messages::GameOperation, actions::multiple<actions::handleOperation, actions::broadcastState, actions::requestNextOperation>,                     guards::operationValid>,
+                // Event                                  Action                                                                                                                                                                               Guard
+                in<spy::network::messages::GameOperation, actions::multiple<actions::handleOperation, actions::broadcastState, actions::requestNextOperation>,                                                                                 guards::operationValid>,
                 in<events::skipOperation,                 actions::multiple<actions::broadcastState, actions::requestNextOperation>>,
-                in<spy::network::messages::GameOperation, actions::multiple<actions::replyWithError<spy::network::ErrorTypeEnum::ILLEGAL_MESSAGE>, actions::requestNextOperation>, not_<guards::operationValid>>,
+                in<spy::network::messages::GameOperation, actions::multiple<actions::replyWithError<spy::network::ErrorTypeEnum::ILLEGAL_MESSAGE>, actions::closeConnectionToClient, actions::broadcastGameLeft, actions::emitForceGameClose>, not_<guards::operationValid>>,
                 in<events::triggerNPCmove,                actions::multiple<actions::generateNPCMove>>,
                 in<events::triggerCatMove,                actions::multiple<actions::executeCatMove, actions::broadcastState, actions::requestNextOperation>>,
                 in<events::triggerJanitorMove,            actions::multiple<actions::executeJanitorMove, actions::broadcastState, actions::requestNextOperation>>,
-                in<spy::network::messages::Hello, actions::multiple<actions::HelloReply, actions::broadcastState>,                                                                 guards::isSpectator>>;
+                in<spy::network::messages::Hello,         actions::multiple<actions::HelloReply, actions::broadcastState>,                                                                                                                     guards::isSpectator>>;
                 // @formatter:on
             };
 
@@ -275,12 +275,12 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
 
                 // @formatter:off
                 using internal_transitions = transition_table <
-                // Event                              Action                                                           Guard
-                in<spy::network::messages::Hello,     actions::multiple<actions::HelloReply, actions::broadcastState>, guards::isSpectator>,
+                // Event                              Action                                                                        Guard
+                in<spy::network::messages::Hello,     actions::multiple<actions::HelloReply, actions::broadcastState>,              guards::isSpectator>,
                 // Another player disconnects, stay in pause
                 in<events::playerDisconnect,          actions::startReconnectTimer>,
                 // A player reconnects, but one is still disconnected
-                in<spy::network::messages::Reconnect, actions::stopReconnectTimer,                                       guards::bothDisconnected>,
+                in<spy::network::messages::Reconnect, actions::stopReconnectTimer,                                                  guards::bothDisconnected>,
                 // A player reconnects, and before the disconnect(s) there was a normal pause which we have to continue
                 in<spy::network::messages::Reconnect, actions::multiple<actions::stopReconnectTimer, actions::revertToNormalPause>, and_<guards::pauseTimeRemaining, not_<guards::bothDisconnected>>>>;
                 // @formatter:on
@@ -320,6 +320,11 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
         // Start                  Event                                    Next        Action                                                                 Guard
         tr<decltype(choicePhase), spy::network::messages::ItemChoice,      equipPhase, actions::multiple<actions::handleChoice, actions::createCharacterSet>, and_<guards::lastChoice, guards::choiceValid>>,
         tr<equipPhase,            spy::network::messages::EquipmentChoice, gamePhase,  actions::handleEquipmentChoice,                                        and_<guards::lastEquipmentChoice, guards::equipmentChoiceValid>>
+        >;
+
+        using internal_transitions = transition_table <
+        // Event                          Action                                                                 Guard
+        in<spy::network::messages::Hello, actions::replyWithError<spy::network::ErrorTypeEnum::ALREADY_SERVING>, not_<guards::isSpectator>>
         >;
         // @formatter:on
 };

@@ -88,25 +88,27 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
         spdlog::info("Registering UUID {} at router", msg.getClientId());
         router.registerUUIDforConnection(msg.getClientId(), con);
         spdlog::info("Posting event to FSM now");
-        clientRoles[msg.getClientId()] = msg.getRole();
         fsm.process_event(msg);
     });
 
     auto forwardMessage = [&fsm, this](auto msg) {
-        auto clientRole = clientRoles.at(msg.getClientId());
+        auto clientRole = clientRoles.find(msg.getClientId());
+        if (clientRole == clientRoles.end()) {
+            return;
+        }
 
-        if (Util::isAllowedMessage(clientRole, msg)) {
+        if (Util::isAllowedMessage(clientRole->second, msg)) {
             fsm.process_event(msg);
         } else {
-            // message dropped
-            if (clientRole == spy::network::RoleEnum::AI) {
-                spdlog::critical("Client {} with role AI was kicked due to role filtering for {} message",
-                                 msg.getClientId(), fmt::json(msg.getType()));
-                fsm.process_event(events::kickClient{msg.getClientId(), spy::network::ErrorTypeEnum::ILLEGAL_MESSAGE});
-            } else {
-                spdlog::warn("Client {} sent an {} message that was dropped due to role filtering",
-                             msg.getClientId(), fmt::json(msg.getType()));
-            }
+            // message dropped --> send illegal message error
+            spdlog::warn("Client {} sent an {} message that was dropped due to role filtering",
+                         msg.getClientId(), fmt::json(msg.getType()));
+            spdlog::warn("Sending ILLEGAL_MESSAGE error and kicking client");
+
+            spy::network::messages::Error errorMessage{msg.getClientId(),
+                                                       spy::network::ErrorTypeEnum::ILLEGAL_MESSAGE};
+            router.sendMessage(errorMessage);
+            fsm.process_event(events::kickClient{msg.getClientId()});
         }
     };
 
@@ -131,6 +133,13 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
                             msg.getClientId(),
                             msg.getSessionId(),
                             sessionId);
+                    spy::network::messages::Error errorMessage{msg.getClientId(),
+                                                               spy::network::ErrorTypeEnum::SESSION_DOES_NOT_EXIST};
+                    spdlog::warn("Sending SESSION_DOES_NOT_EXIST error message");
+                    spy::util::UUID tempUUID = spy::util::UUID::generate();
+                    router.registerUUIDforConnection(tempUUID, con);
+                    router.sendMessage(errorMessage);
+                    router.closeConnection(tempUUID);
                     return;
                 }
 
@@ -148,12 +157,18 @@ Server::Server(uint16_t port, unsigned int verbosity, const std::string &charact
             });
 
     router.addDisconnectListener([&fsm, this](const spy::util::UUID &uuid) {
-        auto clientRole = clientRoles.at(uuid);
         using spy::network::RoleEnum;
-        if (clientRole == RoleEnum::PLAYER or clientRole == RoleEnum::AI) {
+
+        auto clientRole = clientRoles.find(uuid);
+        if (clientRole == clientRoles.end()) {
+            spdlog::info("Client {} with  unconfirmed role {} disconnected.", uuid, fmt::json(clientRole->second));
+            return;
+        }
+
+        if (clientRole->second == RoleEnum::PLAYER or clientRole->second == RoleEnum::AI) {
             fsm.process_event(events::playerDisconnect{uuid});
         } else {
-            spdlog::info("Client {} (Role: {}) disconnected.", uuid, fmt::json(clientRole));
+            spdlog::info("Client {} (Role: {}) disconnected.", uuid, fmt::json(clientRole->second));
         }
     });
 }

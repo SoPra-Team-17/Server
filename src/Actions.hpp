@@ -41,6 +41,10 @@ namespace actions {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
         void operator()(Event &&event, FSM &fsm, SourceState &, TargetState &) {
             spy::network::messages::Hello &helloMessage = event;
+
+            // save requested role of the client
+            root_machine(fsm).clientRoles[helloMessage.getClientId()] = helloMessage.getRole();
+
             // Client ID is already assigned here, gets assigned directly after server receives hello callback from network
             spy::network::messages::HelloReply helloReply{
                     helloMessage.getClientId(),
