@@ -97,11 +97,11 @@ namespace actions {
      */
     struct repeatChoiceOffer {
         template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(const Event &event, FSM &fsm, SourceState &, TargetState &) {
+        void operator()(const Event &event, FSM &fsm, SourceState &, const TargetState &target) {
             const spy::network::messages::Reconnect &reconnect = event;
 
-            auto offer = fsm.offers.find(reconnect.getClientId());
-            if (offer == fsm.offers.end()) {
+            auto offer = target.offers.find(reconnect.getClientId());
+            if (offer == target.offers.end()) {
                 spdlog::error("Reconnect of client {}, no offer found. Closing game.", reconnect.getClientId());
                 root_machine(fsm).process_event(
                         events::forceGameClose{
@@ -109,8 +109,8 @@ namespace actions {
                                 spy::statistics::VictoryEnum::VICTORY_BY_RANDOMNESS});
                 return;
             }
-            spy::network::messages::RequestItemChoice message(reconnect.getClientId(), offer->characters,
-                                                              offer->gadgets);
+            spy::network::messages::RequestItemChoice message(reconnect.getClientId(), offer->second.characters,
+                                                              offer->second.gadgets);
 
             spdlog::info("Repeating choice offer for player {} after reconnect.", reconnect.getClientId());
             root_machine(fsm).router.sendMessage(message);
