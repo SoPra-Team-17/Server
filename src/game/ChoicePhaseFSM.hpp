@@ -40,7 +40,7 @@ static const std::vector<spy::gadget::GadgetEnum> possibleGadgets = {
 struct ChoicePhase : afsm::def::state_def<ChoicePhase> {
     using OfferMap = std::map<spy::util::UUID, Offer>;
     using CharacterMap = std::map<spy::util::UUID, std::vector<spy::util::UUID>>;
-    using GadgetMap    = std::map<spy::util::UUID, std::vector<spy::gadget::GadgetEnum>>;
+    using GadgetMap = std::map<spy::util::UUID, std::vector<spy::gadget::GadgetEnum>>;
     using ChoiceCountMap = std::map<spy::util::UUID, unsigned int>;
 
     CharacterMap characterChoices;
@@ -48,6 +48,18 @@ struct ChoicePhase : afsm::def::state_def<ChoicePhase> {
     ChoiceCountMap choiceCount;
 
     OfferMap offers;
+
+    Timer playerOneReconnectTimer;
+    Timer playerTwoReconnectTimer;
+
+    template<typename FSM>
+    static void limitReached(FSM &fsm, Player p) {
+        spdlog::warn("Player {} reconnect limit in choice phase reached, closing game", p);
+        root_machine(fsm).process_event(
+                events::forceGameClose{
+                        Util::opponentOf(p),
+                        spy::statistics::VictoryEnum::VICTORY_BY_LEAVE});
+    }
 
     template<typename FSM, typename Event>
     void on_enter(Event &&, FSM &fsm) {
@@ -88,14 +100,27 @@ struct ChoicePhase : afsm::def::state_def<ChoicePhase> {
         spdlog::info("Sending choice offer to player1 ({})", idP1);
         router.sendMessage(messageP2);
         spdlog::info("Sending choice offer to player2 ({})", idP2);
+
+        std::optional<unsigned int> reconnectLimit = root_machine(fsm).matchConfig.getReconnectLimit();
+        if (reconnectLimit.has_value()) {
+            playerOneReconnectTimer.restart(std::chrono::seconds{reconnectLimit.value()},
+                                            [&fsm]() {
+                                                limitReached(fsm, Player::one);
+                                            });
+            playerTwoReconnectTimer.restart(std::chrono::seconds{reconnectLimit.value()},
+                                            [&fsm]() {
+                                                limitReached(fsm, Player::two);
+                                            });
+        }
     }
 
     // @formatter:off
     using internal_transitions = transition_table <
     //  Event                              Action                                                                                                                                                                               Guard
-    in<spy::network::messages::ItemChoice, actions::multiple<actions::handleChoice, actions::requestNextChoice>, and_<not_<guards::lastChoice>,                                                                                 guards::choiceValid>>,
+    in<spy::network::messages::ItemChoice, actions::multiple<actions::handleChoice, actions::requestNextChoice>,                                                                                                                and_<not_<guards::lastChoice>, guards::choiceValid>>,
     in<spy::network::messages::ItemChoice, actions::multiple<actions::replyWithError<spy::network::ErrorTypeEnum::ILLEGAL_MESSAGE>, actions::closeConnectionToClient, actions::broadcastGameLeft, actions::emitForceGameClose>, not_<guards::choiceValid>>,
-    in<spy::network::messages::Reconnect,  actions::repeatChoiceOffer>
+    in<spy::network::messages::Reconnect,  actions::multiple<actions::repeatChoiceOffer, actions::stopChoicePhaseTimer>>,
+    in<events::playerDisconnect,           actions::startChoicePhaseTimer>
     >;
     // @formatter:on
 };

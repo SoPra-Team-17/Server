@@ -85,7 +85,7 @@ class Util {
 
                     // Send all characters with faction PLAYER1
                     return MetaInformationPair(key, Util::getFactionCharacters(gameState.getCharacters(),
-                                                                        spy::character::FactionEnum::PLAYER1));
+                                                                               spy::character::FactionEnum::PLAYER1));
 
                 case MetaInformationKey::FACTION_PLAYER2:
                     // request only allowed during game phase by spectators and player 2
@@ -95,7 +95,7 @@ class Util {
 
                     // Send all characters with faction PLAYER2
                     return MetaInformationPair(key, Util::getFactionCharacters(gameState.getCharacters(),
-                                                                        spy::character::FactionEnum::PLAYER2));
+                                                                               spy::character::FactionEnum::PLAYER2));
 
                 case MetaInformationKey::FACTION_NEUTRAL:
                     // request only allowed during game phase by spectators
@@ -105,7 +105,7 @@ class Util {
 
                     // Send all NPCs
                     return MetaInformationPair(key, Util::getFactionCharacters(gameState.getCharacters(),
-                                                                        spy::character::FactionEnum::NEUTRAL));
+                                                                               spy::character::FactionEnum::NEUTRAL));
 
                 case MetaInformationKey::GADGETS_PLAYER1:
                     // request only allowed during game phase by spectators and player 1
@@ -114,7 +114,7 @@ class Util {
                     }
 
                     return MetaInformationPair(key, Util::getFactionGadgets(gameState.getCharacters(),
-                                                                     spy::character::FactionEnum::PLAYER1));
+                                                                            spy::character::FactionEnum::PLAYER1));
 
                 case MetaInformationKey::GADGETS_PLAYER2:
                     // request only allowed during game phase by spectators and player 2
@@ -161,6 +161,15 @@ class Util {
                     return receivableFromAI<decltype(msg)>::value;
                 default:
                     return false;
+            }
+        }
+
+        static Player opponentOf(Player p) {
+            switch (p) {
+                case Player::one:
+                    return Player::two;
+                case Player::two:
+                    return Player::one;
             }
         }
 };
