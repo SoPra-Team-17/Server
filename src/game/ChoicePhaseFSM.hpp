@@ -119,7 +119,7 @@ struct ChoicePhase : afsm::def::state_def<ChoicePhase> {
     //  Event                              Action                                                                                                                                                                               Guard
     in<spy::network::messages::ItemChoice, actions::multiple<actions::handleChoice, actions::requestNextChoice>,                                                                                                                and_<not_<guards::lastChoice>, guards::choiceValid>>,
     in<spy::network::messages::ItemChoice, actions::multiple<actions::replyWithError<spy::network::ErrorTypeEnum::ILLEGAL_MESSAGE>, actions::closeConnectionToClient, actions::broadcastGameLeft, actions::emitForceGameClose>, not_<guards::choiceValid>>,
-    in<spy::network::messages::Reconnect,  actions::multiple<actions::repeatChoiceOffer, actions::stopChoicePhaseTimer>>,
+    in<spy::network::messages::Reconnect,  actions::multiple<actions::repeatChoiceOffer, actions::stopReconnectTimer>>,
     in<events::playerDisconnect,           actions::startChoicePhaseTimer>
     >;
     // @formatter:on

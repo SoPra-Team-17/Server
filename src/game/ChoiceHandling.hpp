@@ -243,27 +243,6 @@ namespace actions {
             }
         }
     };
-
-    struct stopChoicePhaseTimer {
-        template<typename Event, typename FSM, typename SourceState, typename TargetState>
-        void operator()(const Event &event, FSM &fsm, SourceState &, TargetState &target) {
-            spy::util::UUID playerId;
-            if constexpr(std::is_same<Event, events::playerDisconnect>::value) {
-                playerId = event.clientId;
-            } else {
-                playerId = event.getClientId();
-            }
-            auto playerOneId = root_machine(fsm).playerIds.find(Player::one);
-            if (playerOneId != root_machine(fsm).playerIds.end()
-                and playerOneId->second == playerId) {
-                spdlog::info("Stopping reconnect timer for player one");
-                target.playerOneReconnectTimer.stop();
-            } else {
-                spdlog::info("Stopping reconnect timer for player two");
-                target.playerTwoReconnectTimer.stop();
-            }
-        }
-    };
 }
 
 #endif //SERVER017_CHOICE_HANDLING_HPP

@@ -400,6 +400,11 @@ namespace actions {
             auto playerOne = root_machine(fsm).playerIds.find(Player::one);
             if (playerOne == root_machine(fsm).playerIds.end()) {
                 spdlog::error("ID of player one not found. Can not determine which player reconnected.");
+                spdlog::critical("This makes no sense. Ending game.");
+                root_machine(fsm).process_event(
+                        events::forceGameClose{
+                                Player::two,
+                                spy::statistics::VictoryEnum::VICTORY_BY_DRINKING});
                 return;
             }
             spy::util::UUID playerOneId = playerOne->second;
