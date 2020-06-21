@@ -226,14 +226,16 @@ namespace actions {
                 auto playerOneId = root_machine(fsm).playerIds.find(Player::one);
                 if (playerOneId != root_machine(fsm).playerIds.end()
                     and playerOneId->second == playerId) {
-                    spdlog::info("Starting reconnect timer for player one");
+                    spdlog::info("Starting choice phase reconnect timer for player one for {} seconds",
+                                 reconnectLimit.value());
                     target.playerOneReconnectTimer.restart(
                             std::chrono::seconds{reconnectLimit.value()},
                             [&fsm]() {
                                 TargetState::limitReached(fsm, Player::one);
                             });
                 } else {
-                    spdlog::info("Starting reconnect timer for player two");
+                    spdlog::info("Starting choice phase reconnect timer for player two for {} seconds",
+                                 reconnectLimit.value());
                     target.playerTwoReconnectTimer.restart(
                             std::chrono::seconds{reconnectLimit.value()},
                             [&fsm]() {
