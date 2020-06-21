@@ -11,6 +11,10 @@
 #include <datatypes/gadgets/WiretapWithEarplugs.hpp>
 
 namespace actions {
+    constexpr int maxNumberOfCharacters = 4;
+    constexpr int maxNumberOfGadgets = 6;
+    constexpr int requiredNumberOfChoices = 8;
+
     /**
      * @brief Action to apply if a choice is received.
      */
@@ -33,12 +37,12 @@ namespace actions {
                 // client has chosen a character --> add it to chosen list and remove it from selection
                 s.characterChoices.at(clientId).push_back(std::get<spy::util::UUID>(choice));
                 offer.characters.erase(std::remove(offer.characters.begin(), offer.characters.end(),
-                                                  std::get<spy::util::UUID>(choice)), offer.characters.end());
+                                                   std::get<spy::util::UUID>(choice)), offer.characters.end());
             } else {
                 // client has chosen a gadget --> add it to chosen list and remove it from selection
                 s.gadgetChoices.at(clientId).push_back(std::get<spy::gadget::GadgetEnum>(choice));
                 offer.gadgets.erase(std::remove(offer.gadgets.begin(), offer.gadgets.end(),
-                                                   std::get<spy::gadget::GadgetEnum>(choice)), offer.gadgets.end());
+                                                std::get<spy::gadget::GadgetEnum>(choice)), offer.gadgets.end());
             }
             // add other possible selection items to the choice set and clear the selection for this client
             root_machine(fsm).choiceSet.addForSelection(offer.characters, offer.gadgets);
@@ -55,16 +59,19 @@ namespace actions {
         void operator()(Event &&, FSM &fsm, SourceState &s, TargetState &) {
             spdlog::debug("Check which client needs a choice request next");
 
-            for (auto& [playerId, offer] : s.offers) {
+            for (auto &[playerId, offer]: s.offers) {
                 bool hasNoOffer = (offer.characters.empty() && offer.gadgets.empty());
-                bool choicesMissing = ((s.characterChoices.at(playerId).size() + s.gadgetChoices.at(playerId).size()) < 8);
+                bool choicesMissing = ((s.characterChoices.at(playerId).size() + s.gadgetChoices.at(playerId).size())
+                                       < requiredNumberOfChoices);
 
                 if (hasNoOffer && choicesMissing) {
                     // client still needs selections and selection is currently possible
-                    if (s.characterChoices.at(playerId).size() >= 4 && root_machine(fsm).choiceSet.isGadgetOfferPossible()) {
+                    if (s.characterChoices.at(playerId).size() >= maxNumberOfCharacters &&
+                        root_machine(fsm).choiceSet.isGadgetOfferPossible()) {
                         // client has chosen maximum number of characters, thus offer only gadgets
                         offer = root_machine(fsm).choiceSet.requestGadgetSelection();
-                    } else if (s.gadgetChoices.at(playerId).size() >= 6 && root_machine(fsm).choiceSet.isCharacterOfferPossible()) {
+                    } else if (s.gadgetChoices.at(playerId).size() >= maxNumberOfGadgets &&
+                               root_machine(fsm).choiceSet.isCharacterOfferPossible()) {
                         // client has chosen maximum number of gadgets, thus offer only characters
                         offer = root_machine(fsm).choiceSet.requestCharacterSelection();
                     } else if (root_machine(fsm).choiceSet.isOfferPossible()) {
@@ -86,6 +93,31 @@ namespace actions {
                     }
                 }
             }
+        }
+    };
+
+    /**
+     * Sends the current offer to the reconnecting client
+     */
+    struct repeatChoiceOffer {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(const Event &event, FSM &fsm, SourceState &, const TargetState &target) {
+            const spy::network::messages::Reconnect &reconnect = event;
+
+            auto offer = target.offers.find(reconnect.getClientId());
+            if (offer == target.offers.end()) {
+                spdlog::error("Reconnect of client {}, no offer found. Closing game.", reconnect.getClientId());
+                root_machine(fsm).process_event(
+                        events::forceGameClose{
+                                Player::one,
+                                spy::statistics::VictoryEnum::VICTORY_BY_RANDOMNESS});
+                return;
+            }
+            spy::network::messages::RequestItemChoice message(reconnect.getClientId(), offer->second.characters,
+                                                              offer->second.gadgets);
+
+            spdlog::info("Repeating choice offer for player {} after reconnect.", reconnect.getClientId());
+            root_machine(fsm).router.sendMessage(message);
         }
     };
 
@@ -112,7 +144,7 @@ namespace actions {
             spy::character::FactionEnum faction;
 
             auto remainingCharacters = choiceSet.getRemainingCharacters();
-            auto remainingGadgets    = choiceSet.getRemainingGadgets();
+            auto remainingGadgets = choiceSet.getRemainingGadgets();
 
             std::list<spy::util::UUID> npcCharacters;
             // choose characters that will be NPCs
@@ -135,7 +167,8 @@ namespace actions {
                     faction = spy::character::FactionEnum::PLAYER1;
                 } else if (std::find(charsP2.begin(), charsP2.end(), c.getCharacterId()) != charsP2.end()) {
                     faction = spy::character::FactionEnum::PLAYER2;
-                } else if (std::find(npcCharacters.begin(), npcCharacters.end(), c.getCharacterId()) != npcCharacters.end()) {
+                } else if (std::find(npcCharacters.begin(), npcCharacters.end(), c.getCharacterId()) !=
+                           npcCharacters.end()) {
                     faction = spy::character::FactionEnum::NEUTRAL;
                 } else {
                     continue;
@@ -175,6 +208,41 @@ namespace actions {
             // give information about choices to the equip phase
             t.chosenCharacters = s.characterChoices;
             t.chosenGadgets = s.gadgetChoices;
+        }
+    };
+
+    struct startChoicePhaseTimer {
+        template<typename Event, typename FSM, typename SourceState, typename TargetState>
+        void operator()(const Event &event, FSM &fsm, SourceState &, TargetState &target) {
+            std::optional<unsigned int> reconnectLimit = root_machine(fsm).matchConfig.getReconnectLimit();
+            if (reconnectLimit.has_value()) {
+                spy::util::UUID playerId;
+                if constexpr(std::is_same<Event, events::playerDisconnect>::value) {
+                    playerId = event.clientId;
+                } else {
+                    playerId = event.getClientId();
+                }
+
+                auto playerOneId = root_machine(fsm).playerIds.find(Player::one);
+                if (playerOneId != root_machine(fsm).playerIds.end()
+                    and playerOneId->second == playerId) {
+                    spdlog::info("Starting choice phase reconnect timer for player one for {} seconds",
+                                 reconnectLimit.value());
+                    target.playerOneReconnectTimer.restart(
+                            std::chrono::seconds{reconnectLimit.value()},
+                            [&fsm]() {
+                                TargetState::limitReached(fsm, Player::one);
+                            });
+                } else {
+                    spdlog::info("Starting choice phase reconnect timer for player two for {} seconds",
+                                 reconnectLimit.value());
+                    target.playerTwoReconnectTimer.restart(
+                            std::chrono::seconds{reconnectLimit.value()},
+                            [&fsm]() {
+                                TargetState::limitReached(fsm, Player::two);
+                            });
+                }
+            }
         }
     };
 }
