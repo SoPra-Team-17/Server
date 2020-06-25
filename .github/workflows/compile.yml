@@ -1,0 +1,31 @@
+name: Compile
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 4
+      fail-fast: false
+      matrix:
+        cxx: [g++-8, clang++]
+        build: [Release, Debug]
+    env:
+      CXX: ${{ matrix.cxx }}
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Install Dependencies
+        run: |
+          ./installDependencies.sh
+      - name: Set up Build
+        run: |
+          mkdir build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=${{ matrix.build }} ..
+      - name: Build
+        run: |
+          cd build
+          make -j$(nproc)

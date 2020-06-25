@@ -2,6 +2,8 @@
 # Created by https://www.gitignore.io/api/c++,clion
 # Edit at https://www.gitignore.io/?templates=c++,clion
 
+logs
+
 ### C++ ###
 # Prerequisites
 *.d
@@ -83,7 +85,6 @@ cmake-build-*/
 *.iws
 
 # IntelliJ
-.idea/
 out/
 
 # mpeltonen/sbt-idea plugin
@@ -126,3 +127,5 @@ fabric.properties
 .idea/**/markdown-navigator/
 
 # End of https://www.gitignore.io/api/c++,clion
+
+doxygen-out/

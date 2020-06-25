@@ -1,0 +1,156 @@
+[
+  {
+    "name": "James Bond",
+    "description": "Bester Geheimagent aller Zeiten mit 00-Status.",
+    "gender": "DIVERSE",
+    "features": [
+      "SPRYNESS",
+      "LUCKY_DEVIL",
+      "ROBUST_STOMACH",
+      "TOUGHNESS",
+      "TRADECRAFT"
+    ]
+  },
+  {
+    "name": "Terry Wood",
+    "description": "Dueling is legal in Paraguay, as long as both parties are registered blood donors.",
+    "gender": "FEMALE",
+    "features": [
+      "CLAMMY_CLOTHES",
+      "OBSERVATION",
+      "ROBUST_STOMACH",
+      "FLAPS_AND_SEALS",
+      "TRADECRAFT",
+      "BANG_AND_BURN",
+      "LUCKY_DEVIL",
+      "JINX",
+      "SPRYNESS",
+      "PONDEROUSNESS"
+    ]
+  },
+  {
+    "name": "Lewis Holl",
+    "description": "There are over 58 million dogs in the U.S!",
+    "gender": "MALE",
+    "features": [
+      "BABYSITTER",
+      "FLAPS_AND_SEALS"
+    ]
+  },
+  {
+    "name": "Aria Jones",
+    "description": "Kids ask 300 questions a day.",
+    "gender": "MALE",
+    "features": [
+      "SLUGGISHNESS",
+      "AGILITY",
+      "BANG_AND_BURN",
+      "CONSTANT_CLAMMY_CLOTHES",
+      "OBSERVATION",
+      "JINX",
+      "FLAPS_AND_SEALS",
+      "CLAMMY_CLOTHES",
+      "TOUGHNESS",
+      "ROBUST_STOMACH",
+      "PONDEROUSNESS",
+      "TRADECRAFT"
+    ]
+  },
+  {
+    "name": "Arran Fassbender",
+    "description": "A dozen bodies were once found in Benjamin Franklin\u0027s basement.",
+    "gender": "DIVERSE",
+    "features": [
+      "HONEY_TRAP",
+      "BABYSITTER",
+      "CLAMMY_CLOTHES"
+    ]
+  },
+  {
+    "name": "Holly Harrington",
+    "description": "The earth is .02 degrees hotter during a full moon.",
+    "gender": "FEMALE",
+    "features": [
+      "SPRYNESS",
+      "OBSERVATION",
+      "TOUGHNESS",
+      "PONDEROUSNESS",
+      "CONSTANT_CLAMMY_CLOTHES",
+      "LUCKY_DEVIL",
+      "JINX"
+    ]
+  },
+  {
+    "name": "Charlotte Taylor",
+    "description": "George Washington and Thomas Jefferson grew marijuana on their plantations!",
+    "gender": "FEMALE",
+    "features": [
+      "CONSTANT_CLAMMY_CLOTHES",
+      "FLAPS_AND_SEALS",
+      "TRADECRAFT",
+      "SPRYNESS",
+      "LUCKY_DEVIL",
+      "PONDEROUSNESS"
+    ]
+  },
+  {
+    "name": "Holly Norton",
+    "description": "The healthiest place in the world is in Panama.",
+    "gender": "DIVERSE",
+    "features": [
+      "TRADECRAFT",
+      "ROBUST_STOMACH",
+      "BABYSITTER",
+      "FLAPS_AND_SEALS",
+      "LUCKY_DEVIL",
+      "TOUGHNESS",
+      "HONEY_TRAP",
+      "SLUGGISHNESS",
+      "JINX"
+    ]
+  },
+  {
+    "name": "Rosie Hoelle",
+    "description": "Playing the accordion was once required for teachers in North Korea.",
+    "gender": "FEMALE",
+    "features": [
+      "TOUGHNESS",
+      "BABYSITTER",
+      "AGILITY",
+      "SLUGGISHNESS",
+      "LUCKY_DEVIL"
+    ]
+  },
+  {
+    "name": "Zoe Nonnenmache",
+    "description": "There\u0027s a giant fish with a transparent head.",
+    "gender": "DIVERSE",
+    "features": [
+      "AGILITY",
+      "BABYSITTER",
+      "OBSERVATION",
+      "ROBUST_STOMACH",
+      "TRADECRAFT",
+      "NIMBLENESS",
+      "CLAMMY_CLOTHES",
+      "PONDEROUSNESS"
+    ]
+  },
+  {
+    "name": "Karen Dayton",
+    "description": "In Florida, It is illegal to sing in a public place while attired in a swimsuit.",
+    "gender": "DIVERSE",
+    "features": []
+  },
+  {
+    "name": "Claire Norton",
+    "description": "Pringles aren\u0027t actually potato chips.",
+    "gender": "MALE",
+    "features": [
+      "NIMBLENESS",
+      "HONEY_TRAP",
+      "TRADECRAFT",
+      "FLAPS_AND_SEALS"
+    ]
+  }
+]

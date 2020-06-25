@@ -1,0 +1,6 @@
+[submodule "external/LibCommon"]
+	path = external/LibCommon
+	url = https://github.com/SoPra-Team-17/LibCommon.git
+[submodule "external/WebsocketCPP"]
+	path = external/WebsocketCPP
+	url = https://github.com/SoPra-Team-17/WebsocketCPP.git
