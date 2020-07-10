@@ -83,4 +83,7 @@ A service file is provided [here](server017.service).
 Copy it to `/etc/systemd/system/server017.service`, execute `sudo systemctl daemon-reload` and `sudo systemctl start server017`
 to run the server in the background with automatic restart.
 Whenever the server restarts, it also pulls the latest version from docker hub.
+
 To manually restart (and update) the server, use `sudo systemctl restart server017`.
+
+Logs can be viewed with `sudo journalctl  -u server017`.
