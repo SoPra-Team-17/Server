@@ -1,0 +1,17 @@
+[Unit]
+Description=No Time To Spy server by Team 17
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=ubuntu
+ExecStartPre=/usr/bin/docker pull soprateam17/server
+ExecStart=/usr/bin/docker run --name server_systemd -v /home/ubuntu/config:/config --rm -p 7007:7007 soprateam17/server -v 0
+ExecStop=/usr/bin/docker container stop server_systemd
+
+[Install]
+WantedBy=multi-user.target
+

@@ -3,6 +3,16 @@ This repository contains the server component of team 17 for the
 *No Time To Spy* game of the Softwaregrundprojekt 2019/2020 at 
 the university of Ulm.
 
+## Usage
+The standard defines several flags for the server startup:
+* `-h` / `--help` prints some help information and exits.
+* `-c <path>` / `--config-charset <path>` usage of the given character configuration.
+* `-m <path>` / `--config-match <path>` usage of the given match configuration.
+* `-s <path>` / `--config-scenario <path>` usage of the given scenario configuration.
+* `--x <key> <value>` can be used to give the server additional key-value pairs
+* `-v <int>` / `--verbosity <int>` configuration of the logging verbosity
+* `-p <int>` / `--port <int>` configuration of the port to be used
+
 ## Installation 
 This server can be installed manually and through a docker container. 
 
@@ -37,23 +47,13 @@ Test the installation by executing the server.
 ./server017 -h
 ```
 
-## Usage
-The standard defines several flags for the server startup:
-* `-h` / `--help` prints some help information and exits.
-* `-c <path>` / `--config-charset <path>` usage of the given character configuration.
-* `-m <path>` / `--config-match <path>` usage of the given match configuration.
-* `-s <path>` / `--config-scenario <path>` usage of the given scenario configuration.
-* `--x <key> <value>` can be used to give the server additional key-value pairs
-* `-v <int>` / `--verbosity <int>` configuration of the logging verbosity
-* `-p <int>` / `--port <int>` configuration of the port to be used
-
-## Docker
-### Building the docker container
+### Docker
+#### Building the docker container
 ```bash
 docker build -t soprateam17/server .
 ```
 
-### Running the container
+#### Running the container
 ```bash
 docker run --rm -p 7007:7007 soprateam17/server
 ```
@@ -62,7 +62,7 @@ To get the latest `develop` branch you can also pull the container from [docker 
 docker pull soprateam17/server
 ```
 
-### Customizing configuration files with docker
+#### Customizing configuration files with docker
 Configuration can be changed by bindmounting a directory with configuration files to `/config`:
 ```bash
 docker run -v ~/customConfig:/config -p 7007:7007 soprateam17/server
@@ -77,3 +77,13 @@ The local directory path has to begin with `/` or `~`, so if you have a config d
 ```bash
 sudo docker run --rm -v "$(pwd)"/myConfig:/config -p 7007:7007 soprateam17/server
 ```
+
+#### systemd service
+A service file is provided [here](server017.service).
+Copy it to `/etc/systemd/system/server017.service`, execute `sudo systemctl daemon-reload` and `sudo systemctl start server017`
+to run the server in the background with automatic restart.
+Whenever the server restarts, it also pulls the latest version from docker hub.
+
+To manually restart (and update) the server, use `sudo systemctl restart server017`.
+
+Logs can be viewed with `sudo journalctl  -u server017`.
