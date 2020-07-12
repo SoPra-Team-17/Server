@@ -22,10 +22,13 @@ This server can be installed manually and through a docker container.
  * C++17 compatible Compiler (e.g. GCC-8)
  * CMake (at least version 3.10)
  * GNU-Make
- * [spdlog](https://github.com/gabime/spdlog/) [[MIT license](https://github.com/gabime/spdlog/blob/v1.x/LICENSE)]
- * [CLI11](https://github.com/CLIUtils/CLI11) [[license](https://github.com/CLIUtils/CLI11/blob/master/LICENSE)]
+ * [spdlog](https://github.com/gabime/spdlog/), version 1.6.1 [[MIT license](https://github.com/gabime/spdlog/blob/v1.x/LICENSE)]
+ * [CLI11](https://github.com/CLIUtils/CLI11), version 1.9.0 [[license](https://github.com/CLIUtils/CLI11/blob/master/LICENSE)]
  * [afsm](https://github.com/zmij/afsm) [[Artistic License 2.0](https://github.com/zmij/afsm/blob/develop/LICENSE)]
  * [metapushkin](https://github.com/zmij/metapushkin) (dependency from afsm) [[Artistic License 2.0](https://github.com/zmij/metapushkin/blob/develop/LICENSE)]
+
+For a comfortable installation of the last four prerequisites, the script [installDependencies.sh](https://github.com/SoPra-Team-17/Server/blob/develop/installDependencies.sh) is provided. 
+This assumes that the first three prerequisites are already satisfied. 
 
 #### Compiling the application
 Create a directory for the build and change into this. The name of this 
