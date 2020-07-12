@@ -22,10 +22,10 @@ This server can be installed manually and through a docker container.
  * C++17 compatible Compiler (e.g. GCC-8)
  * CMake (at least version 3.10)
  * GNU-Make
- * [spdlog](https://github.com/gabime/spdlog/)
- * [CLI11](https://github.com/CLIUtils/CLI11)
- * [afsm](https://github.com/zmij/afsm)
- * [metapushkin](https://github.com/zmij/metapushkin) (dependency from afsm)
+ * [spdlog](https://github.com/gabime/spdlog/) [[MIT license](https://github.com/gabime/spdlog/blob/v1.x/LICENSE)]
+ * [CLI11](https://github.com/CLIUtils/CLI11) [[license](https://github.com/CLIUtils/CLI11/blob/master/LICENSE)]
+ * [afsm](https://github.com/zmij/afsm) [[Artistic License 2.0](https://github.com/zmij/afsm/blob/develop/LICENSE)]
+ * [metapushkin](https://github.com/zmij/metapushkin) (dependency from afsm) [[Artistic License 2.0](https://github.com/zmij/metapushkin/blob/develop/LICENSE)]
 
 #### Compiling the application
 Create a directory for the build and change into this. The name of this 
