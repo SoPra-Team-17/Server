@@ -10,6 +10,7 @@
 #include <spdlog/spdlog.h>
 #include <network/messages/GameOperation.hpp>
 #include <network/messages/RequestGameOperation.hpp>
+#include <network/messages/Hello.hpp>
 #include <util/Player.hpp>
 #include <util/Format.hpp>
 #include <gameLogic/validation/ActionValidator.hpp>
@@ -184,10 +185,39 @@ namespace guards {
         bool operator()(FSM const &fsm, FSMState const &, Event const &e) {
             spdlog::debug("Testing spectator condition");
 
+            if constexpr (std::is_same<Event, spy::network::messages::Hello>::value) {
+                spy::network::messages::Hello msg = e;
+                return (msg.getRole() == spy::network::RoleEnum::SPECTATOR);
+            }
+
             const auto &clientRoles = root_machine(fsm).clientRoles;
 
             auto it = clientRoles.find(e.getClientId());
             return (it != clientRoles.end() && it->second == spy::network::RoleEnum::SPECTATOR);
+        }
+    };
+
+    /**
+     * @brief Guard passes if the chosen role of the client is player or AI.
+     */
+    struct isPlayer {
+        template<typename FSM, typename FSMState, typename Event>
+        bool operator()(FSM const &fsm, FSMState const &, Event const &e) {
+            spdlog::debug("Testing player condition");
+
+            if constexpr (std::is_same<Event, spy::network::messages::Hello>::value) {
+                spy::network::messages::Hello msg = e;
+                return (msg.getRole() == spy::network::RoleEnum::AI || msg.getRole() == spy::network::RoleEnum::PLAYER);
+            }
+
+            const auto &clientRoles = root_machine(fsm).clientRoles;
+
+            auto it = clientRoles.find(e.getClientId());
+            if (it == clientRoles.end()) {
+                return false;
+            } else {
+                return (it->second == spy::network::RoleEnum::PLAYER || it->second == spy::network::RoleEnum::AI);
+            }
         }
     };
 

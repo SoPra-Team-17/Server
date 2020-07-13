@@ -60,14 +60,14 @@ class Server : public afsm::def::state_machine<Server> {
         // @formatter:off
         using transitions = transition_table <
         // Start           Event                              Next            Action                                                                                                Guard
-        tr<emptyLobby,     spy::network::messages::Hello,     waitFor2Player, actions::multiple<actions::InitializeSession, actions::HelloReply>,                                   and_<not_<guards::isSpectator>, guards::isNameUnused>>,
-        tr<waitFor2Player, spy::network::messages::GameLeave, emptyLobby,     actions::multiple<actions::broadcastGameLeft, actions::closeConnectionToClient>,                      not_<guards::isSpectator>>,
+        tr<emptyLobby,     spy::network::messages::Hello,     waitFor2Player, actions::multiple<actions::InitializeSession, actions::HelloReply>,                                   and_<guards::isPlayer, guards::isNameUnused>>,
+        tr<waitFor2Player, spy::network::messages::GameLeave, emptyLobby,     actions::multiple<actions::broadcastGameLeft, actions::closeConnectionToClient>,                      guards::isPlayer>,
         tr<waitFor2Player, events::playerDisconnect,          emptyLobby>,
-        tr<waitFor2Player, spy::network::messages::Hello,     decltype(game), actions::multiple<actions::HelloReply, actions::StartGame>,                                           and_<not_<guards::isSpectator>, guards::isNameUnused>>,
+        tr<waitFor2Player, spy::network::messages::Hello,     decltype(game), actions::multiple<actions::HelloReply, actions::StartGame>,                                           and_<guards::isPlayer, guards::isNameUnused>>,
         tr<GameFSM,        none,                              emptyLobby,     actions::closeGame,                                                                                   guards::gameOver>,
         tr<GameFSM,        events::triggerGameEnd,            emptyLobby,     actions::closeGame,                                                                                   guards::gameOver>,
         tr<GameFSM,        events::forceGameClose,            emptyLobby,     actions::closeGame>,
-        tr<GameFSM,        spy::network::messages::GameLeave, emptyLobby,     actions::multiple<actions::broadcastGameLeft, actions::closeConnectionToClient, actions::closeGame>,   not_<guards::isSpectator>>
+        tr<GameFSM,        spy::network::messages::GameLeave, emptyLobby,     actions::multiple<actions::broadcastGameLeft, actions::closeConnectionToClient, actions::closeGame>,  guards::isPlayer>
         >;
 
         using internal_transitions = transition_table <
@@ -76,7 +76,7 @@ class Server : public afsm::def::state_machine<Server> {
         in<spy::network::messages::RequestMetaInformation, actions::sendMetaInformation>,
         in<spy::network::messages::GameLeave,              actions::multiple<actions::sendGameLeft, actions::closeConnectionToClient>,                                                                                                          guards::isSpectator>,
         in<spy::network::messages::Hello,                  actions::HelloReply,                                                                                                                                                                 guards::isSpectator>,
-        in<spy::network::messages::Hello,                  actions::replyWithError<spy::network::ErrorTypeEnum::NAME_NOT_AVAILABLE>,                                                                                                            and_<not_<guards::isSpectator>, not_<guards::isNameUnused>>>,
+        in<spy::network::messages::Hello,                  actions::replyWithError<spy::network::ErrorTypeEnum::NAME_NOT_AVAILABLE>,                                                                                                            and_<guards::isPlayer, not_<guards::isNameUnused>>>,
         in<events::kickClient,                             actions::multiple<actions::replyWithError<>, actions::closeConnectionToClient, actions::broadcastGameLeft, actions::emitForceGameClose>>
         >;
         // @formatter:on

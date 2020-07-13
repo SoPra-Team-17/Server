@@ -334,7 +334,7 @@ class GameFSM : public afsm::def::state_machine<GameFSM> {
 
         using internal_transitions = transition_table <
         // Event                          Action                                                                 Guard
-        in<spy::network::messages::Hello, actions::replyWithError<spy::network::ErrorTypeEnum::ALREADY_SERVING>, not_<guards::isSpectator>>
+        in<spy::network::messages::Hello, actions::replyWithError<spy::network::ErrorTypeEnum::ALREADY_SERVING>, guards::isPlayer>
         >;
         // @formatter:on
 };
