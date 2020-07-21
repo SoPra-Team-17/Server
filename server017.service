@@ -11,6 +11,7 @@ User=ubuntu
 ExecStartPre=/usr/bin/docker pull soprateam17/server
 ExecStart=/usr/bin/docker run --name server_systemd -v /home/ubuntu/config:/config --rm -p 7007:7007 soprateam17/server -v 0
 ExecStop=/usr/bin/docker container stop server_systemd
+ExecStopPost=/usr/bin/bash /home/ubuntu/execStopPost.sh
 
 [Install]
 WantedBy=multi-user.target
