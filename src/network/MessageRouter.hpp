@@ -108,11 +108,9 @@ class MessageRouter {
          */
         template<typename MessageType>
         void sendMessage(MessageType message) {
-            nlohmann::json serializedMessage = message;
-            spdlog::trace("Sending message: {}", serializedMessage.dump());
             try {
                 auto &con = connectionFromUUID(message.getClientId());
-                con.first->send(serializedMessage.dump());
+                sendMessage(con.first, message);
             } catch (const UUIDNotFoundException &e) {
                 spdlog::warn("UUIDNotFoundException: {}", e.what());
                 spdlog::warn("Tried sending message to UUID {}, but it's not found in connection list.",
@@ -122,6 +120,16 @@ class MessageRouter {
                     spdlog::debug(optID.value_or(spy::util::UUID{}));
                 }
             }
+        }
+
+        /**
+         * Sends a message to a specific connection.
+         */
+        template<typename MessageType>
+        void sendMessage(connectionPtr connectionPtr, MessageType message) {
+            nlohmann::json serializedMessage = message;
+            spdlog::trace("Sending message: {}", serializedMessage.dump());
+            connectionPtr->send(serializedMessage.dump());
         }
 
         /**

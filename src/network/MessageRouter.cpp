@@ -142,12 +142,18 @@ void MessageRouter::receiveListener(const MessageRouter::connectionPtr &connecti
     } catch (nlohmann::json::exception &e) {
         // message doesn't fit to the standard definition --> illegal message error + kick
         spdlog::error("Error parsing JSON from message: {}", e.what());
-        spdlog::error("Sending ILLEGAL_MESSAGE and kicking client");
-        spy::network::messages::Error errorMessage{connectionId.value(),
+        spy::network::messages::Error errorMessage{connectionId.value_or(spy::util::UUID{}),
                                                    spy::network::ErrorTypeEnum::ILLEGAL_MESSAGE};
-        errorMessage.setDebugMessage("Message doesn't fit to the standardized ones");
-        sendMessage(errorMessage);
-        closeConnection(connectionId.value());
+        errorMessage.setDebugMessage("Message doesn't fit to the standardized ones. "
+                                     "Exception: " + std::string{e.what()});
+        if (connectionId.has_value()) {
+            spdlog::error("Sending ILLEGAL_MESSAGE and kicking client");
+            sendMessage(errorMessage);
+            closeConnection(connectionId.value());
+        } else {
+            spdlog::error("Sending ILLEGAL_MESSAGE and closing connection");
+            sendMessage(connectionPtr, errorMessage);
+        }
         return;
     }
 }
@@ -188,7 +194,8 @@ void MessageRouter::closeConnection(const spy::util::UUID &id) {
     spdlog::info("MessageRouter: Closing connection to player {}", id);
     try {
         connection con = connectionFromUUID(id);
-        activeConnections.erase(std::remove(activeConnections.begin(), activeConnections.end(), con), activeConnections.end());
+        activeConnections.erase(std::remove(activeConnections.begin(), activeConnections.end(), con),
+                                activeConnections.end());
     } catch (const UUIDNotFoundException &e) {
         spdlog::warn("Connection to {} was already closed! Error: {}", id, e.what());
     }
