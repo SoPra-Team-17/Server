@@ -74,19 +74,26 @@ namespace guards {
         bool operator()(FSM const &fsm, FSMState const &state, Event const &e) {
             spdlog::debug("Checking guard choiceValid");
 
-            auto clientId = e.getClientId();
+            spy::network::messages::ItemChoice m = e;
+            auto clientId = m.getClientId();
 
             const auto &offered = state.offers.at(clientId);
             const auto &clientRoles = root_machine(fsm).clientRoles;
 
             auto role = clientRoles.find(clientId);
             if (role == clientRoles.end()) {
-                spdlog::error("Player who send the choice is no longer listed in the clientRoles map!");
+                spdlog::error("Player who sent the choice is no longer listed in the clientRoles map!");
                 return false;
             }
+            if (role->second != spy::network::RoleEnum::PLAYER and role->second != spy::network::RoleEnum::AI) {
+                spdlog::warn("Player is role {}", fmt::json(role->second));
+            }
 
-            bool validMessage = e.validate(role->second, offered.characters, offered.gadgets);
-            auto choice = e.getChoice();
+            spdlog::trace("Validating ItemChoice, current character offers: {}, current gadget offers: {}, role: {}",
+                          fmt::json(offered.characters), fmt::json(offered.gadgets), fmt::json(role->second));
+
+            bool validMessage = m.validate(role->second, offered.characters, offered.gadgets);
+            auto choice = m.getChoice();
 
             bool choiceInvalid = ((std::holds_alternative<spy::util::UUID>(choice)
                                    && state.characterChoices.at(clientId).size() >= 4)
@@ -96,7 +103,10 @@ namespace guards {
             if (validMessage && !choiceInvalid) {
                 return true;
             } else {
-                spdlog::critical("Player {} has send an invalid choice and should be kicked", clientId);
+                spdlog::critical("Player {} has send an invalid choice and should be kicked"
+                                 "validMessage={},"
+                                 "choiceInvalid(Too many choices)={}",
+                                 clientId, validMessage, choiceInvalid);
                 return false;
             }
         }
@@ -246,7 +256,7 @@ namespace guards {
         bool operator()(const FSM &fsm, const FSMState &, const spy::network::messages::Hello &e) {
             const auto &playerNames = root_machine(fsm).playerNames;
 
-            for (const auto& [_, name] : playerNames) {
+            for (const auto &[_, name] : playerNames) {
                 if (name == e.getName()) {
                     spdlog::debug("Name \"{}\" is already used", e.getName());
                     return false;
